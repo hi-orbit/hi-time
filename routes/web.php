@@ -70,8 +70,25 @@ Route::middleware(['auth'])->group(function () {
 
     // Admin only routes
     Route::middleware(['admin'])->group(function () {
-        Route::get('/settings', function () {
-            return view('settings.index');
-        })->name('settings.index');
+        Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
+        
+        // User management routes
+        Route::resource('settings/users', \App\Http\Controllers\UserManagementController::class, [
+            'names' => [
+                'index' => 'settings.users.index',
+                'create' => 'settings.users.create',
+                'store' => 'settings.users.store',
+                'show' => 'settings.users.show',
+                'edit' => 'settings.users.edit',
+                'update' => 'settings.users.update',
+                'destroy' => 'settings.users.destroy',
+            ]
+        ]);
+        
+        // Additional password reset routes
+        Route::get('/settings/users/{user}/reset-password', [\App\Http\Controllers\UserManagementController::class, 'showResetPassword'])
+            ->name('settings.users.reset-password');
+        Route::post('/settings/users/{user}/reset-password', [\App\Http\Controllers\UserManagementController::class, 'resetPassword'])
+            ->name('settings.users.reset-password.store');
     });
 });
