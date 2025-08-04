@@ -17,22 +17,9 @@ class AdminUserSeeder extends Seeder
         User::create([
             'name' => 'Admin User',
             'email' => 'admin@hi-time.test',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('UDK_pmr7wtr0ufe0gua'),
             'role' => 'admin',
         ]);
 
-        User::create([
-            'name' => 'Test User',
-            'email' => 'user@hi-time.test',
-            'password' => Hash::make('password'),
-            'role' => 'user',
-        ]);
-
-        User::create([
-            'name' => 'Test Contractor',
-            'email' => 'contractor@hi-time.test',
-            'password' => Hash::make('password'),
-            'role' => 'contractor',
-        ]);
     }
 }
