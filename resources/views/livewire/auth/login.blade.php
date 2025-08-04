@@ -39,15 +39,6 @@
                     Sign in
                 </button>
             </div>
-
-            <div class="text-center">
-                <p class="mt-2 text-sm text-gray-600">
-                    Test accounts:<br>
-                    <strong>Admin:</strong> admin@hi-time.test / password<br>
-                    <strong>User:</strong> user@hi-time.test / password<br>
-                    <strong>Contractor:</strong> contractor@hi-time.test / password
-                </p>
-            </div>
         </form>
     </div>
 </div>
