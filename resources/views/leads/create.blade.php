@@ -29,22 +29,22 @@
 
                 <!-- Company Name -->
                 <div>
-                    <label for="company_name" class="block text-sm font-medium text-gray-700">Company Name</label>
-                    <input type="text" name="company_name" id="company_name"
-                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('company_name') border-red-300 @enderror"
-                           value="{{ old('company_name') }}" required>
-                    @error('company_name')
+                    <label for="company" class="block text-sm font-medium text-gray-700">Company Name</label>
+                    <input type="text" name="company" id="company"
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('company') border-red-300 @enderror"
+                           value="{{ old('company') }}">
+                    @error('company')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <!-- Contact Name -->
                 <div>
-                    <label for="contact_name" class="block text-sm font-medium text-gray-700">Contact Name</label>
-                    <input type="text" name="contact_name" id="contact_name"
-                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('contact_name') border-red-300 @enderror"
-                           value="{{ old('contact_name') }}" required>
-                    @error('contact_name')
+                    <label for="name" class="block text-sm font-medium text-gray-700">Contact Name</label>
+                    <input type="text" name="name" id="name"
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('name') border-red-300 @enderror"
+                           value="{{ old('name') }}" required>
+                    @error('name')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
@@ -71,17 +71,25 @@
                     @enderror
                 </div>
 
+                <!-- Address -->
+                <div>
+                    <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
+                    <textarea name="address" id="address" rows="3"
+                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('address') border-red-300 @enderror"
+                              placeholder="Complete business address...">{{ old('address') }}</textarea>
+                    @error('address')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <!-- Status -->
                 <div>
                     <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
                     <select name="status" id="status"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('status') border-red-300 @enderror">
-                        <option value="new" {{ old('status') == 'new' ? 'selected' : '' }}>New</option>
-                        <option value="contacted" {{ old('status') == 'contacted' ? 'selected' : '' }}>Contacted</option>
-                        <option value="qualified" {{ old('status') == 'qualified' ? 'selected' : '' }}>Qualified</option>
-                        <option value="proposal_sent" {{ old('status') == 'proposal_sent' ? 'selected' : '' }}>Proposal Sent</option>
-                        <option value="closed_won" {{ old('status') == 'closed_won' ? 'selected' : '' }}>Closed Won</option>
-                        <option value="closed_lost" {{ old('status') == 'closed_lost' ? 'selected' : '' }}>Closed Lost</option>
+                        <option value="active" {{ old('status', 'active') == 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="converted" {{ old('status') == 'converted' ? 'selected' : '' }}>Converted</option>
+                        <option value="lost" {{ old('status') == 'lost' ? 'selected' : '' }}>Lost</option>
                     </select>
                     @error('status')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

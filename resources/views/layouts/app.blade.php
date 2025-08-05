@@ -17,6 +17,9 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- Custom Styles Stack -->
+    @stack('styles')
+
     <!-- Simple Browser Notifications -->
     <script>
         // Wrap in IIFE to avoid conflicts with browser extensions
@@ -353,5 +356,8 @@
     </div>
 
     @livewireScripts
+
+    <!-- Custom Scripts Stack -->
+    @stack('scripts')
 </body>
 </html>

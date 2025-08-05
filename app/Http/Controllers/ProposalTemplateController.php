@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ProposalTemplate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ProposalTemplateController extends Controller
 {
@@ -34,11 +35,15 @@ class ProposalTemplateController extends Controller
             'type' => 'required|string|max:255',
             'description' => 'nullable|string',
             'content' => 'required|string',
-            'variables' => 'nullable|array',
-            'is_active' => 'boolean',
+            'is_active' => 'required|boolean',
         ]);
 
-        $validated['is_active'] = $request->has('is_active');
+        // Convert string "0"/"1" to proper boolean
+        $validated['is_active'] = (bool) $validated['is_active'];
+
+        // Auto-extract variables from the new content
+        preg_match_all('/\{\{([^}]+)\}\}/', $validated['content'], $matches);
+        $validated['variables'] = array_unique($matches[1]);
 
         ProposalTemplate::create($validated);
 
@@ -72,11 +77,15 @@ class ProposalTemplateController extends Controller
             'type' => 'required|string|max:255',
             'description' => 'nullable|string',
             'content' => 'required|string',
-            'variables' => 'nullable|array',
-            'is_active' => 'boolean',
+            'is_active' => 'required|boolean',
         ]);
 
-        $validated['is_active'] = $request->has('is_active');
+        // Convert string "0"/"1" to proper boolean
+        $validated['is_active'] = (bool) $validated['is_active'];
+
+        // Auto-extract variables from the new content
+        preg_match_all('/\{\{([^}]+)\}\}/', $validated['content'], $matches);
+        $validated['variables'] = array_unique($matches[1]);
 
         $proposalTemplate->update($validated);
 

@@ -37,7 +37,14 @@ class LeadController extends Controller
             'company' => 'nullable|string|max:255',
             'address' => 'nullable|string',
             'notes' => 'nullable|string',
+            'status' => 'nullable|in:active,converted,lost',
+            'source' => 'nullable|string|max:255',
         ]);
+
+        // Set default status if not provided
+        if (!isset($validated['status'])) {
+            $validated['status'] = 'active';
+        }
 
         Lead::create($validated);
 

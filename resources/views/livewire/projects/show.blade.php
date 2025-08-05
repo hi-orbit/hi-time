@@ -218,7 +218,7 @@
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                 <option value="">Unassigned</option>
                                 @foreach($users as $user)
-                                    <option value="{{ $user->id }}">{{ $user->name }} ({{ ucfirst($user->role) }})</option>
+                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
                                 @endforeach
                             </select>
                             @error('assigned_to') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
@@ -397,7 +397,7 @@
                                                     class="block w-full mt-1 px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                                 <option value="">Unassigned</option>
                                                 @foreach($users as $user)
-                                                    <option value="{{ $user->id }}">{{ $user->name }} ({{ ucfirst($user->role) }})</option>
+                                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
                                                 @endforeach
                                             </select>
                                         @else

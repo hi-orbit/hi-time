@@ -16,6 +16,7 @@ class Lead extends Model
         'address',
         'notes',
         'status',
+        'source',
         'converted_customer_id',
         'converted_at',
     ];

@@ -113,4 +113,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/settings/users/{user}/reset-password', [\App\Http\Controllers\UserManagementController::class, 'resetPassword'])
             ->name('settings.users.reset-password.store');
     });
+
+    // CSRF token refresh route (for large forms)
+    Route::get('/csrf-token', function () {
+        return response()->json(['csrf_token' => csrf_token()]);
+    })->name('csrf-token');
 });
