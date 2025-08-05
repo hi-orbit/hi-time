@@ -623,9 +623,9 @@ class Show extends Component
         }
     }
 
-    public function updatedDropzoneFiles()
+    public function processDropzoneFiles()
     {
-        Log::info('Dropzone files updated', [
+        Log::info('Process dropzone files called', [
             'count' => count($this->dropzoneFiles ?? []),
             'selectedTask' => $this->selectedTask ? $this->selectedTask->id : 'null',
             'files_debug' => $this->dropzoneFiles
@@ -637,14 +637,18 @@ class Show extends Component
         }
 
         if (empty($this->dropzoneFiles)) {
-            Log::info('No files to process');
+            session()->flash('error', 'No files to upload.');
             return;
         }
+
+        $uploadedCount = 0;
+        $errorCount = 0;
 
         foreach ($this->dropzoneFiles as $index => $fileData) {
             try {
                 if (!$fileData || !is_array($fileData)) {
                     Log::warning('Invalid file data at index: ' . $index, ['data' => $fileData]);
+                    $errorCount++;
                     continue;
                 }
 
@@ -652,6 +656,7 @@ class Show extends Component
                 // 'tmpFilename', 'name', 'extension', 'path', 'temporaryUrl', 'size'
                 if (!isset($fileData['tmpFilename']) || !isset($fileData['name'])) {
                     Log::warning('Missing required file data', ['fileData' => $fileData]);
+                    $errorCount++;
                     continue;
                 }
 
@@ -660,6 +665,7 @@ class Show extends Component
 
                 if (!$tempFile) {
                     Log::error('Could not create temporary file', ['fileData' => $fileData]);
+                    $errorCount++;
                     continue;
                 }
 
@@ -686,6 +692,7 @@ class Show extends Component
                 ]);
 
                 Log::info('Dropzone file saved', ['fileName' => $fileName]);
+                $uploadedCount++;
 
             } catch (\Exception $e) {
                 Log::error('Error processing dropzone file', [
@@ -694,14 +701,32 @@ class Show extends Component
                     'fileData' => $fileData ?? 'null',
                     'index' => $index
                 ]);
-                session()->flash('error', 'Error uploading file: ' . ($fileData['name'] ?? 'unknown') . ' - ' . $e->getMessage());
+                $errorCount++;
             }
         }
 
         // Clear the files array and refresh attachments
         $this->dropzoneFiles = [];
         $this->refreshAttachments();
-        session()->flash('message', 'Files uploaded successfully!');
+
+        if ($uploadedCount > 0) {
+            session()->flash('message', "Successfully uploaded {$uploadedCount} file(s)!");
+        }
+
+        if ($errorCount > 0) {
+            session()->flash('error', "Failed to upload {$errorCount} file(s). Check logs for details.");
+        }
+    }
+
+    public function updatedDropzoneFiles()
+    {
+        // Just log when files are added to the dropzone
+        Log::info('Dropzone files updated', [
+            'count' => count($this->dropzoneFiles ?? []),
+            'selectedTask' => $this->selectedTask ? $this->selectedTask->id : 'null'
+        ]);
+
+        // Files will be processed when the user clicks "Upload Files" button
     }
 
     public function deleteAttachment($attachmentId)

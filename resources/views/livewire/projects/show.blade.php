@@ -458,6 +458,15 @@
                                         :rules="['file', 'max:10240', 'mimes:jpg,jpeg,png,gif,pdf,doc,docx,txt,zip,csv,xlsx,xls']"
                                         :multiple="true"
                                         :key="'task-dropzone-' . ($selectedTask->id ?? 'new')" />
+
+                                    @if(!empty($dropzoneFiles))
+                                        <div class="mt-3">
+                                            <button wire:click="processDropzoneFiles"
+                                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                                Upload {{ count($dropzoneFiles) }} File(s)
+                                            </button>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
