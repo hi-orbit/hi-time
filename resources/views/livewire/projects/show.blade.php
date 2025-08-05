@@ -297,7 +297,20 @@
 
     <!-- Task Details Modal -->
     @if($showTaskDetailsModal && $selectedTask)
-        <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+             wire:key="task-details-modal-{{ $selectedTask->id }}"
+             x-data="{
+                 showSuccessMessage: false,
+                 showErrorMessage: false,
+                 successMessage: '',
+                 errorMessage: ''
+             }"
+             x-on:note-added.window="showSuccessMessage = true; successMessage = $event.detail.message; setTimeout(() => showSuccessMessage = false, 3000)"
+             x-on:assignment-updated.window="showSuccessMessage = true; successMessage = $event.detail.message; setTimeout(() => showSuccessMessage = false, 3000)"
+             x-on:files-uploaded.window="showSuccessMessage = true; successMessage = $event.detail.message; setTimeout(() => showSuccessMessage = false, 3000)"
+             x-on:attachment-deleted.window="showSuccessMessage = true; successMessage = $event.detail.message; setTimeout(() => showSuccessMessage = false, 3000)"
+             x-on:attachment-error.window="showErrorMessage = true; errorMessage = $event.detail.message; setTimeout(() => showErrorMessage = false, 3000)"
+             x-on:upload-error.window="showErrorMessage = true; errorMessage = $event.detail.message; setTimeout(() => showErrorMessage = false, 3000)">
             <div class="relative top-10 mx-auto p-5 border max-w-4xl shadow-lg rounded-md bg-white">
                 <div class="mt-3">
                     <div class="flex justify-between items-start mb-6">
@@ -325,11 +338,19 @@
                         </div>
                     </div>
 
-                    @if (session()->has('note_added'))
-                        <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                            {{ session('note_added') }}
-                        </div>
-                    @endif
+                    <!-- Success message using Alpine.js instead of session flash -->
+                    <div x-show="showSuccessMessage"
+                         x-transition
+                         class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                        <span x-text="successMessage"></span>
+                    </div>
+
+                    <!-- Error message using Alpine.js -->
+                    <div x-show="showErrorMessage"
+                         x-transition
+                         class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        <span x-text="errorMessage"></span>
+                    </div>
 
                     @if (session()->has('message'))
                         <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
@@ -372,6 +393,7 @@
                                         <label class="text-sm font-medium text-gray-700">Assigned to:</label>
                                         @if(auth()->user()->isAdmin() || auth()->user()->id == $selectedTask->assigned_to || auth()->user()->id == $selectedTask->created_by)
                                             <select wire:model="taskAssignment" wire:change="updateTaskAssignment"
+                                                    wire:key="task-assignment-{{ $selectedTask->id }}"
                                                     class="block w-full mt-1 px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                                 <option value="">Unassigned</option>
                                                 @foreach($users as $user)
@@ -411,11 +433,11 @@
                         </div>
 
                         <!-- Notes Section -->
-                        <div>
+                        <div wire:key="notes-section-{{ $selectedTask->id }}">
                             <h4 class="text-lg font-medium text-gray-900 mb-3">Notes</h4>
 
                             <!-- Add Note Form -->
-                            <form wire:submit.prevent="addNote" class="mb-4">
+                            <form wire:submit.prevent="addNote" class="mb-4" wire:key="add-note-form-{{ $selectedTask->id }}">
                                 <div class="mb-3">
                                     <textarea wire:model="newNote" rows="3"
                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
@@ -429,10 +451,10 @@
                             </form>
 
                             <!-- Notes List -->
-                            <div class="max-h-96 overflow-y-auto">
+                            <div class="max-h-96 overflow-y-auto" wire:key="notes-list-{{ $selectedTask->id }}">
                                 @if($selectedTask->notes && $selectedTask->notes->count() > 0)
                                     @foreach($selectedTask->notes->sortByDesc('created_at') as $note)
-                                        <div class="bg-white border rounded-lg p-3 mb-3">
+                                        <div class="bg-white border rounded-lg p-3 mb-3" wire:key="note-{{ $note->id }}">
                                             <div class="flex items-start justify-between mb-2">
                                                 <div class="flex items-center">
                                                     <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-300 text-sm font-medium text-gray-700">

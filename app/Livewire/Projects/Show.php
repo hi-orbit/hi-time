@@ -210,10 +210,12 @@ class Show extends Component
                 'content' => $this->newNote,
             ]);
 
-            // Refresh the selected task to show the new note
-            $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries'])->findOrFail($this->selectedTask->id);
+            // Refresh the selected task to show the new note and maintain all relationships
+            $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader'])->findOrFail($this->selectedTask->id);
             $this->newNote = '';
-            session()->flash('note_added', 'Note added successfully!');
+
+            // Use dispatch instead of session flash to avoid component refresh issues
+            $this->dispatch('note-added', message: 'Note added successfully!');
         }
     }    public function createTask()
     {
@@ -315,7 +317,7 @@ class Show extends Component
             $this->reset(['title', 'description', 'assigned_to', 'status', 'showTaskModal', 'editingTask']);
 
             // Reopen task details modal with updated data
-            $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries'])->findOrFail($taskId);
+            $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader'])->findOrFail($taskId);
             $this->taskAssignment = $this->selectedTask->assigned_to;
             $this->showTaskDetailsModal = true;
 
@@ -349,9 +351,10 @@ class Show extends Component
             }
 
             // Refresh the task data
-            $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries'])->findOrFail($this->selectedTask->id);
+            $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader'])->findOrFail($this->selectedTask->id);
 
-            session()->flash('note_added', 'Task assignment updated successfully!');
+            // Use dispatch instead of session flash
+            $this->dispatch('assignment-updated', message: 'Task assignment updated successfully!');
         }
     }
 
@@ -710,11 +713,11 @@ class Show extends Component
         $this->refreshAttachments();
 
         if ($uploadedCount > 0) {
-            session()->flash('message', "Successfully uploaded {$uploadedCount} file(s)!");
+            $this->dispatch('files-uploaded', message: "Successfully uploaded {$uploadedCount} file(s)!");
         }
 
         if ($errorCount > 0) {
-            session()->flash('error', "Failed to upload {$errorCount} file(s). Check logs for details.");
+            $this->dispatch('upload-error', message: "Failed to upload {$errorCount} file(s). Check logs for details.");
         }
     }
 
@@ -755,9 +758,9 @@ class Show extends Component
 
                 $attachment->delete();
                 $this->selectedTask->load('attachments.uploader');
-                session()->flash('message', 'Attachment deleted successfully!');
+                $this->dispatch('attachment-deleted', message: 'Attachment deleted successfully!');
             } else {
-                session()->flash('error', 'You do not have permission to delete this attachment.');
+                $this->dispatch('attachment-error', message: 'You do not have permission to delete this attachment.');
             }
         }
     }
