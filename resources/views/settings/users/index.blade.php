@@ -63,8 +63,8 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
-                                        {{ $user->role === 'admin' ? 'bg-purple-100 text-purple-800' : 
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                                        {{ $user->role === 'admin' ? 'bg-purple-100 text-purple-800' :
                                            ($user->role === 'contractor' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800') }}">
                                         {{ ucfirst($user->role) }}
                                     </span>

@@ -68,7 +68,13 @@
                                 </div>
                                 <div class="text-right">
                                     <div class="text-2xl font-bold text-gray-900">{{ number_format($userData['total_hours'], 2) }}h</div>
-                                    <div class="text-sm text-gray-500">{{ $userTimeData['total_hours'] > 0 ? number_format(($userData['total_hours'] / $userTimeData['total_hours']) * 100, 1) : 0 }}% of total</div>
+                                    <div class="text-sm text-gray-500">
+                                        @if($userTimeData['total_hours'] > 0)
+                                            {{ number_format(($userData['total_hours'] / $userTimeData['total_hours']) * 100, 1) }}% of total
+                                        @else
+                                            0% of total
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>

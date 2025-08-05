@@ -57,7 +57,14 @@
                 @endif
 
                 <!-- Kanban Board -->
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                <div id="kanban-board" class="grid gap-6 transition-all duration-300" style="grid-template-columns: repeat(5, 1fr) 80px;" data-collapsed="true">
+                    <style>
+                        @media (max-width: 768px) {
+                            #kanban-board {
+                                grid-template-columns: 1fr !important;
+                            }
+                        }
+                    </style>
                     <!-- Backlog Column -->
                     <div class="bg-gray-50 rounded-lg p-4 min-h-96"
                          ondrop="handleDrop(event, 'backlog')"
@@ -106,6 +113,22 @@
                         </div>
                     </div>
 
+                    <!-- Failed Testing Column -->
+                    <div class="bg-red-50 rounded-lg p-4 min-h-96"
+                         ondrop="handleDrop(event, 'failed_testing')"
+                         ondragover="event.preventDefault()"
+                         ondragenter="event.preventDefault()">
+                        <h3 class="font-semibold text-gray-900 mb-4 flex items-center">
+                            <span class="w-3 h-3 bg-red-400 rounded-full mr-2"></span>
+                            Failed Testing ({{ $columns['failed_testing']->count() }})
+                        </h3>
+                        <div class="space-y-3">
+                            @foreach($columns['failed_testing'] as $task)
+                                @include('livewire.projects.partials.task-card', ['task' => $task])
+                            @endforeach
+                        </div>
+                    </div>
+
                     <!-- Ready to Release Column -->
                     <div class="bg-purple-50 rounded-lg p-4 min-h-96"
                          ondrop="handleDrop(event, 'ready_to_release')"
@@ -123,18 +146,33 @@
                     </div>
 
                     <!-- Done Column -->
-                    <div class="bg-green-50 rounded-lg p-4 min-h-96"
+                    <div id="done-column" class="bg-green-50 rounded-lg p-4 min-h-96 transition-all duration-300"
                          ondrop="handleDrop(event, 'done')"
                          ondragover="event.preventDefault()"
                          ondragenter="event.preventDefault()">
-                        <h3 class="font-semibold text-gray-900 mb-4 flex items-center">
-                            <span class="w-3 h-3 bg-green-400 rounded-full mr-2"></span>
-                            Done ({{ $columns['done']->count() }})
+                        <h3 class="font-semibold text-gray-900 mb-4 flex items-center justify-between cursor-pointer"
+                            onclick="toggleDoneColumn()">
+                            <div class="flex items-center">
+                                <span class="w-3 h-3 bg-green-400 rounded-full mr-2"></span>
+                                <span id="done-title">Done ({{ $columns['done']->count() }})</span>
+                            </div>
+                            <svg id="done-chevron" class="w-5 h-5 transform transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
                         </h3>
-                        <div class="space-y-3">
+                        <div id="done-tasks" class="space-y-3" style="display: none;">
                             @foreach($columns['done'] as $task)
                                 @include('livewire.projects.partials.task-card', ['task' => $task])
                             @endforeach
+                        </div>
+                        <!-- Collapsed state indicator -->
+                        <div id="done-collapsed-indicator" class="text-center text-gray-500 text-xs">
+                            <div class="transform -rotate-90 origin-center whitespace-nowrap">
+                                {{ $columns['done']->count() }}
+                            </div>
+                            @if($columns['done']->count() > 0)
+                                <div class="mt-2 text-xs">↑</div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -181,6 +219,7 @@
                                 <option value="backlog">Backlog</option>
                                 <option value="in_progress">In Progress</option>
                                 <option value="in_test">In Test</option>
+                                <option value="failed_testing">Failed Testing</option>
                                 <option value="ready_to_release">Ready to Release</option>
                                 <option value="done">Done</option>
                             </select>
@@ -391,11 +430,130 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Attachments Section -->
+                    <div class="mt-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-3">Attachments</h4>
+                        
+                        <!-- Upload Form -->
+                        <div class="mb-4">
+                            <div class="flex items-center space-x-3">
+                                <input type="file" wire:model="attachmentFiles" multiple 
+                                       class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                       accept="image/*,.pdf,.doc,.docx,.txt,.xlsx,.xls,.zip,.rar">
+                                <button type="button" wire:click="uploadAttachments" 
+                                        wire:loading.attr="disabled" wire:target="attachmentFiles,uploadAttachments"
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50">
+                                    <span wire:loading.remove wire:target="uploadAttachments">Upload</span>
+                                    <span wire:loading wire:target="uploadAttachments">Uploading...</span>
+                                </button>
+                            </div>
+                            @error('attachmentFiles.*') 
+                                <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
+                            @enderror
+                            <p class="text-xs text-gray-500 mt-1">Max file size: 10MB. Supported: images, PDF, documents, spreadsheets, archives</p>
+                        </div>
+
+                        <!-- Attachments List -->
+                        <div class="space-y-2">
+                            @if($selectedTask->attachments && $selectedTask->attachments->count() > 0)
+                                @foreach($selectedTask->attachments as $attachment)
+                                    <div class="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                                        <div class="flex items-center space-x-3">
+                                            <!-- File Icon -->
+                                            <div class="flex-shrink-0">
+                                                @if($attachment->is_image)
+                                                    <svg class="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                @else
+                                                    <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                @endif
+                                            </div>
+                                            
+                                            <!-- File Info -->
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium text-gray-900 truncate">{{ $attachment->original_name }}</p>
+                                                <p class="text-xs text-gray-500">
+                                                    {{ $attachment->file_size_human }} • 
+                                                    Uploaded by {{ $attachment->uploader->name }} • 
+                                                    {{ $attachment->created_at->format('M j, Y H:i') }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Actions -->
+                                        <div class="flex items-center space-x-2">
+                                            <!-- Preview for images -->
+                                            @if($attachment->is_image)
+                                                <button type="button" onclick="showImagePreview('{{ Storage::disk('public')->url($attachment->file_path) }}', '{{ $attachment->original_name }}')"
+                                                        class="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                                                    Preview
+                                                </button>
+                                            @endif
+                                            
+                                            <!-- Download -->
+                                            <a href="{{ Storage::disk('public')->url($attachment->file_path) }}" 
+                                               download="{{ $attachment->original_name }}"
+                                               class="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                                                Download
+                                            </a>
+                                            
+                                            <!-- Delete (only for uploader or admin) -->
+                                            @if($attachment->uploaded_by === auth()->id() || auth()->user()->isAdmin())
+                                                <button type="button" wire:click="deleteAttachment({{ $attachment->id }})"
+                                                        onclick="return confirm('Are you sure you want to delete this attachment?')"
+                                                        class="text-red-600 hover:text-red-500 text-sm font-medium">
+                                                    Delete
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @else
+                                <p class="text-gray-500 text-center py-8">No attachments yet. Upload files using the form above.</p>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     @endif
 </div>
+
+<!-- Image Preview Modal -->
+<div id="imagePreviewModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center" onclick="closeImagePreview()">
+    <div class="max-w-4xl max-h-full p-4">
+        <div class="bg-white rounded-lg overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b">
+                <h3 id="imagePreviewTitle" class="text-lg font-medium text-gray-900"></h3>
+                <button onclick="closeImagePreview()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-4">
+                <img id="imagePreviewImage" src="" alt="" class="max-w-full max-h-96 mx-auto">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showImagePreview(imageUrl, title) {
+    document.getElementById('imagePreviewImage').src = imageUrl;
+    document.getElementById('imagePreviewTitle').textContent = title;
+    document.getElementById('imagePreviewModal').classList.remove('hidden');
+}
+
+function closeImagePreview() {
+    document.getElementById('imagePreviewModal').classList.add('hidden');
+    document.getElementById('imagePreviewImage').src = '';
+}
+</script>
 
 <script>
 let draggedTaskId = null;
@@ -535,5 +693,57 @@ document.addEventListener('DOMContentLoaded', function() {
             cleanupColumnStyles();
         }
     });
+});
+
+// Toggle Done Column
+function toggleDoneColumn() {
+    const doneTasks = document.getElementById('done-tasks');
+    const doneChevron = document.getElementById('done-chevron');
+    const doneIndicator = document.getElementById('done-collapsed-indicator');
+    const doneColumn = document.getElementById('done-column');
+    const kanbanBoard = document.getElementById('kanban-board');
+    const doneTitle = document.getElementById('done-title');
+    
+    const isCollapsed = kanbanBoard.getAttribute('data-collapsed') === 'true';
+    
+    if (isCollapsed) {
+        // Expand
+        doneTasks.style.display = 'block';
+        doneIndicator.style.display = 'none';
+        doneChevron.style.transform = 'rotate(180deg)';
+        doneTitle.style.display = 'block';
+        
+        // Restore full width grid
+        kanbanBoard.style.gridTemplateColumns = 'repeat(6, 1fr)';
+        kanbanBoard.setAttribute('data-collapsed', 'false');
+        
+        // Add responsive classes for mobile
+        kanbanBoard.classList.add('md:grid-cols-6');
+    } else {
+        // Collapse
+        doneTasks.style.display = 'none';
+        doneIndicator.style.display = 'block';
+        doneChevron.style.transform = 'rotate(0deg)';
+        doneTitle.style.display = 'none';
+        
+        // Collapse to narrow width
+        kanbanBoard.style.gridTemplateColumns = 'repeat(5, 1fr) 80px';
+        kanbanBoard.setAttribute('data-collapsed', 'true');
+        
+        // Remove responsive classes for mobile
+        kanbanBoard.classList.remove('md:grid-cols-6');
+    }
+}
+
+// Initialize collapsed state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Already starts collapsed due to initial inline styles
+    const doneTasks = document.getElementById('done-tasks');
+    const doneIndicator = document.getElementById('done-collapsed-indicator');
+    const doneTitle = document.getElementById('done-title');
+    
+    doneTasks.style.display = 'none';
+    doneIndicator.style.display = 'block';
+    doneTitle.style.display = 'none';
 });
 </script>

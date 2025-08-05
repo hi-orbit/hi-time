@@ -19,6 +19,11 @@ Route::post('/logout', function () {
     return redirect('/login');
 })->name('logout');
 
+// Public proposal routes (no auth required)
+Route::get('/proposals/view/{token}', [\App\Http\Controllers\PublicProposalController::class, 'view'])->name('proposals.public.view');
+Route::post('/proposals/sign/{token}', [\App\Http\Controllers\PublicProposalController::class, 'sign'])->name('proposals.public.sign');
+Route::post('/proposals/reject/{token}', [\App\Http\Controllers\PublicProposalController::class, 'reject'])->name('proposals.public.reject');
+
 // Protected routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
@@ -30,6 +35,19 @@ Route::middleware(['auth'])->group(function () {
 
     // Customer routes
     Route::resource('customers', \App\Http\Controllers\CustomerController::class);
+
+    // Proposal system routes
+    Route::resource('proposals', \App\Http\Controllers\ProposalController::class);
+    Route::resource('leads', \App\Http\Controllers\LeadController::class);
+    Route::resource('proposal-templates', \App\Http\Controllers\ProposalTemplateController::class);
+
+    // Additional proposal routes
+    Route::post('/proposals/{proposal}/send', [\App\Http\Controllers\ProposalController::class, 'send'])->name('proposals.send');
+    Route::get('/proposals/{proposal}/preview', [\App\Http\Controllers\ProposalController::class, 'preview'])->name('proposals.preview');
+    Route::get('/proposals/{proposal}/pdf', [\App\Http\Controllers\ProposalController::class, 'downloadPdf'])->name('proposals.pdf');
+
+    // Lead conversion
+    Route::post('/leads/{lead}/convert', [\App\Http\Controllers\LeadController::class, 'convert'])->name('leads.convert');
 
     // Reports routes
     Route::get('/reports', [\App\Http\Controllers\ReportsController::class, 'index'])->name('reports.index');
@@ -71,7 +89,7 @@ Route::middleware(['auth'])->group(function () {
     // Admin only routes
     Route::middleware(['admin'])->group(function () {
         Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
-        
+
         // User management routes
         Route::resource('settings/users', \App\Http\Controllers\UserManagementController::class, [
             'names' => [
@@ -84,7 +102,7 @@ Route::middleware(['auth'])->group(function () {
                 'destroy' => 'settings.users.destroy',
             ]
         ]);
-        
+
         // Additional password reset routes
         Route::get('/settings/users/{user}/reset-password', [\App\Http\Controllers\UserManagementController::class, 'showResetPassword'])
             ->name('settings.users.reset-password');

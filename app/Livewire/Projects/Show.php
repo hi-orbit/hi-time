@@ -3,16 +3,22 @@
 namespace App\Livewire\Projects;
 
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\TimeEntry;
 use App\Models\TaskNote;
+use App\Models\TaskAttachment;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Show extends Component
 {
+    use WithFileUploads;
+
     public Project $project;
     public $showTaskModal = false;
     public $showTimeModal = false;
@@ -33,6 +39,9 @@ class Show extends Component
 
     // Task notes fields
     public $newNote = '';
+
+    // File upload fields
+    public $attachmentFiles = [];
 
     // Quick assignment field
     public $taskAssignment = '';
@@ -143,14 +152,14 @@ class Show extends Component
     // Task details and notes
     public function openTaskDetails($taskId)
     {
-        $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries'])->findOrFail($taskId);
+        $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader'])->findOrFail($taskId);
         $this->taskAssignment = $this->selectedTask->assigned_to;
         $this->showTaskDetailsModal = true;
     }
 
     public function closeTaskDetailsModal()
     {
-        $this->reset(['showTaskDetailsModal', 'selectedTask', 'newNote', 'taskAssignment']);
+        $this->reset(['showTaskDetailsModal', 'selectedTask', 'newNote', 'taskAssignment', 'attachmentFiles']);
     }
 
     public function addNote()
@@ -424,12 +433,74 @@ class Show extends Component
         }
     }
 
+    public function uploadAttachments()
+    {
+        if (!$this->selectedTask || empty($this->attachmentFiles)) {
+            return;
+        }
+
+        $this->validate([
+            'attachmentFiles.*' => 'file|max:10240', // 10MB max per file
+        ]);
+
+        foreach ($this->attachmentFiles as $file) {
+            $originalName = $file->getClientOriginalName();
+            $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $filePath = $file->storeAs('task-attachments', $fileName, 'public');
+
+            TaskAttachment::create([
+                'task_id' => $this->selectedTask->id,
+                'uploaded_by' => Auth::id(),
+                'original_name' => $originalName,
+                'file_name' => $fileName,
+                'file_path' => $filePath,
+                'mime_type' => $file->getMimeType(),
+                'file_size' => $file->getSize(),
+            ]);
+        }
+
+        $this->attachmentFiles = [];
+        $this->selectedTask->load('attachments.uploader');
+        session()->flash('message', 'Files uploaded successfully!');
+    }
+
+    public function deleteAttachment($attachmentId)
+    {
+        $attachment = TaskAttachment::find($attachmentId);
+        
+        if ($attachment && $attachment->task_id === $this->selectedTask->id) {
+            // Check if user can delete (either uploader or admin)
+            if ($attachment->uploaded_by === Auth::id() || Auth::user()->isAdmin()) {
+                $attachment->delete();
+                $this->selectedTask->load('attachments.uploader');
+                session()->flash('message', 'Attachment deleted successfully!');
+            }
+        }
+    }
+
+    public function downloadAttachment($attachmentId)
+    {
+        $attachment = TaskAttachment::find($attachmentId);
+        
+        if ($attachment && $attachment->task_id === $this->selectedTask->id) {
+            if (Storage::disk('public')->exists($attachment->file_path)) {
+                return response()->download(
+                    Storage::disk('public')->path($attachment->file_path),
+                    $attachment->original_name
+                );
+            }
+        }
+        
+        session()->flash('error', 'File not found!');
+    }
+
     public function render()
     {
         $columns = [
             'backlog' => $this->project->tasks()->where('status', 'backlog')->orderBy('order')->get(),
             'in_progress' => $this->project->tasks()->where('status', 'in_progress')->orderBy('order')->get(),
             'in_test' => $this->project->tasks()->where('status', 'in_test')->orderBy('order')->get(),
+            'failed_testing' => $this->project->tasks()->where('status', 'failed_testing')->orderBy('order')->get(),
             'ready_to_release' => $this->project->tasks()->where('status', 'ready_to_release')->orderBy('order')->get(),
             'done' => $this->project->tasks()->where('status', 'done')->orderBy('order')->get(),
         ];

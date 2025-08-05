@@ -42,6 +42,11 @@ class Task extends Model
         return $this->hasMany(TaskNote::class);
     }
 
+    public function attachments()
+    {
+        return $this->hasMany(TaskAttachment::class);
+    }
+
     public function getTotalTimeAttribute()
     {
         return $this->timeEntries()
