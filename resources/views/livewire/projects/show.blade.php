@@ -451,12 +451,17 @@
                         <div class="mb-4">
                             <div class="space-y-3">
                                 <!-- Dropzone Upload -->
-                                <div class="border border-gray-300 rounded-lg p-4 bg-blue-50" 
-                                     x-data="{ 
+                                <div class="border border-gray-300 rounded-lg p-4 bg-blue-50"
+                                     x-data="{
                                          refreshTimer: null,
+                                         isModalOpen: false,
                                          startAutoRefresh() {
                                              this.refreshTimer = setInterval(() => {
-                                                 $wire.refreshDropzoneState();
+                                                 // Only refresh if no modal is open
+                                                 const modal = document.getElementById('imagePreviewModal');
+                                                 if (!modal || modal.classList.contains('hidden')) {
+                                                     $wire.refreshDropzoneState();
+                                                 }
                                              }, 2000); // Check every 2 seconds
                                          },
                                          stopAutoRefresh() {
