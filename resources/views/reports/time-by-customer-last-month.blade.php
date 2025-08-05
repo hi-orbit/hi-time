@@ -48,10 +48,15 @@
                                 <div class="text-right">
                                     <div class="text-2xl font-bold text-gray-900">{{ number_format($customerData['total_hours'], 2) }}h</div>
                                     <div class="text-sm text-gray-500">
-                                        @if($customerTimeData['total_hours'] > 0)
-                                            {{ number_format(($customerData['total_hours'] / $customerTimeData['total_hours']) * 100, 1) }}% of total
+                                        @if(isset($customerData['total_task_hours']) && isset($customerData['total_general_hours']))
+                                            Task: {{ number_format($customerData['total_task_hours'], 1) }}h |
+                                            General: {{ number_format($customerData['total_general_hours'], 1) }}h
                                         @else
-                                            0% of total
+                                            @if($customerTimeData['total_hours'] > 0)
+                                                {{ number_format(($customerData['total_hours'] / $customerTimeData['total_hours']) * 100, 1) }}% of total
+                                            @else
+                                                0% of total
+                                            @endif
                                         @endif
                                     </div>
                                 </div>
@@ -63,8 +68,16 @@
                             @foreach($customerData['projects'] as $projectData)
                                 <div class="px-6 py-4">
                                     <div class="flex items-center justify-between mb-3">
-                                        <h4 class="text-md font-medium text-gray-900">{{ $projectData['project_name'] }}</h4>
-                                        <span class="text-lg font-semibold text-gray-700">{{ number_format($projectData['hours'], 2) }}h</span>
+                                        <div>
+                                            <h4 class="text-md font-medium text-gray-900">{{ $projectData['project_name'] }}</h4>
+                                            @if(isset($projectData['total_task_hours']) && isset($projectData['total_general_hours']))
+                                                <div class="text-xs text-gray-500 mt-1">
+                                                    Task Work: {{ number_format($projectData['total_task_hours'], 1) }}h |
+                                                    General Activities: {{ number_format($projectData['total_general_hours'], 1) }}h
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <span class="text-lg font-semibold text-gray-700">{{ number_format($projectData['total_hours'], 2) }}h</span>
                                     </div>
 
                                     <!-- Time Entries -->
@@ -72,14 +85,23 @@
                                         @foreach($projectData['entries'] as $entry)
                                             <div class="flex items-center justify-between text-sm bg-gray-50 rounded px-3 py-2">
                                                 <div class="flex-1">
-                                                    <span class="font-medium text-gray-900">{{ $entry->task_title }}</span>
+                                                    <div class="flex items-center">
+                                                        <span class="font-medium text-gray-900">{{ $entry->activity_description ?? $entry->task_title ?? 'Unknown Activity' }}</span>
+                                                        @if(isset($entry->entry_type))
+                                                            <span class="ml-2 px-2 py-1 text-xs font-medium rounded-full {{ $entry->entry_type === 'Task Work' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }}">
+                                                                {{ $entry->entry_type }}
+                                                            </span>
+                                                        @endif
+                                                    </div>
                                                     @if($entry->description)
-                                                        <span class="text-gray-600 ml-2">- {{ $entry->description }}</span>
+                                                        <div class="text-gray-600 mt-1">{{ $entry->description }}</div>
                                                     @endif
                                                 </div>
                                                 <div class="flex items-center space-x-3">
                                                     <span class="text-gray-500">{{ $entry->user_name }}</span>
-                                                    <span class="font-medium text-gray-900">{{ number_format($entry->hours + ($entry->minutes / 60), 2) }}h</span>
+                                                    <span class="font-medium text-gray-900">
+                                                        {{ number_format($entry->calculated_hours ?? (($entry->duration ?? $entry->duration_minutes ?? 0) / 60), 2) }}h
+                                                    </span>
                                                     <span class="text-gray-500">{{ \Carbon\Carbon::parse($entry->created_at)->format('M j') }}</span>
                                                 </div>
                                             </div>

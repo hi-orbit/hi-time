@@ -80,7 +80,7 @@ class ReportsController extends Controller
      */
     private function getCustomerTimeData($startDate, $endDate)
     {
-        // Get time entries with related data
+        // Get time entries with related data - use LEFT JOINs to include general activities
         $timeEntries = TimeEntry::select([
                 'time_entries.*',
                 'tasks.title as task_title',
@@ -89,8 +89,11 @@ class ReportsController extends Controller
                 'customers.name as customer_name',
                 'users.name as user_name'
             ])
-            ->join('tasks', 'time_entries.task_id', '=', 'tasks.id')
-            ->join('projects', 'tasks.project_id', '=', 'projects.id')
+            ->leftJoin('tasks', 'time_entries.task_id', '=', 'tasks.id')
+            ->leftJoin('projects', function($join) {
+                $join->on('tasks.project_id', '=', 'projects.id')
+                     ->orOn('time_entries.project_id', '=', 'projects.id');
+            })
             ->leftJoin('customers', 'projects.customer_id', '=', 'customers.id')
             ->join('users', 'time_entries.user_id', '=', 'users.id')
             ->whereBetween('time_entries.created_at', [$startDate, $endDate])
@@ -104,30 +107,50 @@ class ReportsController extends Controller
 
         foreach ($timeEntries as $entry) {
             $customerName = $entry->customer_name ?? 'No Customer';
-            $projectName = $entry->project_name;
-            $hours = $entry->hours + ($entry->minutes / 60);
+            $projectName = $entry->project_name ?? 'Unknown Project';
 
-            if (!isset($customerData[$customerName])) {
-                $customerData[$customerName] = [
-                    'customer_name' => $customerName,
-                    'total_hours' => 0,
+            // Calculate hours from duration_minutes (the actual field in our DB)
+            $minutes = $entry->duration ?? $entry->duration_minutes ?? 0;
+            $hours = $minutes / 60;
+
+            // Determine activity description for display
+            $activityDescription = $entry->activity_type ?? $entry->task_title ?? 'Unknown Activity';
+
+            // Add computed fields for display
+            $entry->activity_description = $activityDescription;
+            $entry->entry_type = $entry->activity_type ? 'General Activity' : 'Task Work';
+            $entry->calculated_hours = $hours;
+
+            if (!isset($reportData[$customerName])) {
+                $reportData[$customerName] = [
                     'projects' => [],
+                    'total_hours' => 0,
+                    'total_task_hours' => 0,
+                    'total_general_hours' => 0
+                ];
+            }
+
+            if (!isset($reportData[$customerName]['projects'][$projectName])) {
+                $reportData[$customerName]['projects'][$projectName] = [
+                    'total_hours' => 0,
+                    'total_task_hours' => 0,
+                    'total_general_hours' => 0,
                     'entries' => []
                 ];
             }
 
-            if (!isset($customerData[$customerName]['projects'][$projectName])) {
-                $customerData[$customerName]['projects'][$projectName] = [
-                    'project_name' => $projectName,
-                    'hours' => 0,
-                    'entries' => []
-                ];
-            }
+            // Track totals by entry type
+            $reportData[$customerName]['total_hours'] += $hours;
+            $reportData[$customerName]['projects'][$projectName]['total_hours'] += $hours;
+            $reportData[$customerName]['projects'][$projectName]['entries'][] = $entry;
 
-            $customerData[$customerName]['total_hours'] += $hours;
-            $customerData[$customerName]['projects'][$projectName]['hours'] += $hours;
-            $customerData[$customerName]['projects'][$projectName]['entries'][] = $entry;
-            $customerData[$customerName]['entries'][] = $entry;
+            if ($entry->activity_type) {
+                $reportData[$customerName]['total_general_hours'] += $hours;
+                $reportData[$customerName]['projects'][$projectName]['total_general_hours'] += $hours;
+            } else {
+                $reportData[$customerName]['total_task_hours'] += $hours;
+                $reportData[$customerName]['projects'][$projectName]['total_task_hours'] += $hours;
+            }
             $totalHours += $hours;
         }
 
@@ -150,8 +173,11 @@ class ReportsController extends Controller
                 'customers.name as customer_name',
                 'users.name as user_name'
             ])
-            ->join('tasks', 'time_entries.task_id', '=', 'tasks.id')
-            ->join('projects', 'tasks.project_id', '=', 'projects.id')
+            ->leftJoin('tasks', 'time_entries.task_id', '=', 'tasks.id')
+            ->leftJoin('projects', function($join) {
+                $join->on('tasks.project_id', '=', 'projects.id')
+                     ->orOn('time_entries.project_id', '=', 'projects.id');
+            })
             ->leftJoin('customers', 'projects.customer_id', '=', 'customers.id')
             ->join('users', 'time_entries.user_id', '=', 'users.id')
             ->whereBetween('time_entries.created_at', [$startDate, $endDate])
@@ -166,8 +192,19 @@ class ReportsController extends Controller
         foreach ($timeEntries as $entry) {
             $userName = $entry->user_name;
             $customerName = $entry->customer_name ?? 'No Customer';
-            $projectName = $entry->project_name;
-            $hours = $entry->hours + ($entry->minutes / 60);
+            $projectName = $entry->project_name ?? 'Unknown Project';
+
+            // Calculate hours from duration_minutes
+            $minutes = $entry->duration ?? $entry->duration_minutes ?? 0;
+            $hours = $minutes / 60;
+
+            // Determine activity description for display
+            $activityDescription = $entry->activity_type ?? $entry->task_title ?? 'Unknown Activity';
+
+            // Add computed fields for display
+            $entry->activity_description = $activityDescription;
+            $entry->entry_type = $entry->activity_type ? 'General Activity' : 'Task Work';
+            $entry->calculated_hours = $hours;
 
             if (!isset($userData[$userName])) {
                 $userData[$userName] = [
