@@ -441,13 +441,21 @@ class Show extends Component
 
     public function stopTimer($taskId)
     {
-        TimeEntry::where('task_id', $taskId)
+        $runningEntries = TimeEntry::where('task_id', $taskId)
             ->where('user_id', Auth::id())
             ->where('is_running', true)
-            ->update([
+            ->get();
+
+        foreach ($runningEntries as $entry) {
+            $endTime = now();
+            $durationMinutes = $entry->start_time->diffInMinutes($endTime);
+
+            $entry->update([
                 'is_running' => false,
-                'end_time' => now(),
+                'end_time' => $endTime,
+                'duration_minutes' => $durationMinutes,
             ]);
+        }
 
         session()->flash('message', 'Timer stopped.');
     }
