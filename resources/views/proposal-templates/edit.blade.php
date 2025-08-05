@@ -136,24 +136,24 @@
                         <!-- Template Content -->
                         <div>
                             <label for="content" class="block text-sm font-medium text-gray-700 mb-2">Template Content</label>
-                            
+
                             <!-- CSRF Token Refresh Indicator -->
                             <div class="csrf-refresh-indicator mb-2 text-xs text-green-600" id="csrf-refresh-status">
                                 CSRF token refreshed successfully
                             </div>
-                            
+
                             <!-- Hidden textarea for form submission -->
                             <textarea id="content" name="content" style="display: none;" required>{{ old('content', $proposalTemplate->content) }}</textarea>
-                            
+
                             <!-- Sun Editor Container -->
                             <div id="suneditor-container" class="@error('content') border-red-300 @enderror">
                                 <!-- Sun Editor will be initialized here -->
                             </div>
-                            
+
                             @error('content')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
-                            
+
                             <div class="mt-2 text-xs text-gray-500">
                                 💡 Tip: Use variables like @{{client_name}}, @{{project_name}}, @{{amount}}, @{{date}} in your content
                             </div>
@@ -303,13 +303,13 @@ We are pleased to submit this proposal for {{project_name}}...`,
             if (data.csrf_token) {
                 // Update CSRF token in meta tag
                 document.querySelector('meta[name="csrf-token"]').setAttribute('content', data.csrf_token);
-                
+
                 // Update CSRF token in form
                 const csrfInput = document.querySelector('input[name="_token"]');
                 if (csrfInput) {
                     csrfInput.value = data.csrf_token;
                 }
-                
+
                 // Show refresh indicator briefly
                 const indicator = document.getElementById('csrf-refresh-status');
                 if (indicator) {
@@ -318,7 +318,7 @@ We are pleased to submit this proposal for {{project_name}}...`,
                         indicator.classList.remove('active');
                     }, 2000);
                 }
-                
+
                 console.log('CSRF token refreshed successfully');
             }
         })
@@ -345,7 +345,7 @@ We are pleased to submit this proposal for {{project_name}}...`,
         form.addEventListener('submit', function(e) {
             // Ensure the hidden textarea has the latest content before submission
             hiddenTextarea.value = editor.getContents();
-            
+
             // Show loading state
             const submitButton = form.querySelector('button[type="submit"]');
             if (submitButton) {
@@ -359,10 +359,10 @@ We are pleased to submit this proposal for {{project_name}}...`,
     let autoSaveTimeout;
     editor.onChange = function(contents) {
         hiddenTextarea.value = contents;
-        
+
         // Clear existing timeout
         clearTimeout(autoSaveTimeout);
-        
+
         // Set new timeout for auto-save (you can implement this if needed)
         autoSaveTimeout = setTimeout(function() {
             // Auto-save logic can go here

@@ -124,15 +124,15 @@
                         <!-- Template Content -->
                         <div>
                             <label for="content" class="block text-sm font-medium text-gray-700 mb-2">Template Content</label>
-                            
+
                             <!-- CSRF Token Refresh Indicator -->
                             <div class="csrf-refresh-indicator mb-2 text-xs text-green-600" id="csrf-refresh-status" style="opacity: 0; transition: opacity 0.3s ease;">
                                 CSRF token refreshed successfully
                             </div>
-                            
+
                             <!-- Hidden textarea for form submission -->
                             <textarea id="content" name="content" style="display: none;" required>{{ old('content') }}</textarea>
-                            
+
                             <!-- Sun Editor Container -->
                             <div id="suneditor-container" class="@error('content') border-red-300 @enderror">
                                 <!-- Fallback content while Sun Editor loads -->
@@ -143,11 +143,11 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             @error('content')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
-                            
+
                             <div class="mt-2 text-xs text-gray-500">
                                 💡 Tip: Use variables like @{{client_name}}, @{{project_name}}, @{{amount}}, @{{date}} in your content
                             </div>
@@ -241,20 +241,20 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, attempting to initialize Sun Editor...');
-    
+
     // Check if Sun Editor is loaded
     if (typeof SUNEDITOR === 'undefined') {
         console.error('SUNEDITOR is not defined. Check if the script loaded correctly.');
         document.getElementById('editor-loading').innerHTML = '<div class="text-center text-red-600"><p>Error: Editor failed to load. Please refresh the page.</p></div>';
         return;
     }
-    
+
     if (typeof SUNEDITOR_LANG === 'undefined') {
         console.error('SUNEDITOR_LANG is not defined. Check if the language script loaded correctly.');
         document.getElementById('editor-loading').innerHTML = '<div class="text-center text-red-600"><p>Error: Editor language pack failed to load. Please refresh the page.</p></div>';
         return;
     }
-    
+
     try {
         // Initialize Sun Editor
         const editor = SUNEDITOR.create('suneditor-container', {
@@ -314,10 +314,10 @@ Your Company Name`,
     editor.onChange = function(contents) {
         // Update hidden textarea for form submission
         hiddenTextarea.value = contents;
-        
+
         // Clear existing auto-save timeout
         clearTimeout(autoSaveTimeout);
-        
+
         // Set new timeout for auto-save (optional feature)
         autoSaveTimeout = setTimeout(function() {
             console.log('Content auto-saved locally');
@@ -338,13 +338,13 @@ Your Company Name`,
             if (data.csrf_token) {
                 // Update CSRF token in meta tag
                 document.querySelector('meta[name="csrf-token"]').setAttribute('content', data.csrf_token);
-                
+
                 // Update CSRF token in form
                 const csrfInput = document.querySelector('input[name="_token"]');
                 if (csrfInput) {
                     csrfInput.value = data.csrf_token;
                 }
-                
+
                 // Show refresh indicator briefly
                 const indicator = document.getElementById('csrf-refresh-status');
                 if (indicator) {
@@ -353,7 +353,7 @@ Your Company Name`,
                         indicator.style.opacity = '0';
                     }, 2000);
                 }
-                
+
                 console.log('CSRF token refreshed successfully');
             }
         })
@@ -380,7 +380,7 @@ Your Company Name`,
         form.addEventListener('submit', function(e) {
             // Ensure the hidden textarea has the latest content before submission
             hiddenTextarea.value = editor.getContents();
-            
+
             // Show loading state
             const submitButton = form.querySelector('button[type="submit"]');
             if (submitButton) {
@@ -389,7 +389,7 @@ Your Company Name`,
             }
         });
     }
-    
+
     } catch (error) {
         console.error('Error initializing Sun Editor:', error);
         document.getElementById('editor-loading').innerHTML = '<div class="text-center text-red-600"><p>Error: Failed to initialize editor. Please refresh the page.</p></div>';
