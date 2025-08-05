@@ -1,5 +1,5 @@
 <div class="py-12">
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6 bg-white border-b border-gray-200">
                 <div class="flex justify-between items-center mb-6">
@@ -57,16 +57,27 @@
                 @endif
 
                 <!-- Kanban Board -->
-                <div id="kanban-board" class="grid gap-6 transition-all duration-300" style="grid-template-columns: repeat(5, 1fr) 80px;" data-collapsed="true">
+                <div id="kanban-board" class="grid gap-4 xl:gap-6 transition-all duration-300" style="grid-template-columns: repeat(5, 1fr) 80px;" data-collapsed="true">
                     <style>
+                        @media (min-width: 1536px) {
+                            #kanban-board {
+                                gap: 1.5rem;
+                            }
+                        }
+                        @media (max-width: 1280px) {
+                            #kanban-board {
+                                gap: 1rem;
+                            }
+                        }
                         @media (max-width: 768px) {
                             #kanban-board {
                                 grid-template-columns: 1fr !important;
+                                gap: 1rem;
                             }
                         }
                     </style>
                     <!-- Backlog Column -->
-                    <div class="bg-gray-50 rounded-lg p-4 min-h-96"
+                    <div class="bg-gray-50 rounded-lg p-3 lg:p-4 xl:p-5 min-h-96"
                          ondrop="handleDrop(event, 'backlog')"
                          ondragover="event.preventDefault()"
                          ondragenter="event.preventDefault()">
@@ -82,7 +93,7 @@
                     </div>
 
                     <!-- In Progress Column -->
-                    <div class="bg-blue-50 rounded-lg p-4 min-h-96"
+                    <div class="bg-blue-50 rounded-lg p-3 lg:p-4 xl:p-5 min-h-96"
                          ondrop="handleDrop(event, 'in_progress')"
                          ondragover="event.preventDefault()"
                          ondragenter="event.preventDefault()">
@@ -98,7 +109,7 @@
                     </div>
 
                     <!-- In Test Column -->
-                    <div class="bg-yellow-50 rounded-lg p-4 min-h-96"
+                    <div class="bg-yellow-50 rounded-lg p-3 lg:p-4 xl:p-5 min-h-96"
                          ondrop="handleDrop(event, 'in_test')"
                          ondragover="event.preventDefault()"
                          ondragenter="event.preventDefault()">
@@ -114,7 +125,7 @@
                     </div>
 
                     <!-- Failed Testing Column -->
-                    <div class="bg-red-50 rounded-lg p-4 min-h-96"
+                    <div class="bg-red-50 rounded-lg p-3 lg:p-4 xl:p-5 min-h-96"
                          ondrop="handleDrop(event, 'failed_testing')"
                          ondragover="event.preventDefault()"
                          ondragenter="event.preventDefault()">
@@ -130,7 +141,7 @@
                     </div>
 
                     <!-- Ready to Release Column -->
-                    <div class="bg-purple-50 rounded-lg p-4 min-h-96"
+                    <div class="bg-purple-50 rounded-lg p-3 lg:p-4 xl:p-5 min-h-96"
                          ondrop="handleDrop(event, 'ready_to_release')"
                          ondragover="event.preventDefault()"
                          ondragenter="event.preventDefault()">
@@ -146,7 +157,7 @@
                     </div>
 
                     <!-- Done Column -->
-                    <div id="done-column" class="bg-green-50 rounded-lg p-4 min-h-96 transition-all duration-300"
+                    <div id="done-column" class="bg-green-50 rounded-lg p-3 lg:p-4 xl:p-5 min-h-96 transition-all duration-300"
                          ondrop="handleDrop(event, 'done')"
                          ondragover="event.preventDefault()"
                          ondragenter="event.preventDefault()">
