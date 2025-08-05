@@ -15,6 +15,8 @@ class TimeEntry extends Model
         'end_time',
         'duration_minutes',
         'is_running',
+        'activity_type',
+        'project_id',
     ];
 
     protected $casts = [
@@ -31,6 +33,11 @@ class TimeEntry extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
     }
 
     public function getDurationAttribute()

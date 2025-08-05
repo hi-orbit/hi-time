@@ -42,6 +42,10 @@
                             </a>
                         @endif
                         @if(auth()->user()->isAdmin() || auth()->user()->isUser())
+                            <button wire:click="openTimeModal()"
+                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium">
+                                + Log General Time
+                            </button>
                             <button wire:click="openTaskModal"
                                     class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium">
                                 + New Task
@@ -253,17 +257,36 @@
     @endif
 
     <!-- Log Time Modal -->
-    @if($showTimeModal && $selectedTask)
+    @if($showTimeModal)
         <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
                 <div class="mt-3">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Log Time - {{ $selectedTask->title }}</h3>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">
+                        @if($isGeneralActivity)
+                            Log General Activity Time
+                        @else
+                            Log Time - {{ $selectedTask->title }}
+                        @endif
+                    </h3>
                     <form wire:submit.prevent="logTime">
+                        @if($isGeneralActivity)
+                            <div class="mb-4">
+                                <label for="activityType" class="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
+                                <select wire:model="activityType" id="activityType"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">Select Activity Type</option>
+                                    @foreach($this->getStandardActivityTypes() as $type)
+                                        <option value="{{ $type }}">{{ $type }}</option>
+                                    @endforeach
+                                </select>
+                                @error('activityType') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                            </div>
+                        @endif
                         <div class="mb-4">
                             <label for="timeDescription" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
                             <textarea wire:model="timeDescription" id="timeDescription" rows="2"
                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                                      placeholder="What did you work on?"></textarea>
+                                      placeholder="{{ $isGeneralActivity ? 'Describe the activity...' : 'What did you work on?' }}"></textarea>
                         </div>
                         <div class="grid grid-cols-2 gap-4 mb-4">
                             <div>

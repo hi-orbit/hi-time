@@ -37,6 +37,8 @@ class Show extends Component
     public $timeDescription = '';
     public $hours = '';
     public $minutes = '';
+    public $activityType = '';
+    public $isGeneralActivity = false;
 
     // Task notes fields
     public $newNote = '';
@@ -100,6 +102,27 @@ class Show extends Component
     private function getNotificationService()
     {
         return new NotificationService();
+    }
+
+    public function getStandardActivityTypes()
+    {
+        return [
+            'Client Meeting',
+            'Project Planning',
+            'Research',
+            'Documentation',
+            'Code Review',
+            'Testing',
+            'Deployment',
+            'Training',
+            'Administrative',
+            'Travel Time',
+            'Bug Investigation',
+            'System Maintenance',
+            'Client Communication',
+            'Team Meeting',
+            'Other'
+        ];
     }
 
     // Drag and drop functionality
@@ -196,7 +219,7 @@ class Show extends Component
 
     public function closeTaskDetailsModal()
     {
-        $this->reset(['showTaskDetailsModal', 'selectedTask', 'newNote', 'taskAssignment', 'attachmentFiles']);
+        $this->reset(['showTaskDetailsModal', 'selectedTask', 'newNote', 'taskAssignment', 'attachmentFiles', 'dropzoneFiles']);
     }
 
     public function addNote()
@@ -439,37 +462,77 @@ class Show extends Component
         $this->reset(['title', 'description', 'assigned_to', 'status', 'showTaskModal', 'editingTask', 'selectedTask']);
     }
 
-    public function openTimeModal($taskId)
+    public function openTimeModal($taskId = null)
     {
-        $this->selectedTask = Task::findOrFail($taskId);
+        if ($taskId) {
+            $this->selectedTask = Task::findOrFail($taskId);
+            $this->isGeneralActivity = false;
+        } else {
+            $this->selectedTask = null;
+            $this->isGeneralActivity = true;
+        }
         $this->showTimeModal = true;
     }
 
     public function closeTimeModal()
     {
-        $this->reset(['timeDescription', 'hours', 'minutes', 'showTimeModal', 'selectedTask']);
+        $this->reset(['timeDescription', 'hours', 'minutes', 'showTimeModal', 'selectedTask', 'activityType', 'isGeneralActivity']);
     }
 
     public function logTime()
     {
-        $this->validate([
+        // Enhanced validation that includes activity type for general activities
+        $rules = [
             'hours' => 'required|integer|min:0|max:23',
             'minutes' => 'required|integer|min:0|max:59',
-        ]);
+            'timeDescription' => 'nullable|string|max:255',
+        ];
+
+        if ($this->isGeneralActivity) {
+            $rules['activityType'] = 'required|string|max:100';
+        }
+
+        $this->validate($rules);
 
         $totalMinutes = ($this->hours * 60) + $this->minutes;
 
         if ($totalMinutes > 0) {
-            TimeEntry::create([
-                'task_id' => $this->selectedTask->id,
+            $timeEntryData = [
                 'user_id' => Auth::id(),
                 'description' => $this->timeDescription,
                 'duration_minutes' => $totalMinutes,
                 'is_running' => false,
-            ]);
+            ];
 
-            session()->flash('message', 'Time logged successfully!');
+            if ($this->isGeneralActivity) {
+                // For general activities
+                $timeEntryData['activity_type'] = $this->activityType;
+                $timeEntryData['project_id'] = $this->project->id;
+                $timeEntryData['task_id'] = null;
+            } else {
+                // For task-specific activities
+                $timeEntryData['task_id'] = $this->selectedTask->id;
+                $timeEntryData['project_id'] = $this->project->id;
+                $timeEntryData['activity_type'] = null;
+            }
+
+            try {
+                $timeEntry = TimeEntry::create($timeEntryData);
+
+                if ($timeEntry) {
+                    $activityLabel = $this->isGeneralActivity ? $this->activityType : $this->selectedTask->title;
+                    session()->flash('message', "Time logged successfully for: {$activityLabel}!");
+                } else {
+                    session()->flash('error', 'Failed to save time entry. Please try again.');
+                }
+            } catch (\Exception $e) {
+                Log::error('Time entry creation failed: ' . $e->getMessage());
+                session()->flash('error', 'Error saving time entry: ' . $e->getMessage());
+            }
+
             $this->closeTimeModal();
+        } else {
+            session()->flash('error', 'Please enter a valid time duration.');
         }
     }
 
