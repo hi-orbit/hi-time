@@ -53,7 +53,7 @@ class TaskAttachment extends Model
         if (Storage::exists($this->file_path)) {
             Storage::delete($this->file_path);
         }
-        
+
         return parent::delete();
     }
 }

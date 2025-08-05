@@ -15,7 +15,7 @@ return new class extends Migration
             // Drop the old enum column and recreate with new values
             $table->dropColumn('status');
         });
-        
+
         Schema::table('tasks', function (Blueprint $table) {
             $table->enum('status', ['backlog', 'in_progress', 'in_test', 'failed_testing', 'ready_to_release', 'done'])->default('backlog')->after('description');
         });
@@ -30,7 +30,7 @@ return new class extends Migration
             // Revert back to original enum values
             $table->dropColumn('status');
         });
-        
+
         Schema::table('tasks', function (Blueprint $table) {
             $table->enum('status', ['backlog', 'in_progress', 'in_test', 'ready_to_release', 'done'])->default('backlog')->after('description');
         });

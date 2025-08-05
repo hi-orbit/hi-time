@@ -13,6 +13,7 @@ use App\Models\TaskAttachment;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class Show extends Component
@@ -42,6 +43,36 @@ class Show extends Component
 
     // File upload fields
     public $attachmentFiles = [];
+    public $singleAttachment = null;
+    public $dropzoneFiles = [];
+
+    public function updatedAttachmentFiles()
+    {
+        Log::info('Files updated in Livewire', [
+            'count' => count($this->attachmentFiles),
+            'files' => array_map(function($file) {
+                if ($file) {
+                    return [
+                        'name' => $file->getClientOriginalName(),
+                        'size' => $file->getSize(),
+                        'type' => $file->getMimeType()
+                    ];
+                }
+                return null;
+            }, $this->attachmentFiles)
+        ]);
+    }
+
+    public function updatedSingleAttachment()
+    {
+        Log::info('Single file updated in Livewire', [
+            'file' => $this->singleAttachment ? [
+                'name' => $this->singleAttachment->getClientOriginalName(),
+                'size' => $this->singleAttachment->getSize(),
+                'type' => $this->singleAttachment->getMimeType()
+            ] : null
+        ]);
+    }
 
     // Quick assignment field
     public $taskAssignment = '';
@@ -58,6 +89,12 @@ class Show extends Component
         }
 
         $this->project = $project->load('customer');
+
+        Log::info('Projects.Show component mounted', [
+            'project_id' => $project->id,
+            'user_id' => Auth::id(),
+            'withFileUploads_trait' => trait_exists('Livewire\WithFileUploads') ? 'exists' : 'not_exists'
+        ]);
     }
 
     private function getNotificationService()
@@ -433,20 +470,40 @@ class Show extends Component
         }
     }
 
-    public function uploadAttachments()
+    public function uploadSingleAttachment()
     {
-        if (!$this->selectedTask || empty($this->attachmentFiles)) {
+        Log::info('Single upload method called', [
+            'selectedTask' => $this->selectedTask ? $this->selectedTask->id : 'null',
+            'singleAttachment' => $this->singleAttachment ? 'file exists' : 'null',
+        ]);
+
+        if (!$this->selectedTask) {
+            session()->flash('error', 'No task selected.');
             return;
         }
 
-        $this->validate([
-            'attachmentFiles.*' => 'file|max:10240', // 10MB max per file
-        ]);
+        if (!$this->singleAttachment) {
+            session()->flash('error', 'No file selected for upload.');
+            return;
+        }
 
-        foreach ($this->attachmentFiles as $file) {
+        try {
+            // Simplified validation
+            $this->validate([
+                'singleAttachment' => 'required|file|max:2048',
+            ]);
+
+            Log::info('Single file validation passed');
+
+            $file = $this->singleAttachment;
             $originalName = $file->getClientOriginalName();
             $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
+
+            Log::info('About to store single file', ['fileName' => $fileName]);
+
             $filePath = $file->storeAs('task-attachments', $fileName, 'public');
+
+            Log::info('Single file stored', ['filePath' => $filePath]);
 
             TaskAttachment::create([
                 'task_id' => $this->selectedTask->id,
@@ -457,23 +514,214 @@ class Show extends Component
                 'mime_type' => $file->getMimeType(),
                 'file_size' => $file->getSize(),
             ]);
+
+            Log::info('Single file database record created');
+
+            $this->singleAttachment = null;
+            $this->selectedTask->load('attachments.uploader');
+            session()->flash('message', "Successfully uploaded file: {$originalName}!");
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Single file validation error', [
+                'errors' => $e->validator->errors()->all(),
+                'task_id' => $this->selectedTask->id
+            ]);
+            session()->flash('error', 'Upload failed: ' . implode(' ', $e->validator->errors()->all()));
+        } catch (\Exception $e) {
+            Log::error('Single file upload exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'task_id' => $this->selectedTask->id
+            ]);
+            session()->flash('error', 'Upload failed: ' . $e->getMessage());
+        }
+    }
+
+    public function uploadAttachments()
+    {
+        Log::info('Upload method called', [
+            'selectedTask' => $this->selectedTask ? $this->selectedTask->id : 'null',
+            'attachmentFiles' => $this->attachmentFiles ? count($this->attachmentFiles) : 'null',
+            'files_array' => $this->attachmentFiles
+        ]);
+
+        if (!$this->selectedTask) {
+            session()->flash('error', 'No task selected.');
+            return;
         }
 
-        $this->attachmentFiles = [];
-        $this->selectedTask->load('attachments.uploader');
+        if (empty($this->attachmentFiles)) {
+            session()->flash('error', 'No files selected for upload.');
+            return;
+        }
+
+        try {
+            // Simplified validation first
+            $this->validate([
+                'attachmentFiles.*' => 'required|file|max:2048', // Remove mime types for now
+            ]);
+
+            Log::info('Validation passed');
+
+            $uploadedCount = 0;
+            foreach ($this->attachmentFiles as $index => $file) {
+                Log::info('Processing file', [
+                    'index' => $index,
+                    'original_name' => $file->getClientOriginalName(),
+                    'size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'extension' => $file->getClientOriginalExtension()
+                ]);
+
+                $originalName = $file->getClientOriginalName();
+                $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
+
+                Log::info('About to store file', ['fileName' => $fileName]);
+
+                $filePath = $file->storeAs('task-attachments', $fileName, 'public');
+
+                Log::info('File stored', ['filePath' => $filePath]);
+
+                TaskAttachment::create([
+                    'task_id' => $this->selectedTask->id,
+                    'uploaded_by' => Auth::id(),
+                    'original_name' => $originalName,
+                    'file_name' => $fileName,
+                    'file_path' => $filePath,
+                    'mime_type' => $file->getMimeType(),
+                    'file_size' => $file->getSize(),
+                ]);
+
+                Log::info('Database record created');
+                $uploadedCount++;
+            }
+
+            $this->attachmentFiles = [];
+            $this->selectedTask->load('attachments.uploader');
+            session()->flash('message', "Successfully uploaded {$uploadedCount} file(s)!");
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation error during upload', [
+                'errors' => $e->validator->errors()->all(),
+                'task_id' => $this->selectedTask->id
+            ]);
+            session()->flash('error', 'Upload failed: ' . implode(' ', $e->validator->errors()->all()));
+        } catch (\Exception $e) {
+            Log::error('Exception during upload', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'task_id' => $this->selectedTask->id
+            ]);
+            session()->flash('error', 'Upload failed: ' . $e->getMessage());
+        }
+    }
+
+    public function refreshAttachments()
+    {
+        if ($this->selectedTask) {
+            $this->selectedTask->load('attachments.uploader');
+        }
+    }
+
+    public function updatedDropzoneFiles()
+    {
+        Log::info('Dropzone files updated', [
+            'count' => count($this->dropzoneFiles ?? []),
+            'selectedTask' => $this->selectedTask ? $this->selectedTask->id : 'null',
+            'files_debug' => $this->dropzoneFiles
+        ]);
+
+        if (!$this->selectedTask) {
+            session()->flash('error', 'No task selected.');
+            return;
+        }
+
+        if (empty($this->dropzoneFiles)) {
+            Log::info('No files to process');
+            return;
+        }
+
+        foreach ($this->dropzoneFiles as $index => $fileData) {
+            try {
+                if (!$fileData || !is_array($fileData)) {
+                    Log::warning('Invalid file data at index: ' . $index, ['data' => $fileData]);
+                    continue;
+                }
+
+                // The dropzone component provides file data as an array with keys like:
+                // 'tmpFilename', 'name', 'extension', 'path', 'temporaryUrl', 'size'
+                if (!isset($fileData['tmpFilename']) || !isset($fileData['name'])) {
+                    Log::warning('Missing required file data', ['fileData' => $fileData]);
+                    continue;
+                }
+
+                // Create a temporary uploaded file from the path
+                $tempFile = \Livewire\Features\SupportFileUploads\TemporaryUploadedFile::createFromLivewire($fileData['tmpFilename']);
+
+                if (!$tempFile) {
+                    Log::error('Could not create temporary file', ['fileData' => $fileData]);
+                    continue;
+                }
+
+                $originalName = $fileData['name'];
+                $fileName = Str::uuid() . '.' . ($fileData['extension'] ?? 'bin');
+
+                Log::info('Processing dropzone file', [
+                    'fileName' => $fileName,
+                    'originalName' => $originalName,
+                    'size' => $fileData['size'] ?? 'unknown',
+                    'tmpFilename' => $fileData['tmpFilename']
+                ]);
+
+                $filePath = $tempFile->storeAs('task-attachments', $fileName, 'public');
+
+                TaskAttachment::create([
+                    'task_id' => $this->selectedTask->id,
+                    'uploaded_by' => Auth::id(),
+                    'original_name' => $originalName,
+                    'file_name' => $fileName,
+                    'file_path' => $filePath,
+                    'mime_type' => $tempFile->getMimeType(),
+                    'file_size' => $tempFile->getSize(),
+                ]);
+
+                Log::info('Dropzone file saved', ['fileName' => $fileName]);
+
+            } catch (\Exception $e) {
+                Log::error('Error processing dropzone file', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'fileData' => $fileData ?? 'null',
+                    'index' => $index
+                ]);
+                session()->flash('error', 'Error uploading file: ' . ($fileData['name'] ?? 'unknown') . ' - ' . $e->getMessage());
+            }
+        }
+
+        // Clear the files array and refresh attachments
+        $this->dropzoneFiles = [];
+        $this->refreshAttachments();
         session()->flash('message', 'Files uploaded successfully!');
     }
 
     public function deleteAttachment($attachmentId)
     {
         $attachment = TaskAttachment::find($attachmentId);
-        
+
         if ($attachment && $attachment->task_id === $this->selectedTask->id) {
             // Check if user can delete (either uploader or admin)
-            if ($attachment->uploaded_by === Auth::id() || Auth::user()->isAdmin()) {
+            $user = Auth::user();
+            if ($attachment->uploaded_by === Auth::id() || ($user && $user->role === 'admin')) {
+                // Delete file from storage
+                if (Storage::disk('public')->exists($attachment->file_path)) {
+                    Storage::disk('public')->delete($attachment->file_path);
+                }
+
                 $attachment->delete();
                 $this->selectedTask->load('attachments.uploader');
                 session()->flash('message', 'Attachment deleted successfully!');
+            } else {
+                session()->flash('error', 'You do not have permission to delete this attachment.');
             }
         }
     }
@@ -481,7 +729,7 @@ class Show extends Component
     public function downloadAttachment($attachmentId)
     {
         $attachment = TaskAttachment::find($attachmentId);
-        
+
         if ($attachment && $attachment->task_id === $this->selectedTask->id) {
             if (Storage::disk('public')->exists($attachment->file_path)) {
                 return response()->download(
@@ -490,7 +738,7 @@ class Show extends Component
                 );
             }
         }
-        
+
         session()->flash('error', 'File not found!');
     }
 

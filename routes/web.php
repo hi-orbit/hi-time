@@ -33,6 +33,10 @@ Route::middleware(['auth'])->group(function () {
     // Project routes
     Route::resource('projects', \App\Http\Controllers\ProjectController::class);
 
+    // Task attachment routes
+    Route::post('/tasks/{task}/upload-attachment', [\App\Http\Controllers\TaskAttachmentController::class, 'upload'])->name('tasks.upload-attachment');
+    Route::post('/tasks/{task}/dropzone-upload', [\App\Http\Controllers\TaskAttachmentController::class, 'dropzoneUpload'])->name('tasks.dropzone-upload');
+
     // Customer routes
     Route::resource('customers', \App\Http\Controllers\CustomerController::class);
 

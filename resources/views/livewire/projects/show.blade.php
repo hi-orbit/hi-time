@@ -320,6 +320,18 @@
                         </div>
                     @endif
 
+                    @if (session()->has('message'))
+                        <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                            {{ session('message') }}
+                        </div>
+                    @endif
+
+                    @if (session()->has('error'))
+                        <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <!-- Task Details -->
                         <div>
@@ -434,24 +446,20 @@
                     <!-- Attachments Section -->
                     <div class="mt-6">
                         <h4 class="text-lg font-medium text-gray-900 mb-3">Attachments</h4>
-                        
+
                         <!-- Upload Form -->
                         <div class="mb-4">
-                            <div class="flex items-center space-x-3">
-                                <input type="file" wire:model="attachmentFiles" multiple 
-                                       class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                       accept="image/*,.pdf,.doc,.docx,.txt,.xlsx,.xls,.zip,.rar">
-                                <button type="button" wire:click="uploadAttachments" 
-                                        wire:loading.attr="disabled" wire:target="attachmentFiles,uploadAttachments"
-                                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50">
-                                    <span wire:loading.remove wire:target="uploadAttachments">Upload</span>
-                                    <span wire:loading wire:target="uploadAttachments">Uploading...</span>
-                                </button>
+                            <div class="space-y-3">
+                                <!-- Dropzone Upload -->
+                                <div class="border border-gray-300 rounded-lg p-4 bg-blue-50">
+                                    <h5 class="text-sm font-medium text-gray-900 mb-2">Upload Files (Dropzone)</h5>
+                                    <livewire:dropzone
+                                        wire:model="dropzoneFiles"
+                                        :rules="['file', 'max:10240', 'mimes:jpg,jpeg,png,gif,pdf,doc,docx,txt,zip,csv,xlsx,xls']"
+                                        :multiple="true"
+                                        :key="'task-dropzone-' . ($selectedTask->id ?? 'new')" />
+                                </div>
                             </div>
-                            @error('attachmentFiles.*') 
-                                <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
-                            @enderror
-                            <p class="text-xs text-gray-500 mt-1">Max file size: 10MB. Supported: images, PDF, documents, spreadsheets, archives</p>
                         </div>
 
                         <!-- Attachments List -->
@@ -472,18 +480,18 @@
                                                     </svg>
                                                 @endif
                                             </div>
-                                            
+
                                             <!-- File Info -->
                                             <div class="flex-1 min-w-0">
                                                 <p class="text-sm font-medium text-gray-900 truncate">{{ $attachment->original_name }}</p>
                                                 <p class="text-xs text-gray-500">
-                                                    {{ $attachment->file_size_human }} • 
-                                                    Uploaded by {{ $attachment->uploader->name }} • 
+                                                    {{ $attachment->file_size_human }} •
+                                                    Uploaded by {{ $attachment->uploader->name }} •
                                                     {{ $attachment->created_at->format('M j, Y H:i') }}
                                                 </p>
                                             </div>
                                         </div>
-                                        
+
                                         <!-- Actions -->
                                         <div class="flex items-center space-x-2">
                                             <!-- Preview for images -->
@@ -493,14 +501,14 @@
                                                     Preview
                                                 </button>
                                             @endif
-                                            
+
                                             <!-- Download -->
-                                            <a href="{{ Storage::disk('public')->url($attachment->file_path) }}" 
+                                            <a href="{{ Storage::disk('public')->url($attachment->file_path) }}"
                                                download="{{ $attachment->original_name }}"
                                                class="text-blue-600 hover:text-blue-500 text-sm font-medium">
                                                 Download
                                             </a>
-                                            
+
                                             <!-- Delete (only for uploader or admin) -->
                                             @if($attachment->uploaded_by === auth()->id() || auth()->user()->isAdmin())
                                                 <button type="button" wire:click="deleteAttachment({{ $attachment->id }})"
@@ -521,22 +529,22 @@
             </div>
         </div>
     @endif
-</div>
 
-<!-- Image Preview Modal -->
-<div id="imagePreviewModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center" onclick="closeImagePreview()">
-    <div class="max-w-4xl max-h-full p-4">
-        <div class="bg-white rounded-lg overflow-hidden">
-            <div class="flex items-center justify-between p-4 border-b">
-                <h3 id="imagePreviewTitle" class="text-lg font-medium text-gray-900"></h3>
-                <button onclick="closeImagePreview()" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <div class="p-4">
-                <img id="imagePreviewImage" src="" alt="" class="max-w-full max-h-96 mx-auto">
+    <!-- Image Preview Modal -->
+    <div id="imagePreviewModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center" onclick="closeImagePreview()">
+        <div class="max-w-4xl max-h-full p-4">
+            <div class="bg-white rounded-lg overflow-hidden">
+                <div class="flex items-center justify-between p-4 border-b">
+                    <h3 id="imagePreviewTitle" class="text-lg font-medium text-gray-900"></h3>
+                    <button onclick="closeImagePreview()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-4">
+                    <img id="imagePreviewImage" src="" alt="" class="max-w-full max-h-96 mx-auto">
+                </div>
             </div>
         </div>
     </div>
@@ -703,20 +711,20 @@ function toggleDoneColumn() {
     const doneColumn = document.getElementById('done-column');
     const kanbanBoard = document.getElementById('kanban-board');
     const doneTitle = document.getElementById('done-title');
-    
+
     const isCollapsed = kanbanBoard.getAttribute('data-collapsed') === 'true';
-    
+
     if (isCollapsed) {
         // Expand
         doneTasks.style.display = 'block';
         doneIndicator.style.display = 'none';
         doneChevron.style.transform = 'rotate(180deg)';
         doneTitle.style.display = 'block';
-        
+
         // Restore full width grid
         kanbanBoard.style.gridTemplateColumns = 'repeat(6, 1fr)';
         kanbanBoard.setAttribute('data-collapsed', 'false');
-        
+
         // Add responsive classes for mobile
         kanbanBoard.classList.add('md:grid-cols-6');
     } else {
@@ -725,11 +733,11 @@ function toggleDoneColumn() {
         doneIndicator.style.display = 'block';
         doneChevron.style.transform = 'rotate(0deg)';
         doneTitle.style.display = 'none';
-        
+
         // Collapse to narrow width
         kanbanBoard.style.gridTemplateColumns = 'repeat(5, 1fr) 80px';
         kanbanBoard.setAttribute('data-collapsed', 'true');
-        
+
         // Remove responsive classes for mobile
         kanbanBoard.classList.remove('md:grid-cols-6');
     }
@@ -741,7 +749,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const doneTasks = document.getElementById('done-tasks');
     const doneIndicator = document.getElementById('done-collapsed-indicator');
     const doneTitle = document.getElementById('done-title');
-    
+
     doneTasks.style.display = 'none';
     doneIndicator.style.display = 'block';
     doneTitle.style.display = 'none';
