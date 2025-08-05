@@ -459,14 +459,30 @@
                                         :multiple="true"
                                         :key="'task-dropzone-' . ($selectedTask->id ?? 'new')" />
 
-                                    @if(!empty($dropzoneFiles))
-                                        <div class="mt-3">
+                                    <!-- Always show upload button, but disable when no files -->
+                                    <div class="mt-3 space-y-2">
+                                        <div class="flex space-x-2">
                                             <button wire:click="processDropzoneFiles"
-                                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                                                Upload {{ count($dropzoneFiles) }} File(s)
+                                                    class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium"
+                                                    @if(empty($dropzoneFiles)) disabled @endif>
+                                                @if(!empty($dropzoneFiles))
+                                                    Upload {{ count($dropzoneFiles) }} File(s)
+                                                @else
+                                                    Upload Files (No files selected)
+                                                @endif
+                                            </button>
+                                            
+                                            <button wire:click="refreshDropzoneState"
+                                                    class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-md text-sm font-medium">
+                                                Refresh
                                             </button>
                                         </div>
-                                    @endif
+                                        
+                                        <!-- Debug info -->
+                                        <div class="text-xs text-gray-500">
+                                            Debug: {{ count($dropzoneFiles ?? []) }} files in dropzoneFiles array
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -723,13 +723,24 @@ class Show extends Component
         // Just log when files are added to the dropzone
         Log::info('Dropzone files updated', [
             'count' => count($this->dropzoneFiles ?? []),
-            'selectedTask' => $this->selectedTask ? $this->selectedTask->id : 'null'
+            'selectedTask' => $this->selectedTask ? $this->selectedTask->id : 'null',
+            'files_content' => $this->dropzoneFiles
         ]);
-
+        
+        // Force a re-render to update the UI
+        $this->dispatch('$refresh');
+        
         // Files will be processed when the user clicks "Upload Files" button
     }
 
-    public function deleteAttachment($attachmentId)
+    public function refreshDropzoneState()
+    {
+        // Manual method to refresh the state if needed
+        Log::info('Manual dropzone refresh called', [
+            'dropzoneFiles_count' => count($this->dropzoneFiles ?? [])
+        ]);
+        $this->dispatch('$refresh');
+    }    public function deleteAttachment($attachmentId)
     {
         $attachment = TaskAttachment::find($attachmentId);
 
