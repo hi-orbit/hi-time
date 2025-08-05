@@ -726,10 +726,10 @@ class Show extends Component
             'selectedTask' => $this->selectedTask ? $this->selectedTask->id : 'null',
             'files_content' => $this->dropzoneFiles
         ]);
-        
+
         // Force a re-render to update the UI
         $this->dispatch('$refresh');
-        
+
         // Files will be processed when the user clicks "Upload Files" button
     }
 

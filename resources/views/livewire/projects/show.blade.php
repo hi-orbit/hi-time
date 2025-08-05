@@ -471,13 +471,13 @@
                                                     Upload Files (No files selected)
                                                 @endif
                                             </button>
-                                            
+
                                             <button wire:click="refreshDropzoneState"
                                                     class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-md text-sm font-medium">
                                                 Refresh
                                             </button>
                                         </div>
-                                        
+
                                         <!-- Debug info -->
                                         <div class="text-xs text-gray-500">
                                             Debug: {{ count($dropzoneFiles ?? []) }} files in dropzoneFiles array
