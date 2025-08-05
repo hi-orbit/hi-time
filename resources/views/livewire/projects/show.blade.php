@@ -451,7 +451,23 @@
                         <div class="mb-4">
                             <div class="space-y-3">
                                 <!-- Dropzone Upload -->
-                                <div class="border border-gray-300 rounded-lg p-4 bg-blue-50">
+                                <div class="border border-gray-300 rounded-lg p-4 bg-blue-50" 
+                                     x-data="{ 
+                                         refreshTimer: null,
+                                         startAutoRefresh() {
+                                             this.refreshTimer = setInterval(() => {
+                                                 $wire.refreshDropzoneState();
+                                             }, 2000); // Check every 2 seconds
+                                         },
+                                         stopAutoRefresh() {
+                                             if (this.refreshTimer) {
+                                                 clearInterval(this.refreshTimer);
+                                                 this.refreshTimer = null;
+                                             }
+                                         }
+                                     }"
+                                     x-init="startAutoRefresh()"
+                                     x-on:beforeunload.window="stopAutoRefresh()">
                                     <h5 class="text-sm font-medium text-gray-900 mb-2">Upload Files (Dropzone)</h5>
                                     <livewire:dropzone
                                         wire:model="dropzoneFiles"
@@ -471,16 +487,12 @@
                                                     Upload Files (No files selected)
                                                 @endif
                                             </button>
-
-                                            <button wire:click="refreshDropzoneState"
-                                                    class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-md text-sm font-medium">
-                                                Refresh
-                                            </button>
                                         </div>
 
                                         <!-- Debug info -->
                                         <div class="text-xs text-gray-500">
                                             Debug: {{ count($dropzoneFiles ?? []) }} files in dropzoneFiles array
+                                            <span class="ml-2 text-green-600">• Auto-refresh every 2s</span>
                                         </div>
                                     </div>
                                 </div>
