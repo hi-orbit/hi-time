@@ -87,14 +87,14 @@
                             </div>
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label for="hours" class="block text-sm font-medium text-gray-700 mb-2">Hours</label>
-                                    <input wire:model="hours" type="number" id="hours" min="0" max="23"
+                                    <label for="hours" class="block text-sm font-medium text-gray-700 mb-2">Hours <span class="text-gray-500 text-xs">(optional)</span></label>
+                                    <input wire:model="hours" type="number" id="hours" min="0" max="23" placeholder="0"
                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                     @error('hours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                 </div>
                                 <div>
-                                    <label for="minutes" class="block text-sm font-medium text-gray-700 mb-2">Minutes</label>
-                                    <input wire:model="minutes" type="number" id="minutes" min="0" max="59"
+                                    <label for="minutes" class="block text-sm font-medium text-gray-700 mb-2">Minutes <span class="text-red-500">*</span></label>
+                                    <input wire:model="minutes" type="number" id="minutes" min="0" max="59" required
                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                     @error('minutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                 </div>

@@ -491,7 +491,7 @@ class Show extends Component
     {
         // Enhanced validation that includes activity type for general activities
         $rules = [
-            'hours' => 'required|integer|min:0|max:23',
+            'hours' => 'nullable|integer|min:0|max:23',
             'minutes' => 'required|integer|min:0|max:59',
             'timeDescription' => 'nullable|string|max:255',
         ];
@@ -502,7 +502,9 @@ class Show extends Component
 
         $this->validate($rules);
 
-        $totalMinutes = ($this->hours * 60) + $this->minutes;
+        // Treat empty or null hours as 0
+        $hours = $this->hours ?: 0;
+        $totalMinutes = ($hours * 60) + $this->minutes;
 
         if ($totalMinutes > 0) {
             $timeEntryData = [

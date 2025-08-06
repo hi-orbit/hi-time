@@ -17,7 +17,7 @@ class Index extends Component
 
     protected $rules = [
         'selectedTaskId' => 'required|exists:tasks,id',
-        'hours' => 'required|integer|min:0|max:23',
+        'hours' => 'nullable|integer|min:0|max:23',
         'minutes' => 'required|integer|min:0|max:59',
     ];
 
@@ -74,7 +74,9 @@ class Index extends Component
     {
         $this->validate();
 
-        $totalMinutes = ($this->hours * 60) + $this->minutes;
+        // Treat empty or null hours as 0
+        $hours = $this->hours ?: 0;
+        $totalMinutes = ($hours * 60) + $this->minutes;
 
         if ($totalMinutes > 0) {
             TimeEntry::create([
