@@ -121,8 +121,9 @@ class ReportsController extends Controller
             $entry->entry_type = $entry->activity_type ? 'General Activity' : 'Task Work';
             $entry->calculated_hours = $hours;
 
-            if (!isset($reportData[$customerName])) {
-                $reportData[$customerName] = [
+            if (!isset($customerData[$customerName])) {
+                $customerData[$customerName] = [
+                    'customer_name' => $customerName,
                     'projects' => [],
                     'total_hours' => 0,
                     'total_task_hours' => 0,
@@ -130,8 +131,9 @@ class ReportsController extends Controller
                 ];
             }
 
-            if (!isset($reportData[$customerName]['projects'][$projectName])) {
-                $reportData[$customerName]['projects'][$projectName] = [
+            if (!isset($customerData[$customerName]['projects'][$projectName])) {
+                $customerData[$customerName]['projects'][$projectName] = [
+                    'project_name' => $projectName,
                     'total_hours' => 0,
                     'total_task_hours' => 0,
                     'total_general_hours' => 0,
@@ -140,16 +142,16 @@ class ReportsController extends Controller
             }
 
             // Track totals by entry type
-            $reportData[$customerName]['total_hours'] += $hours;
-            $reportData[$customerName]['projects'][$projectName]['total_hours'] += $hours;
-            $reportData[$customerName]['projects'][$projectName]['entries'][] = $entry;
+            $customerData[$customerName]['total_hours'] += $hours;
+            $customerData[$customerName]['projects'][$projectName]['total_hours'] += $hours;
+            $customerData[$customerName]['projects'][$projectName]['entries'][] = $entry;
 
             if ($entry->activity_type) {
-                $reportData[$customerName]['total_general_hours'] += $hours;
-                $reportData[$customerName]['projects'][$projectName]['total_general_hours'] += $hours;
+                $customerData[$customerName]['total_general_hours'] += $hours;
+                $customerData[$customerName]['projects'][$projectName]['total_general_hours'] += $hours;
             } else {
-                $reportData[$customerName]['total_task_hours'] += $hours;
-                $reportData[$customerName]['projects'][$projectName]['total_task_hours'] += $hours;
+                $customerData[$customerName]['total_task_hours'] += $hours;
+                $customerData[$customerName]['projects'][$projectName]['total_task_hours'] += $hours;
             }
             $totalHours += $hours;
         }
