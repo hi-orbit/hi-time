@@ -2,6 +2,138 @@
 
 @section('title', 'Proposal Template Details')
 
+@push('styles')
+<style>
+/* Sun Editor Template Content Styles */
+.template-content {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+.template-content h1,
+.template-content h2,
+.template-content h3,
+.template-content h4,
+.template-content h5,
+.template-content h6 {
+    font-weight: 600;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    line-height: 1.3;
+}
+
+.template-content h1 {
+    font-size: 2em;
+    text-align: center;
+    margin-bottom: 1em;
+}
+
+.template-content h2 {
+    font-size: 1.5em;
+    text-align: center;
+    margin-bottom: 0.8em;
+}
+
+.template-content h3 {
+    font-size: 1.17em;
+    line-height: 1.6em;
+}
+
+.template-content p {
+    margin-bottom: 1em;
+    line-height: 1.6;
+}
+
+.template-content strong {
+    font-weight: 600;
+}
+
+.template-content ol,
+.template-content ul {
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+.template-content li {
+    margin-bottom: 0.5em;
+    line-height: 1.6;
+}
+
+.template-content ol li {
+    list-style-type: decimal;
+}
+
+.template-content ul li {
+    list-style-type: disc;
+}
+
+.template-content div {
+    margin-bottom: 1em;
+}
+
+/* Center-aligned content */
+.template-content div[style*="text-align: center"],
+.template-content p[style*="text-align: center"] {
+    text-align: center;
+}
+
+/* Bold text styling */
+.template-content strong,
+.template-content b {
+    font-weight: 600;
+}
+
+/* Line height adjustments */
+.template-content [style*="line-height: 1.5em"] {
+    line-height: 1.5em;
+}
+
+.template-content [style*="line-height: 1.6em"] {
+    line-height: 1.6em;
+}
+
+/* Table styling */
+.template-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+    border: 1px solid #ddd;
+}
+
+.template-content th,
+.template-content td {
+    padding: 0.75rem;
+    text-align: left;
+    border: 1px solid #ddd;
+    vertical-align: top;
+}
+
+.template-content th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.template-content tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+/* Preserve custom inline styles */
+.template-content [style] {
+    /* Allow inline styles to override */
+}
+
+/* Container styling for better readability */
+.template-content {
+    max-width: none;
+    background: white;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+</style>
+@endpush
+
 @section('content')
 <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -134,11 +266,20 @@
                 <!-- Template Content -->
                 <div class="lg:col-span-2">
                     <div class="bg-white border border-gray-200 rounded-lg">
-                        <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                             <h2 class="text-lg font-medium text-gray-900">Template Content</h2>
+                            <div class="flex space-x-2">
+                                <button id="viewRendered" class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full font-medium">Rendered</button>
+                                <button id="viewHtml" class="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full font-medium">HTML Source</button>
+                            </div>
                         </div>
                         <div class="p-6">
-                            <div class="bg-gray-50 rounded-lg p-4 font-mono text-sm text-gray-800 whitespace-pre-wrap">{{ $proposalTemplate->content }}</div>
+                            <!-- Rendered Content View -->
+                            <div id="renderedContent" class="bg-white border rounded-lg p-6 template-content">
+                                {!! $proposalTemplate->content !!}
+                            </div>
+                            <!-- HTML Source View -->
+                            <div id="htmlContent" class="bg-gray-50 rounded-lg p-4 font-mono text-sm text-gray-800 whitespace-pre-wrap hidden">{{ $proposalTemplate->content }}</div>
                         </div>
                     </div>
 
@@ -228,4 +369,37 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const viewRenderedBtn = document.getElementById('viewRendered');
+    const viewHtmlBtn = document.getElementById('viewHtml');
+    const renderedContent = document.getElementById('renderedContent');
+    const htmlContent = document.getElementById('htmlContent');
+
+    viewRenderedBtn.addEventListener('click', function() {
+        // Show rendered content, hide HTML source
+        renderedContent.classList.remove('hidden');
+        htmlContent.classList.add('hidden');
+
+        // Update button styles
+        viewRenderedBtn.classList.remove('bg-gray-100', 'text-gray-600');
+        viewRenderedBtn.classList.add('bg-blue-100', 'text-blue-800');
+        viewHtmlBtn.classList.remove('bg-blue-100', 'text-blue-800');
+        viewHtmlBtn.classList.add('bg-gray-100', 'text-gray-600');
+    });
+
+    viewHtmlBtn.addEventListener('click', function() {
+        // Show HTML source, hide rendered content
+        htmlContent.classList.remove('hidden');
+        renderedContent.classList.add('hidden');
+
+        // Update button styles
+        viewHtmlBtn.classList.remove('bg-gray-100', 'text-gray-600');
+        viewHtmlBtn.classList.add('bg-blue-100', 'text-blue-800');
+        viewRenderedBtn.classList.remove('bg-blue-100', 'text-blue-800');
+        viewRenderedBtn.classList.add('bg-gray-100', 'text-gray-600');
+    });
+});
+</script>
 @endsection
