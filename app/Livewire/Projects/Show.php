@@ -985,24 +985,18 @@ class Show extends Component
     }
 
     /**
-     * Override the updating method to bypass validation for dropzoneFiles
+     * Livewire lifecycle hook - called before a property is updated
      */
-    public function updating($field, $value)
+    public function updatingDropzoneFiles($value)
     {
-        Log::info('Livewire updating called', [
-            'field' => $field,
+        Log::info('updatingDropzoneFiles called', [
             'value_type' => gettype($value),
-            'value_count' => is_array($value) ? count($value) : 'not_array'
+            'value_count' => is_array($value) ? count($value) : 'not_array',
+            'value_preview' => is_array($value) ? array_slice($value, 0, 2) : $value
         ]);
 
-        // Skip validation for dropzoneFiles - we handle it manually
-        if (str_starts_with($field, 'dropzoneFiles')) {
-            Log::info('Bypassing Livewire validation for dropzoneFiles', ['field' => $field]);
-            return;
-        }
-
-        // Call parent for other fields
-        parent::updating($field, $value);
+        // Don't perform validation here - let the files through to updatedDropzoneFiles
+        // where we handle custom validation in processDropzoneFiles()
     }
 
     public function deleteAttachment($attachmentId)
