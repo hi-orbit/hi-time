@@ -339,65 +339,67 @@
              x-on:upload-error.window="showErrorMessage = true; errorMessage = $event.detail.message; setTimeout(() => showErrorMessage = false, 3000)">
             <div class="relative top-10 mx-auto p-5 border max-w-4xl shadow-lg rounded-md bg-white">
                 <div class="mt-3">
-                    <div class="flex justify-between items-start mb-6">
-                        <div>
-                            <h3 class="text-xl font-medium text-gray-900">{{ $selectedTask->title }}</h3>
-                            <p class="text-sm text-gray-600 mt-1">{{ $selectedTask->project->name }}</p>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <!-- Time Tracking Buttons -->
-                            @php
-                                $hasRunningTimer = auth()->user()->timeEntries()
-                                    ->where('task_id', $selectedTask->id)
-                                    ->where('is_running', true)
-                                    ->exists();
-                            @endphp
+                    <!-- Title Row -->
+                    <div class="mb-6">
+                        <h3 class="text-xl font-medium text-gray-900">{{ $selectedTask->title }}</h3>
+                        <p class="text-sm text-gray-600 mt-1">{{ $selectedTask->project->name }}</p>
+                    </div>
 
-                            @if($hasRunningTimer)
-                                <button wire:click="stopTimer({{ $selectedTask->id }})"
-                                        class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium">
-                                    ⏹ Stop Timer
-                                </button>
+                    <!-- Buttons Row -->
+                    <div class="flex justify-end items-center space-x-2 mb-6">
+                        <!-- Time Tracking Buttons -->
+                        @php
+                            $hasRunningTimer = auth()->user()->timeEntries()
+                                ->where('task_id', $selectedTask->id)
+                                ->where('is_running', true)
+                                ->exists();
+                        @endphp
+
+                        @if($hasRunningTimer)
+                            <button wire:click="stopTimer({{ $selectedTask->id }})"
+                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium">
+                                ⏹ Stop Timer
+                            </button>
+                        @else
+                            <button wire:click="startTimer({{ $selectedTask->id }})"
+                                    class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium">
+                                ▶ Start Timer
+                            </button>
+                        @endif
+
+                        <button wire:click="toggleTimeForm"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium">
+                            @if($showTimeForm)
+                                ✕ Hide
                             @else
-                                <button wire:click="startTimer({{ $selectedTask->id }})"
-                                        class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium">
-                                    ▶ Start Timer
-                                </button>
+                                + Log Time
                             @endif
+                        </button>
 
-                            <button wire:click="toggleTimeForm"
-                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium">
-                                @if($showTimeForm)
-                                    ✕ Hide
-                                @else
-                                    + Log Time
-                                @endif
+                        <!-- Shareable Link Button -->
+                        <button onclick="copyShareableLink({{ $selectedTask->id }})"
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm font-medium"
+                                title="Copy shareable link">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                            </svg>
+                        </button>
+
+                        @if(auth()->user()->isAdmin() || auth()->user()->id == $selectedTask->assigned_to || auth()->user()->id == $selectedTask->created_by)
+                            <button wire:click="editTask({{ $selectedTask->id }})"
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-sm font-medium">
+                                Edit Task
                             </button>
-
-                            <!-- Shareable Link Button -->
-                            <button onclick="copyShareableLink({{ $selectedTask->id }})"
-                                    class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm font-medium"
-                                    title="Copy shareable link">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-                                </svg>
+                            <button wire:click="deleteTask({{ $selectedTask->id }})"
+                                    onclick="return confirm('Are you sure you want to delete this task? This will permanently delete all time entries and notes associated with this task.')"
+                                    class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-medium">
+                                Delete Task
                             </button>
-
-                            @if(auth()->user()->isAdmin() || auth()->user()->id == $selectedTask->assigned_to || auth()->user()->id == $selectedTask->created_by)
-                                <button wire:click="editTask({{ $selectedTask->id }})"
-                                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-sm font-medium">
-                                    Edit Task
-                                </button>
-                                <button wire:click="deleteTask({{ $selectedTask->id }})"
-                                        onclick="return confirm('Are you sure you want to delete this task? This will permanently delete all time entries and notes associated with this task.')"
-                                        class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm font-medium">
-                                    Delete Task
-                                </button>
-                            @endif
-                            <button wire:click="closeTaskDetailsModal" class="text-gray-400 hover:text-gray-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
+                        @endif
+                        <button wire:click="closeTaskDetailsModal" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
                             </button>
                         </div>
                     </div>
