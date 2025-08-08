@@ -98,6 +98,16 @@ class Show extends Component
 
         $this->project = $project->load('customer');
 
+        // Check for task parameter in URL to auto-open task details
+        if (request()->has('task')) {
+            $taskId = request()->get('task');
+            $task = Task::where('id', $taskId)->where('project_id', $project->id)->first();
+            
+            if ($task) {
+                $this->openTaskDetails($taskId);
+            }
+        }
+
         Log::info('Projects.Show component mounted', [
             'project_id' => $project->id,
             'user_id' => Auth::id(),
