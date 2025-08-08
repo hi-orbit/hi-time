@@ -339,11 +339,7 @@
              x-on:upload-error.window="showErrorMessage = true; errorMessage = $event.detail.message; setTimeout(() => showErrorMessage = false, 3000)">
             <div class="relative top-10 mx-auto p-5 border max-w-4xl shadow-lg rounded-md bg-white">
                 <div class="mt-3">
-                    <!-- Title Row -->
-                    <div class="mb-6">
-                        <h3 class="text-xl font-medium text-gray-900">{{ $selectedTask->title }}</h3>
-                        <p class="text-sm text-gray-600 mt-1">{{ $selectedTask->project->name }}</p>
-                    </div>
+
 
                     <!-- Buttons Row -->
                     <div class="flex justify-end items-center space-x-2 mb-6">
@@ -402,6 +398,12 @@
                             </svg>
                             </button>
                         </div>
+                    </div>
+
+                    <!-- Title Row -->
+                    <div class="mb-6">
+                        <h3 class="text-xl font-medium text-gray-900">{{ $selectedTask->title }}</h3>
+                        <p class="text-sm text-gray-600 mt-1">{{ $selectedTask->project->name }}</p>
                     </div>
 
                     <!-- Success message using Alpine.js instead of session flash -->
@@ -601,67 +603,67 @@
 
                         </div>
                     </div>
-                </div>
-                <!-- Attachments Section -->
-                <div>
-                    <h4 class="text-lg font-medium text-gray-900 mb-3">Attachments</h4>
 
-                    <!-- Upload Form -->
-                    <div class="mb-4">
-                        <div class="space-y-3">
-                            <!-- Dropzone Upload -->
-                            <div class="border border-gray-300 rounded-lg p-4 bg-blue-50"
-                                 x-data="{
-                                     refreshTimer: null,
-                                     isModalOpen: false,
-                                     startAutoRefresh() {
-                                         this.refreshTimer = setInterval(() => {
-                                             // Only refresh if no modal is open
-                                             const modal = document.getElementById('imagePreviewModal');
-                                             if (!modal || modal.classList.contains('hidden')) {
-                                                 $wire.refreshDropzoneState();
+                    <!-- Attachments Section (Full Width) -->
+                    <div class="mt-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-3">Attachments</h4>
+
+                        <!-- Upload Form -->
+                        <div class="mb-4">
+                            <div class="space-y-3">
+                                <!-- Dropzone Upload -->
+                                <div class="border border-gray-300 rounded-lg p-4 bg-blue-50"
+                                     x-data="{
+                                         refreshTimer: null,
+                                         isModalOpen: false,
+                                         startAutoRefresh() {
+                                             this.refreshTimer = setInterval(() => {
+                                                 // Only refresh if no modal is open
+                                                 const modal = document.getElementById('imagePreviewModal');
+                                                 if (!modal || modal.classList.contains('hidden')) {
+                                                     $wire.refreshDropzoneState();
+                                                 }
+                                             }, 2000); // Check every 2 seconds
+                                         },
+                                         stopAutoRefresh() {
+                                             if (this.refreshTimer) {
+                                                 clearInterval(this.refreshTimer);
+                                                 this.refreshTimer = null;
                                              }
-                                         }, 2000); // Check every 2 seconds
-                                     },
-                                     stopAutoRefresh() {
-                                         if (this.refreshTimer) {
-                                             clearInterval(this.refreshTimer);
-                                             this.refreshTimer = null;
                                          }
-                                     }
-                                 }"
-                                 x-init="startAutoRefresh()"
-                                 x-on:beforeunload.window="stopAutoRefresh()">
-                                <h5 class="text-sm font-medium text-gray-900 mb-2">Upload Files (Auto-upload)</h5>
-                                <livewire:dropzone
-                                    wire:model="dropzoneFiles"
-                                    :rules="['file', 'mimes:jpg,jpeg,png,gif,pdf,doc,docx,txt,zip,csv,xlsx,xls,mp4,avi,mov,wmv,flv,webm,mkv,m4v,3gp']"
-                                    :multiple="true"
-                                    :key="'task-dropzone-' . ($selectedTask->id ?? 'new')" />
+                                     }"
+                                     x-init="startAutoRefresh()"
+                                     x-on:beforeunload.window="stopAutoRefresh()">
+                                    <h5 class="text-sm font-medium text-gray-900 mb-2">Upload Files (Auto-upload)</h5>
+                                    <livewire:dropzone
+                                        wire:model="dropzoneFiles"
+                                        :rules="['file', 'mimes:jpg,jpeg,png,gif,pdf,doc,docx,txt,zip,csv,xlsx,xls,mp4,avi,mov,wmv,flv,webm,mkv,m4v,3gp']"
+                                        :multiple="true"
+                                        :key="'task-dropzone-' . ($selectedTask->id ?? 'new')" />
 
-                                <!-- Auto-upload info -->
-                                <div class="mt-3 space-y-2">
-                                    <!-- Info message -->
-                                    <div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-md p-2">
-                                        <svg class="inline w-4 h-4 mr-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        Files will be uploaded automatically when added to the dropzone
-                                        <br><strong>Size limits:</strong> Images/Documents up to 10MB, Videos up to 20MB
-                                    </div>
+                                    <!-- Auto-upload info -->
+                                    <div class="mt-3 space-y-2">
+                                        <!-- Info message -->
+                                        <div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-md p-2">
+                                            <svg class="inline w-4 h-4 mr-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            Files will be uploaded automatically when added to the dropzone
+                                            <br><strong>Size limits:</strong> Images/Documents up to 10MB, Videos up to 20MB
+                                        </div>
 
-                                    <!-- Debug info -->
-                                    <div class="text-xs text-gray-500">
-                                        Debug: {{ count($dropzoneFiles ?? []) }} files in dropzoneFiles array
-                                        <span class="ml-2 text-green-600">• Auto-refresh every 2s</span>
+                                        <!-- Debug info -->
+                                        <div class="text-xs text-gray-500">
+                                            Debug: {{ count($dropzoneFiles ?? []) }} files in dropzoneFiles array
+                                            <span class="ml-2 text-green-600">• Auto-refresh every 2s</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Attachments List -->
-                    <div class="space-y-2">
+                        <!-- Attachments List -->
+                        <div class="space-y-2">
                         @if($selectedTask->attachments && $selectedTask->attachments->count() > 0)
                             @foreach($selectedTask->attachments as $attachment)
                                 <div class="flex items-center justify-between bg-gray-50 rounded-lg p-3">
