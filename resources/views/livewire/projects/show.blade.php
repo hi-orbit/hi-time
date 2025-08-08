@@ -633,7 +633,7 @@
                                 <h5 class="text-sm font-medium text-gray-900 mb-2">Upload Files (Auto-upload)</h5>
                                 <livewire:dropzone
                                     wire:model="dropzoneFiles"
-                                    :rules="['file', 'max:10240', 'mimes:jpg,jpeg,png,gif,pdf,doc,docx,txt,zip,csv,xlsx,xls']"
+                                    :rules="['file', 'max:20480', 'mimes:jpg,jpeg,png,gif,pdf,doc,docx,txt,zip,csv,xlsx,xls,mp4,avi,mov,wmv,flv,webm,mkv,m4v,3gp']"
                                     :multiple="true"
                                     :key="'task-dropzone-' . ($selectedTask->id ?? 'new')" />
 
@@ -645,6 +645,7 @@
                                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
                                         </svg>
                                         Files will be uploaded automatically when added to the dropzone
+                                        <br><strong>Size limits:</strong> Images/Documents up to 10MB, Videos up to 20MB
                                     </div>
 
                                     <!-- Debug info -->
@@ -668,6 +669,10 @@
                                             @if($attachment->is_image)
                                                 <svg class="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                                </svg>
+                                            @elseif($attachment->is_video)
+                                                <svg class="w-8 h-8 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path>
                                                 </svg>
                                             @else
                                                 <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
@@ -695,12 +700,19 @@
                                                     class="text-blue-600 hover:text-blue-500 text-sm font-medium">
                                                 Preview
                                             </button>
+                                        @elseif($attachment->is_video)
+                                            <button type="button" onclick="showVideoPreview('{{ Storage::disk('public')->url($attachment->file_path) }}', '{{ $attachment->original_name }}')"
+                                                    class="text-purple-600 hover:text-purple-500 text-sm font-medium">
+                                                Play
+                                            </button>
                                         @endif
 
                                         <!-- Download -->
                                         <a href="{{ Storage::disk('public')->url($attachment->file_path) }}"
                                            download="{{ $attachment->original_name }}"
                                            class="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                                            Download
+                                        </a>
                                             Download
                                         </a>
 
@@ -742,6 +754,28 @@
             </div>
         </div>
     </div>
+
+    <!-- Video Preview Modal -->
+    <div id="videoPreviewModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center" onclick="closeVideoPreview()">
+        <div class="max-w-4xl max-h-full p-4">
+            <div class="bg-white rounded-lg overflow-hidden">
+                <div class="flex items-center justify-between p-4 border-b">
+                    <h3 id="videoPreviewTitle" class="text-lg font-medium text-gray-900"></h3>
+                    <button onclick="closeVideoPreview()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-4">
+                    <video id="videoPreviewPlayer" controls class="max-w-full max-h-96 mx-auto" controlslist="nodownload">
+                        <source id="videoPreviewSource" src="" type="">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -754,6 +788,45 @@ function showImagePreview(imageUrl, title) {
 function closeImagePreview() {
     document.getElementById('imagePreviewModal').classList.add('hidden');
     document.getElementById('imagePreviewImage').src = '';
+}
+
+function showVideoPreview(videoUrl, title) {
+    const videoPlayer = document.getElementById('videoPreviewPlayer');
+    const videoSource = document.getElementById('videoPreviewSource');
+    const videoTitle = document.getElementById('videoPreviewTitle');
+    
+    // Set the video source and type
+    videoSource.src = videoUrl;
+    // Try to determine the video type from the URL
+    const extension = videoUrl.split('.').pop().toLowerCase();
+    const mimeTypes = {
+        'mp4': 'video/mp4',
+        'webm': 'video/webm',
+        'ogg': 'video/ogg',
+        'avi': 'video/avi',
+        'mov': 'video/quicktime',
+        'wmv': 'video/x-ms-wmv',
+        'flv': 'video/x-flv',
+        'mkv': 'video/x-matroska',
+        'm4v': 'video/x-m4v',
+        '3gp': 'video/3gpp'
+    };
+    videoSource.type = mimeTypes[extension] || 'video/mp4';
+    
+    videoTitle.textContent = title;
+    videoPlayer.load(); // Reload the video element
+    document.getElementById('videoPreviewModal').classList.remove('hidden');
+}
+
+function closeVideoPreview() {
+    const videoPlayer = document.getElementById('videoPreviewPlayer');
+    const videoSource = document.getElementById('videoPreviewSource');
+    
+    videoPlayer.pause();
+    videoPlayer.currentTime = 0;
+    videoSource.src = '';
+    videoPlayer.load();
+    document.getElementById('videoPreviewModal').classList.add('hidden');
 }
 </script>
 

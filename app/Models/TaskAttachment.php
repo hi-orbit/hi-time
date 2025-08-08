@@ -47,6 +47,11 @@ class TaskAttachment extends Model
         return str_starts_with($this->mime_type, 'image/');
     }
 
+    public function getIsVideoAttribute(): bool
+    {
+        return str_starts_with($this->mime_type, 'video/');
+    }
+
     public function delete()
     {
         // Delete the file from storage when the model is deleted

@@ -1,0 +1,10 @@
+# PHP Configuration for Hi-Time Application
+# These settings are needed to support video file uploads up to 20MB
+
+php_value upload_max_filesize 20M
+php_value post_max_size 25M
+php_value max_file_uploads 20
+php_value max_execution_time 300
+php_value memory_limit 256M
+php_value max_input_time 60
+php_value max_input_vars 1000
