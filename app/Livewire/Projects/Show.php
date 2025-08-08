@@ -79,6 +79,12 @@ class Show extends Component
     // Quick assignment field
     public $taskAssignment = '';
 
+    // Task status editing (for details modal)
+    public $taskStatus = '';
+
+    // Time tracking form visibility
+    public $showTimeForm = false;
+
     protected $rules = [
         'newNote' => 'required|string|max:1000',
     ];
@@ -214,12 +220,20 @@ class Show extends Component
     {
         $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader'])->findOrFail($taskId);
         $this->taskAssignment = $this->selectedTask->assigned_to;
+        $this->taskStatus = $this->selectedTask->status;
+
+        // Initialize time tracking fields
+        $this->timeDescription = '';
+        $this->hours = '';
+        $this->minutes = '';
+        $this->isGeneralActivity = false; // This is for a specific task
+
         $this->showTaskDetailsModal = true;
     }
 
     public function closeTaskDetailsModal()
     {
-        $this->reset(['showTaskDetailsModal', 'selectedTask', 'newNote', 'taskAssignment', 'attachmentFiles', 'dropzoneFiles']);
+        $this->reset(['showTaskDetailsModal', 'selectedTask', 'newNote', 'taskAssignment', 'taskStatus', 'showTimeForm', 'timeDescription', 'hours', 'minutes', 'attachmentFiles', 'dropzoneFiles']);
     }
 
     public function addNote()
@@ -378,6 +392,58 @@ class Show extends Component
 
             // Use dispatch instead of session flash
             $this->dispatch('assignment-updated', message: 'Task assignment updated successfully!');
+        }
+    }
+
+    public function updateTaskStatusFromModal()
+    {
+        $this->validate([
+            'taskStatus' => 'required|in:backlog,in_progress,in_test,failed_testing,ready_to_release,done',
+        ]);
+
+        if ($this->selectedTask) {
+            $oldStatus = $this->selectedTask->status;
+
+            $this->selectedTask->update([
+                'status' => $this->taskStatus,
+            ]);
+
+            // Send notification if status changed and task is assigned
+            if ($this->taskStatus !== $oldStatus && $this->selectedTask->assigned_to) {
+                $this->getNotificationService()->sendTaskStatusNotification(
+                    $this->selectedTask->assigned_to,
+                    $this->selectedTask->title,
+                    $this->taskStatus,
+                    $this->project->name,
+                    $this->project->id
+                );
+            }
+
+            // Refresh the task data
+            $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader'])->findOrFail($this->selectedTask->id);
+
+            $this->dispatch('status-updated', message: 'Task status updated successfully!');
+        }
+    }
+
+    public function copyShareableLink($taskId)
+    {
+        $task = Task::findOrFail($taskId);
+        $shareableUrl = url("/projects/{$task->project_id}?task={$task->id}");
+
+        // We'll use JavaScript to copy to clipboard
+        $this->dispatch('copy-to-clipboard', url: $shareableUrl, message: 'Shareable link copied to clipboard!');
+    }
+
+    public function toggleTimeForm()
+    {
+        $this->showTimeForm = !$this->showTimeForm;
+
+        // Reset time fields when hiding the form
+        if (!$this->showTimeForm) {
+            $this->timeDescription = '';
+            $this->hours = '';
+            $this->minutes = '';
         }
     }
 
@@ -543,6 +609,57 @@ class Show extends Component
             $this->closeTimeModal();
         } else {
             session()->flash('error', 'Please enter a valid time duration.');
+        }
+    }
+
+    public function logTimeInline()
+    {
+        // Validation for inline time logging
+        $this->validate([
+            'hours' => 'nullable|integer|min:0|max:23',
+            'minutes' => 'required|integer|min:0|max:59',
+            'timeDescription' => 'nullable|string|max:255',
+        ]);
+
+        // Treat empty or null hours as 0
+        $hours = $this->hours ?: 0;
+        $totalMinutes = ($hours * 60) + $this->minutes;
+
+        if ($totalMinutes > 0) {
+            $timeEntryData = [
+                'user_id' => Auth::id(),
+                'description' => $this->timeDescription,
+                'duration_minutes' => $totalMinutes,
+                'is_running' => false,
+                'task_id' => $this->selectedTask->id,
+                'project_id' => $this->project->id,
+                'activity_type' => null,
+            ];
+
+            try {
+                $timeEntry = TimeEntry::create($timeEntryData);
+
+                if ($timeEntry) {
+                    // Reset the time fields and hide the form
+                    $this->timeDescription = '';
+                    $this->hours = '';
+                    $this->minutes = '';
+                    $this->showTimeForm = false;
+
+                    // Refresh the selected task to show updated time entries
+                    $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries.user', 'attachments.uploader'])->findOrFail($this->selectedTask->id);
+
+                    // Dispatch success event for Alpine.js
+                    $this->dispatch('time-logged', message: 'Time logged successfully!');
+                } else {
+                    $this->dispatch('time-log-error', message: 'Failed to save time entry. Please try again.');
+                }
+            } catch (\Exception $e) {
+                Log::error('Time entry creation failed: ' . $e->getMessage());
+                $this->dispatch('time-log-error', message: 'Error saving time entry: ' . $e->getMessage());
+            }
+        } else {
+            $this->dispatch('time-log-error', message: 'Please enter a valid time duration.');
         }
     }
 
@@ -796,17 +913,19 @@ class Show extends Component
 
     public function updatedDropzoneFiles()
     {
-        // Just log when files are added to the dropzone
-        Log::info('Dropzone files updated', [
+        // Auto-process files when they are added
+        Log::info('Dropzone files updated - auto-processing', [
             'count' => count($this->dropzoneFiles ?? []),
             'selectedTask' => $this->selectedTask ? $this->selectedTask->id : 'null',
-            'files_content' => $this->dropzoneFiles
         ]);
+
+        if (!empty($this->dropzoneFiles)) {
+            // Automatically process the files
+            $this->processDropzoneFiles();
+        }
 
         // Force a re-render to update the UI
         $this->dispatch('$refresh');
-
-        // Files will be processed when the user clicks "Upload Files" button
     }
 
     public function refreshDropzoneState()

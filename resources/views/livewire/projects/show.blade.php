@@ -330,6 +330,9 @@
              }"
              x-on:note-added.window="showSuccessMessage = true; successMessage = $event.detail.message; setTimeout(() => showSuccessMessage = false, 3000)"
              x-on:assignment-updated.window="showSuccessMessage = true; successMessage = $event.detail.message; setTimeout(() => showSuccessMessage = false, 3000)"
+             x-on:status-updated.window="showSuccessMessage = true; successMessage = $event.detail.message; setTimeout(() => showSuccessMessage = false, 3000)"
+             x-on:time-logged.window="showSuccessMessage = true; successMessage = $event.detail.message; setTimeout(() => showSuccessMessage = false, 3000)"
+             x-on:time-log-error.window="showErrorMessage = true; errorMessage = $event.detail.message; setTimeout(() => showErrorMessage = false, 3000)"
              x-on:files-uploaded.window="showSuccessMessage = true; successMessage = $event.detail.message; setTimeout(() => showSuccessMessage = false, 3000)"
              x-on:attachment-deleted.window="showSuccessMessage = true; successMessage = $event.detail.message; setTimeout(() => showSuccessMessage = false, 3000)"
              x-on:attachment-error.window="showErrorMessage = true; errorMessage = $event.detail.message; setTimeout(() => showErrorMessage = false, 3000)"
@@ -342,6 +345,44 @@
                             <p class="text-sm text-gray-600 mt-1">{{ $selectedTask->project->name }}</p>
                         </div>
                         <div class="flex items-center space-x-2">
+                            <!-- Time Tracking Buttons -->
+                            @php
+                                $hasRunningTimer = auth()->user()->timeEntries()
+                                    ->where('task_id', $selectedTask->id)
+                                    ->where('is_running', true)
+                                    ->exists();
+                            @endphp
+
+                            @if($hasRunningTimer)
+                                <button wire:click="stopTimer({{ $selectedTask->id }})"
+                                        class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium">
+                                    ⏹ Stop Timer
+                                </button>
+                            @else
+                                <button wire:click="startTimer({{ $selectedTask->id }})"
+                                        class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium">
+                                    ▶ Start Timer
+                                </button>
+                            @endif
+
+                            <button wire:click="toggleTimeForm"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium">
+                                @if($showTimeForm)
+                                    ✕ Hide
+                                @else
+                                    + Log Time
+                                @endif
+                            </button>
+
+                            <!-- Shareable Link Button -->
+                            <button onclick="copyShareableLink({{ $selectedTask->id }})"
+                                    class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm font-medium"
+                                    title="Copy shareable link">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                </svg>
+                            </button>
+
                             @if(auth()->user()->isAdmin() || auth()->user()->id == $selectedTask->assigned_to || auth()->user()->id == $selectedTask->created_by)
                                 <button wire:click="editTask({{ $selectedTask->id }})"
                                         class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-sm font-medium">
@@ -388,7 +429,7 @@
                     @endif
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Task Details -->
+                        <!-- Left Column: Task Details and Time Tracking -->
                         <div>
                             <h4 class="text-lg font-medium text-gray-900 mb-3">Task Details</h4>
 
@@ -401,16 +442,29 @@
                                 <div class="grid grid-cols-2 gap-4 mb-3">
                                     <div>
                                         <label class="text-sm font-medium text-gray-700">Status:</label>
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1
-                                            @switch($selectedTask->status)
-                                                @case('backlog') bg-gray-100 text-gray-800 @break
-                                                @case('in_progress') bg-blue-100 text-blue-800 @break
-                                                @case('in_test') bg-yellow-100 text-yellow-800 @break
-                                                @case('ready_to_release') bg-purple-100 text-purple-800 @break
-                                                @case('done') bg-green-100 text-green-800 @break
-                                            @endswitch">
-                                            {{ ucfirst(str_replace('_', ' ', $selectedTask->status)) }}
-                                        </span>
+                                        @if(auth()->user()->isAdmin() || auth()->user()->id == $selectedTask->assigned_to || auth()->user()->id == $selectedTask->created_by)
+                                            <select wire:model="taskStatus" wire:change="updateTaskStatusFromModal"
+                                                    wire:key="task-status-{{ $selectedTask->id }}"
+                                                    class="block w-full mt-1 px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                                <option value="backlog">Backlog</option>
+                                                <option value="in_progress">In Progress</option>
+                                                <option value="in_test">In Test</option>
+                                                <option value="failed_testing">Failed Testing</option>
+                                                <option value="ready_to_release">Ready to Release</option>
+                                                <option value="done">Done</option>
+                                            </select>
+                                        @else
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1
+                                                @switch($selectedTask->status)
+                                                    @case('backlog') bg-gray-100 text-gray-800 @break
+                                                    @case('in_progress') bg-blue-100 text-blue-800 @break
+                                                    @case('in_test') bg-yellow-100 text-yellow-800 @break
+                                                    @case('ready_to_release') bg-purple-100 text-purple-800 @break
+                                                    @case('done') bg-green-100 text-green-800 @break
+                                                @endswitch">
+                                                {{ ucfirst(str_replace('_', ' ', $selectedTask->status)) }}
+                                            </span>
+                                        @endif
                                     </div>
                                     <div>
                                         <label class="text-sm font-medium text-gray-700">Assigned to:</label>
@@ -455,173 +509,215 @@
                             @endif
                         </div>
 
-                        <!-- Notes Section -->
-                        <div wire:key="notes-section-{{ $selectedTask->id }}">
-                            <h4 class="text-lg font-medium text-gray-900 mb-3">Notes</h4>
+                        <!-- Right Column: Notes and Attachments -->
+                        <div>
+                                                        <!-- Collapsible Time Tracking Section -->
+                            @if($showTimeForm)
+                                <div wire:key="time-tracking-section-{{ $selectedTask->id }}" class="mb-6">
+                                    <h4 class="text-lg font-medium text-gray-900 mb-3">Log Time</h4>
 
-                            <!-- Add Note Form -->
-                            <form wire:submit.prevent="addNote" class="mb-4" wire:key="add-note-form-{{ $selectedTask->id }}">
-                                <div class="mb-3">
-                                    <textarea wire:model="newNote" rows="3"
-                                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                                              placeholder="Add a note..."></textarea>
-                                    @error('newNote') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                    <!-- Manual Time Entry Form -->
+                                    <form wire:submit.prevent="logTimeInline" class="bg-gray-50 rounded-lg p-4">
+                                        <div class="mb-4">
+                                            <label for="timeDescription" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                            <textarea wire:model="timeDescription" id="timeDescription" rows="2"
+                                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                                      placeholder="What did you work on?"></textarea>
+                                            @error('timeDescription') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <label for="hours" class="block text-sm font-medium text-gray-700 mb-2">Hours <span class="text-gray-500 text-xs">(optional)</span></label>
+                                                <input wire:model="hours" type="number" id="hours" min="0" max="23" placeholder="0"
+                                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                                @error('hours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                            </div>
+                                            <div>
+                                                <label for="minutes" class="block text-sm font-medium text-gray-700 mb-2">Minutes <span class="text-red-500">*</span></label>
+                                                <input wire:model="minutes" type="number" id="minutes" min="0" max="59" required
+                                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                                @error('minutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                            </div>
+                                        </div>
+
+                                        <div class="flex justify-end space-x-2">
+                                            <button type="button" wire:click="toggleTimeForm"
+                                                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                                Cancel
+                                            </button>
+                                            <button type="submit"
+                                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                                Log Time
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
-                                <button type="submit"
-                                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                                    Add Note
-                                </button>
-                            </form>
+                            @endif
+                            <!-- Notes Section -->
+                            <div wire:key="notes-section-{{ $selectedTask->id }}">
+                                <h4 class="text-lg font-medium text-gray-900 mb-3">Notes</h4>
 
-                            <!-- Notes List -->
-                            <div class="max-h-96 overflow-y-auto" wire:key="notes-list-{{ $selectedTask->id }}">
-                                @if($selectedTask->notes && $selectedTask->notes->count() > 0)
-                                    @foreach($selectedTask->notes->sortByDesc('created_at') as $note)
-                                        <div class="bg-white border rounded-lg p-3 mb-3" wire:key="note-{{ $note->id }}">
-                                            <div class="flex items-start justify-between mb-2">
-                                                <div class="flex items-center">
-                                                    <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-300 text-sm font-medium text-gray-700">
-                                                        {{ substr($note->user->name, 0, 1) }}
-                                                    </span>
-                                                    <div class="ml-3">
-                                                        <p class="text-sm font-medium text-gray-900">{{ $note->user->name }}</p>
-                                                        <p class="text-xs text-gray-500">{{ $note->created_at->format('M j, Y H:i') }}</p>
+                                <!-- Add Note Form -->
+                                <form wire:submit.prevent="addNote" class="mb-4" wire:key="add-note-form-{{ $selectedTask->id }}">
+                                    <div class="mb-3">
+                                        <textarea wire:model="newNote" rows="3"
+                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                                  placeholder="Add a note..."></textarea>
+                                        @error('newNote') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                    </div>
+                                    <button type="submit"
+                                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                        Add Note
+                                    </button>
+                                </form>
+
+                                <!-- Notes List -->
+                                <div class="max-h-48 overflow-y-auto mb-6" wire:key="notes-list-{{ $selectedTask->id }}">
+                                    @if($selectedTask->notes && $selectedTask->notes->count() > 0)
+                                        @foreach($selectedTask->notes->sortByDesc('created_at') as $note)
+                                            <div class="bg-white border rounded-lg p-3 mb-3" wire:key="note-{{ $note->id }}">
+                                                <div class="flex items-start justify-between mb-2">
+                                                    <div class="flex items-center">
+                                                        <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-300 text-sm font-medium text-gray-700">
+                                                            {{ substr($note->user->name, 0, 1) }}
+                                                        </span>
+                                                        <div class="ml-3">
+                                                            <p class="text-sm font-medium text-gray-900">{{ $note->user->name }}</p>
+                                                            <p class="text-xs text-gray-500">{{ $note->created_at->format('M j, Y H:i') }}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <p class="text-sm text-gray-700">{{ $note->content }}</p>
                                             </div>
-                                            <p class="text-sm text-gray-700">{{ $note->content }}</p>
-                                        </div>
-                                    @endforeach
-                                @else
-                                    <p class="text-gray-500 text-center py-8">No notes yet. Add the first note above.</p>
-                                @endif
+                                        @endforeach
+                                    @else
+                                        <p class="text-gray-500 text-center py-8">No notes yet. Add the first note above.</p>
+                                    @endif
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <!-- Attachments Section -->
+                <div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-3">Attachments</h4>
+
+                    <!-- Upload Form -->
+                    <div class="mb-4">
+                        <div class="space-y-3">
+                            <!-- Dropzone Upload -->
+                            <div class="border border-gray-300 rounded-lg p-4 bg-blue-50"
+                                 x-data="{
+                                     refreshTimer: null,
+                                     isModalOpen: false,
+                                     startAutoRefresh() {
+                                         this.refreshTimer = setInterval(() => {
+                                             // Only refresh if no modal is open
+                                             const modal = document.getElementById('imagePreviewModal');
+                                             if (!modal || modal.classList.contains('hidden')) {
+                                                 $wire.refreshDropzoneState();
+                                             }
+                                         }, 2000); // Check every 2 seconds
+                                     },
+                                     stopAutoRefresh() {
+                                         if (this.refreshTimer) {
+                                             clearInterval(this.refreshTimer);
+                                             this.refreshTimer = null;
+                                         }
+                                     }
+                                 }"
+                                 x-init="startAutoRefresh()"
+                                 x-on:beforeunload.window="stopAutoRefresh()">
+                                <h5 class="text-sm font-medium text-gray-900 mb-2">Upload Files (Auto-upload)</h5>
+                                <livewire:dropzone
+                                    wire:model="dropzoneFiles"
+                                    :rules="['file', 'max:10240', 'mimes:jpg,jpeg,png,gif,pdf,doc,docx,txt,zip,csv,xlsx,xls']"
+                                    :multiple="true"
+                                    :key="'task-dropzone-' . ($selectedTask->id ?? 'new')" />
+
+                                <!-- Auto-upload info -->
+                                <div class="mt-3 space-y-2">
+                                    <!-- Info message -->
+                                    <div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-md p-2">
+                                        <svg class="inline w-4 h-4 mr-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        Files will be uploaded automatically when added to the dropzone
+                                    </div>
+
+                                    <!-- Debug info -->
+                                    <div class="text-xs text-gray-500">
+                                        Debug: {{ count($dropzoneFiles ?? []) }} files in dropzoneFiles array
+                                        <span class="ml-2 text-green-600">• Auto-refresh every 2s</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Attachments Section -->
-                    <div class="mt-6">
-                        <h4 class="text-lg font-medium text-gray-900 mb-3">Attachments</h4>
+                    <!-- Attachments List -->
+                    <div class="space-y-2">
+                        @if($selectedTask->attachments && $selectedTask->attachments->count() > 0)
+                            @foreach($selectedTask->attachments as $attachment)
+                                <div class="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                                    <div class="flex items-center space-x-3">
+                                        <!-- File Icon -->
+                                        <div class="flex-shrink-0">
+                                            @if($attachment->is_image)
+                                                <svg class="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                                </svg>
+                                            @else
+                                                <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                                                </svg>
+                                            @endif
+                                        </div>
 
-                        <!-- Upload Form -->
-                        <div class="mb-4">
-                            <div class="space-y-3">
-                                <!-- Dropzone Upload -->
-                                <div class="border border-gray-300 rounded-lg p-4 bg-blue-50"
-                                     x-data="{
-                                         refreshTimer: null,
-                                         isModalOpen: false,
-                                         startAutoRefresh() {
-                                             this.refreshTimer = setInterval(() => {
-                                                 // Only refresh if no modal is open
-                                                 const modal = document.getElementById('imagePreviewModal');
-                                                 if (!modal || modal.classList.contains('hidden')) {
-                                                     $wire.refreshDropzoneState();
-                                                 }
-                                             }, 2000); // Check every 2 seconds
-                                         },
-                                         stopAutoRefresh() {
-                                             if (this.refreshTimer) {
-                                                 clearInterval(this.refreshTimer);
-                                                 this.refreshTimer = null;
-                                             }
-                                         }
-                                     }"
-                                     x-init="startAutoRefresh()"
-                                     x-on:beforeunload.window="stopAutoRefresh()">
-                                    <h5 class="text-sm font-medium text-gray-900 mb-2">Upload Files (Dropzone)</h5>
-                                    <livewire:dropzone
-                                        wire:model="dropzoneFiles"
-                                        :rules="['file', 'max:10240', 'mimes:jpg,jpeg,png,gif,pdf,doc,docx,txt,zip,csv,xlsx,xls']"
-                                        :multiple="true"
-                                        :key="'task-dropzone-' . ($selectedTask->id ?? 'new')" />
+                                        <!-- File Info -->
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-gray-900 truncate">{{ $attachment->original_name }}</p>
+                                            <p class="text-xs text-gray-500">
+                                                {{ $attachment->file_size_human }} •
+                                                Uploaded by {{ $attachment->uploader->name }} •
+                                                {{ $attachment->created_at->format('M j, Y H:i') }}
+                                            </p>
+                                        </div>
+                                    </div>
 
-                                    <!-- Always show upload button, but disable when no files -->
-                                    <div class="mt-3 space-y-2">
-                                        <div class="flex space-x-2">
-                                            <button wire:click="processDropzoneFiles"
-                                                    class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium"
-                                                    @if(empty($dropzoneFiles)) disabled @endif>
-                                                @if(!empty($dropzoneFiles))
-                                                    Upload {{ count($dropzoneFiles) }} File(s)
-                                                @else
-                                                    Upload Files (No files selected)
-                                                @endif
+                                    <!-- Actions -->
+                                    <div class="flex items-center space-x-2">
+                                        <!-- Preview for images -->
+                                        @if($attachment->is_image)
+                                            <button type="button" onclick="showImagePreview('{{ Storage::disk('public')->url($attachment->file_path) }}', '{{ $attachment->original_name }}')"
+                                                    class="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                                                Preview
                                             </button>
-                                        </div>
+                                        @endif
 
-                                        <!-- Debug info -->
-                                        <div class="text-xs text-gray-500">
-                                            Debug: {{ count($dropzoneFiles ?? []) }} files in dropzoneFiles array
-                                            <span class="ml-2 text-green-600">• Auto-refresh every 2s</span>
-                                        </div>
+                                        <!-- Download -->
+                                        <a href="{{ Storage::disk('public')->url($attachment->file_path) }}"
+                                           download="{{ $attachment->original_name }}"
+                                           class="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                                            Download
+                                        </a>
+
+                                        <!-- Delete (only for uploader or admin) -->
+                                        @if($attachment->uploaded_by === auth()->id() || auth()->user()->isAdmin())
+                                            <button type="button" wire:click="deleteAttachment({{ $attachment->id }})"
+                                                    onclick="return confirm('Are you sure you want to delete this attachment?')"
+                                                    class="text-red-600 hover:text-red-500 text-sm font-medium">
+                                                Delete
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Attachments List -->
-                        <div class="space-y-2">
-                            @if($selectedTask->attachments && $selectedTask->attachments->count() > 0)
-                                @foreach($selectedTask->attachments as $attachment)
-                                    <div class="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                                        <div class="flex items-center space-x-3">
-                                            <!-- File Icon -->
-                                            <div class="flex-shrink-0">
-                                                @if($attachment->is_image)
-                                                    <svg class="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
-                                                    </svg>
-                                                @else
-                                                    <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
-                                                    </svg>
-                                                @endif
-                                            </div>
-
-                                            <!-- File Info -->
-                                            <div class="flex-1 min-w-0">
-                                                <p class="text-sm font-medium text-gray-900 truncate">{{ $attachment->original_name }}</p>
-                                                <p class="text-xs text-gray-500">
-                                                    {{ $attachment->file_size_human }} •
-                                                    Uploaded by {{ $attachment->uploader->name }} •
-                                                    {{ $attachment->created_at->format('M j, Y H:i') }}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <!-- Actions -->
-                                        <div class="flex items-center space-x-2">
-                                            <!-- Preview for images -->
-                                            @if($attachment->is_image)
-                                                <button type="button" onclick="showImagePreview('{{ Storage::disk('public')->url($attachment->file_path) }}', '{{ $attachment->original_name }}')"
-                                                        class="text-blue-600 hover:text-blue-500 text-sm font-medium">
-                                                    Preview
-                                                </button>
-                                            @endif
-
-                                            <!-- Download -->
-                                            <a href="{{ Storage::disk('public')->url($attachment->file_path) }}"
-                                               download="{{ $attachment->original_name }}"
-                                               class="text-blue-600 hover:text-blue-500 text-sm font-medium">
-                                                Download
-                                            </a>
-
-                                            <!-- Delete (only for uploader or admin) -->
-                                            @if($attachment->uploaded_by === auth()->id() || auth()->user()->isAdmin())
-                                                <button type="button" wire:click="deleteAttachment({{ $attachment->id }})"
-                                                        onclick="return confirm('Are you sure you want to delete this attachment?')"
-                                                        class="text-red-600 hover:text-red-500 text-sm font-medium">
-                                                    Delete
-                                                </button>
-                                            @endif
-                                        </div>
-                                    </div>
-                                @endforeach
-                            @else
-                                <p class="text-gray-500 text-center py-8">No attachments yet. Upload files using the form above.</p>
-                            @endif
-                        </div>
+                            @endforeach
+                        @else
+                            <p class="text-gray-500 text-center py-8">No attachments yet. Drag and drop files above to upload them automatically.</p>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -852,4 +948,136 @@ document.addEventListener('DOMContentLoaded', function() {
     doneIndicator.style.display = 'block';
     doneTitle.style.display = 'none';
 });
+
+// Copy shareable link function - called directly from button click
+function copyShareableLink(taskId) {
+    // Get the current project ID from the URL or construct the URL
+    const currentUrl = window.location.href;
+    const projectId = currentUrl.split('/projects/')[1]?.split('/')[0] || currentUrl.split('/projects/')[1]?.split('?')[0];
+    const shareableUrl = `${window.location.origin}/projects/${projectId}?task=${taskId}`;
+    
+    console.log('Copying link:', shareableUrl); // Debug log
+    
+    // Use modern Clipboard API if available
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(shareableUrl).then(function() {
+            console.log('Successfully copied to clipboard'); // Debug log
+            showSuccessMessage('Shareable link copied to clipboard!');
+        }).catch(function(err) {
+            console.error('Failed to copy text: ', err);
+            // Fallback to older method
+            fallbackCopyTextToClipboard(shareableUrl, 'Shareable link copied to clipboard!');
+        });
+    } else {
+        // Fallback for older browsers or non-secure contexts
+        fallbackCopyTextToClipboard(shareableUrl, 'Shareable link copied to clipboard!');
+    }
+}
+
+function showSuccessMessage(message) {
+    // Find the Alpine.js modal and show success message
+    const modal = document.querySelector('[x-data*="showSuccessMessage"]');
+    if (modal && modal.__x) {
+        modal.__x.$data.showSuccessMessage = true;
+        modal.__x.$data.successMessage = message;
+        setTimeout(() => {
+            if (modal.__x) {
+                modal.__x.$data.showSuccessMessage = false;
+            }
+        }, 3000);
+    }
+}
+
+// Copy to clipboard functionality - Listen for Livewire events on window (keeping for other uses)
+window.addEventListener('copy-to-clipboard', function(event) {
+    const url = event.detail.url;
+    const message = event.detail.message;
+
+    console.log('Copy to clipboard event received:', { url, message }); // Debug log
+
+    // Use modern Clipboard API if available, fallback to execCommand
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(url).then(function() {
+            console.log('Successfully copied to clipboard'); // Debug log
+            // Show success message using Alpine.js dispatch
+            window.dispatchEvent(new CustomEvent('show-success', {
+                detail: { message: message }
+            }));
+        }).catch(function(err) {
+            console.error('Failed to copy text: ', err);
+            // Fallback to execCommand
+            fallbackCopyTextToClipboard(url, message);
+        });
+    } else {
+        // Fallback for older browsers
+        fallbackCopyTextToClipboard(url, message);
+    }
+});
+
+function fallbackCopyTextToClipboard(text, message) {
+    console.log('Using fallback copy method'); // Debug log
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-999999px';
+    textarea.style.top = '-999999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        console.log('Fallback copy result:', successful); // Debug log
+        if (successful) {
+            // Show success message
+            window.dispatchEvent(new CustomEvent('show-success', {
+                detail: { message: message }
+            }));
+        }
+    } catch (err) {
+        console.error('Fallback: Failed to copy text: ', err);
+    }
+    
+    document.body.removeChild(textarea);
+}
+
+// Simple function to copy shareable link
+function copyShareableLink(taskId) {
+    const currentUrl = window.location.href.split('?')[0]; // Remove existing query params
+    const shareableUrl = `${currentUrl}?task=${taskId}`;
+    
+    navigator.clipboard.writeText(shareableUrl).then(function() {
+        // Show success message
+        const modal = document.querySelector('[x-data*="showSuccessMessage"]');
+        if (modal && modal.__x) {
+            modal.__x.$data.showSuccessMessage = true;
+            modal.__x.$data.successMessage = 'Shareable link copied to clipboard!';
+            setTimeout(() => {
+                if (modal.__x) {
+                    modal.__x.$data.showSuccessMessage = false;
+                }
+            }, 3000);
+        }
+    }).catch(function(err) {
+        console.error('Failed to copy link: ', err);
+    });
+}
+
+// Listen for Alpine.js show-success event
+document.addEventListener('show-success', function(event) {
+    // This will be handled by Alpine.js in the modal
+    const modal = document.querySelector('[x-data*="showSuccessMessage"]');
+    if (modal) {
+        // Trigger the Alpine.js success message display
+        modal.__x.$data.showSuccessMessage = true;
+        modal.__x.$data.successMessage = event.detail.message;
+        setTimeout(() => {
+            if (modal.__x) {
+                modal.__x.$data.showSuccessMessage = false;
+            }
+        }, 3000);
+    }
+});
 </script>
+
+```
