@@ -717,8 +717,6 @@
                                            class="text-blue-600 hover:text-blue-500 text-sm font-medium">
                                             Download
                                         </a>
-                                            Download
-                                        </a>
 
                                         <!-- Delete (only for uploader or admin) -->
                                         @if($attachment->uploaded_by === auth()->id() || auth()->user()->isAdmin())
