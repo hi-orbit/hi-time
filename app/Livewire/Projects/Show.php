@@ -87,6 +87,7 @@ class Show extends Component
 
     protected $rules = [
         'newNote' => 'required|string|max:1000',
+        // Note: dropzoneFiles validation is handled manually in processDropzoneFiles()
     ];
 
     public function mount(Project $project)
@@ -981,7 +982,30 @@ class Show extends Component
             'dropzoneFiles_count' => count($this->dropzoneFiles ?? [])
         ]);
         $this->dispatch('$refresh');
-    }    public function deleteAttachment($attachmentId)
+    }
+
+    /**
+     * Override the updating method to bypass validation for dropzoneFiles
+     */
+    public function updating($field, $value)
+    {
+        Log::info('Livewire updating called', [
+            'field' => $field,
+            'value_type' => gettype($value),
+            'value_count' => is_array($value) ? count($value) : 'not_array'
+        ]);
+
+        // Skip validation for dropzoneFiles - we handle it manually
+        if (str_starts_with($field, 'dropzoneFiles')) {
+            Log::info('Bypassing Livewire validation for dropzoneFiles', ['field' => $field]);
+            return;
+        }
+
+        // Call parent for other fields
+        parent::updating($field, $value);
+    }
+
+    public function deleteAttachment($attachmentId)
     {
         $attachment = TaskAttachment::find($attachmentId);
 
