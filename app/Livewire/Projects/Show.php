@@ -102,7 +102,7 @@ class Show extends Component
         if (request()->has('task')) {
             $taskId = request()->get('task');
             $task = Task::where('id', $taskId)->where('project_id', $project->id)->first();
-            
+
             if ($task) {
                 $this->openTaskDetails($taskId);
             }

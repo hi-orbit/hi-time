@@ -17,6 +17,36 @@
 
         <!-- Report Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- My Time Today -->
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">
+                                    My Time Today
+                                </dt>
+                                <dd class="text-lg font-medium text-gray-900">
+                                    {{ now()->format('F j, Y') }}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <div class="mt-5">
+                        <a href="{{ route('reports.my-time-today') }}" class="w-full bg-indigo-600 border border-transparent rounded-md py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            View Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <!-- Time by Customer - This Month -->
             <div class="bg-white overflow-hidden shadow rounded-lg">
                 <div class="p-6">
@@ -99,9 +129,12 @@
                             </dl>
                         </div>
                     </div>
-                    <div class="mt-5">
+                    <div class="mt-5 grid grid-cols-1 gap-2">
                         <a href="{{ route('reports.time-by-user') }}" class="w-full bg-purple-600 border border-transparent rounded-md py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
-                            View Report
+                            Standard View
+                        </a>
+                        <a href="{{ route('reports.time-by-user-enhanced') }}" class="w-full bg-purple-100 border border-purple-300 rounded-md py-2 px-4 inline-flex justify-center text-sm font-medium text-purple-700 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                            Enhanced (Editable)
                         </a>
                     </div>
                 </div>

@@ -955,9 +955,9 @@ function copyShareableLink(taskId) {
     const currentUrl = window.location.href;
     const projectId = currentUrl.split('/projects/')[1]?.split('/')[0] || currentUrl.split('/projects/')[1]?.split('?')[0];
     const shareableUrl = `${window.location.origin}/projects/${projectId}?task=${taskId}`;
-    
+
     console.log('Copying link:', shareableUrl); // Debug log
-    
+
     // Use modern Clipboard API if available
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(shareableUrl).then(function() {
@@ -1024,7 +1024,7 @@ function fallbackCopyTextToClipboard(text, message) {
     document.body.appendChild(textarea);
     textarea.focus();
     textarea.select();
-    
+
     try {
         const successful = document.execCommand('copy');
         console.log('Fallback copy result:', successful); // Debug log
@@ -1037,7 +1037,7 @@ function fallbackCopyTextToClipboard(text, message) {
     } catch (err) {
         console.error('Fallback: Failed to copy text: ', err);
     }
-    
+
     document.body.removeChild(textarea);
 }
 
@@ -1045,7 +1045,7 @@ function fallbackCopyTextToClipboard(text, message) {
 function copyShareableLink(taskId) {
     const currentUrl = window.location.href.split('?')[0]; // Remove existing query params
     const shareableUrl = `${currentUrl}?task=${taskId}`;
-    
+
     navigator.clipboard.writeText(shareableUrl).then(function() {
         // Show success message
         const modal = document.querySelector('[x-data*="showSuccessMessage"]');
