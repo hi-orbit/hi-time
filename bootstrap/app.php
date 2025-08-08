@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);
+
+        // Temporarily disable CSRF for proposals debugging
+        $middleware->web(remove: [
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -149,8 +149,53 @@
                             @enderror
 
                             <div class="mt-2 text-xs text-gray-500">
-                                💡 Tip: Use variables like @{{client_name}}, @{{project_name}}, @{{amount}}, @{{date}} in your content
+                                💡 Tip: Use variables like @{{client_name}}, @{{project_name}}, @{{amount}}, @{{date}}, @{{client_address}}, @{{client_company_number}}, @{{valid_until}}, @{{client_email}} in your content
                             </div>
+                        </div>
+
+                        <!-- Template Preview -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <h4 class="text-sm font-medium text-gray-900 mb-2">Template Guidelines</h4>
+                            <div class="text-sm text-gray-600 space-y-2">
+                                <div class="flex items-start">
+                                    <svg class="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span>Include your company branding and contact information</span>
+                                </div>
+                                <div class="flex items-start">
+                                    <svg class="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span>Define project scope, timeline, and deliverables</span>
+                                </div>
+                                <div class="flex items-start">
+                                    <svg class="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span>Use variables for dynamic content that changes per proposal</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Example Variables -->
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <h4 class="text-sm font-medium text-yellow-900 mb-2">Available Variables</h4>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <div class="space-y-1">
+                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{client_name}}</code>
+                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{client_email}}</code>
+                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{client_address}}</code>
+                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{client_company_number}}</code>
+                                </div>
+                                <div class="space-y-1">
+                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{project_name}}</code>
+                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{amount}}</code>
+                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{date}}</code>
+                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{valid_until}}</code>
+                                </div>
+                            </div>
+                        </div>
                         </div>
 
                         <!-- Template Preview -->
@@ -265,16 +310,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
 Use variables like:
 • {{client_name}} for client name
+• {{client_email}} for client email
+• {{client_address}} for client address
+• {{client_company_number}} for company number
 • {{project_name}} for project name
 • {{amount}} for project amount
 • {{date}} for current date
+• {{valid_until}} for validity date
 
 Example:
 Dear {{client_name}},
 
 We are pleased to submit this proposal for {{project_name}}.
 
+Company: {{client_name}}
+Address: {{client_address}}
+Company Number: {{client_company_number}}
+Email: {{client_email}}
+
 The total investment for this project is {{amount}}.
+
+This proposal is valid until {{valid_until}}.
 
 Thank you for considering our services.
 

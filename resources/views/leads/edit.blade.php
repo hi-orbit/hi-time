@@ -13,7 +13,7 @@
                         </svg>
                     </a>
                     <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-                        Edit Lead: {{ $lead->company_name }}
+                        Edit Lead: {{ $lead->company ?: $lead->name }}
                     </h1>
                 </div>
                 <p class="mt-1 text-sm text-gray-500">
@@ -30,22 +30,33 @@
 
                 <!-- Company Name -->
                 <div>
-                    <label for="company_name" class="block text-sm font-medium text-gray-700">Company Name</label>
-                    <input type="text" name="company_name" id="company_name"
-                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('company_name') border-red-300 @enderror"
-                           value="{{ old('company_name', $lead->company_name) }}" required>
-                    @error('company_name')
+                    <label for="company" class="block text-sm font-medium text-gray-700">Company Name</label>
+                    <input type="text" name="company" id="company"
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('company') border-red-300 @enderror"
+                           value="{{ old('company', $lead->company) }}">
+                    @error('company')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Company Number -->
+                <div>
+                    <label for="company_number" class="block text-sm font-medium text-gray-700">Company Number</label>
+                    <input type="text" name="company_number" id="company_number"
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('company_number') border-red-300 @enderror"
+                           value="{{ old('company_number', $lead->company_number) }}" placeholder="e.g., 123456789">
+                    @error('company_number')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <!-- Contact Name -->
                 <div>
-                    <label for="contact_name" class="block text-sm font-medium text-gray-700">Contact Name</label>
-                    <input type="text" name="contact_name" id="contact_name"
-                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('contact_name') border-red-300 @enderror"
-                           value="{{ old('contact_name', $lead->contact_name) }}" required>
-                    @error('contact_name')
+                    <label for="name" class="block text-sm font-medium text-gray-700">Contact Name</label>
+                    <input type="text" name="name" id="name"
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('name') border-red-300 @enderror"
+                           value="{{ old('name', $lead->name) }}" required>
+                    @error('name')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
@@ -68,6 +79,17 @@
                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('phone') border-red-300 @enderror"
                            value="{{ old('phone', $lead->phone) }}">
                     @error('phone')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Address -->
+                <div>
+                    <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
+                    <textarea name="address" id="address" rows="3"
+                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('address') border-red-300 @enderror"
+                              placeholder="Full business address...">{{ old('address', $lead->address) }}</textarea>
+                    @error('address')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
@@ -122,27 +144,37 @@
 
                 <!-- Action Buttons -->
                 <div class="flex items-center justify-between pt-6 border-t border-gray-200">
-                    <div class="flex space-x-3">
-                        <a href="{{ route('leads.show', $lead) }}"
-                           class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200">
-                            Cancel
-                        </a>
-                        <form action="{{ route('leads.destroy', $lead) }}" method="POST" class="inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit"
-                                    class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200"
-                                    onclick="return confirm('Are you sure you want to delete this lead?')">
-                                Delete Lead
-                            </button>
-                        </form>
-                    </div>
+                    <a href="{{ route('leads.show', $lead) }}"
+                       class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200">
+                        Cancel
+                    </a>
                     <button type="submit"
                             class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200">
                         Update Lead
                     </button>
                 </div>
             </form>
+        </div>
+
+        <!-- Delete Form - Separate from update form -->
+        <div class="mt-6 bg-white shadow rounded-lg p-6">
+            <div class="border-t border-gray-200 pt-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Danger Zone</h3>
+                        <p class="text-sm text-gray-500">Delete this lead permanently. This action cannot be undone.</p>
+                    </div>
+                    <form action="{{ route('leads.destroy', $lead) }}" method="POST" class="inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200"
+                                onclick="return confirm('Are you sure you want to delete this lead? This action cannot be undone.')">
+                            Delete Lead
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>

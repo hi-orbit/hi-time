@@ -10,6 +10,7 @@ class TimeEntry extends Model
     protected $fillable = [
         'task_id',
         'user_id',
+        'entry_date',
         'description',
         'start_time',
         'end_time',
@@ -22,6 +23,7 @@ class TimeEntry extends Model
     protected $casts = [
         'start_time' => 'datetime',
         'end_time' => 'datetime',
+        'entry_date' => 'date',
         'is_running' => 'boolean',
     ];
 

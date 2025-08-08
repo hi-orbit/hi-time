@@ -29,6 +29,9 @@ class Proposal extends Model
         'email_body',
         'pdf_path',
         'created_by',
+        'valid_until',
+        'client_name',
+        'client_email',
     ];
 
     protected $casts = [
@@ -36,6 +39,7 @@ class Proposal extends Model
         'sent_at' => 'datetime',
         'viewed_at' => 'datetime',
         'responded_at' => 'datetime',
+        'valid_until' => 'date',
         'signature_data' => 'array',
     ];
 

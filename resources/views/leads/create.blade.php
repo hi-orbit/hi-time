@@ -38,6 +38,17 @@
                     @enderror
                 </div>
 
+                <!-- Company Number -->
+                <div>
+                    <label for="company_number" class="block text-sm font-medium text-gray-700">Company Number</label>
+                    <input type="text" name="company_number" id="company_number"
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('company_number') border-red-300 @enderror"
+                           value="{{ old('company_number') }}" placeholder="e.g., 123456789">
+                    @error('company_number')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <!-- Contact Name -->
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700">Contact Name</label>
@@ -87,9 +98,12 @@
                     <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
                     <select name="status" id="status"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('status') border-red-300 @enderror">
-                        <option value="active" {{ old('status', 'active') == 'active' ? 'selected' : '' }}>Active</option>
-                        <option value="converted" {{ old('status') == 'converted' ? 'selected' : '' }}>Converted</option>
-                        <option value="lost" {{ old('status') == 'lost' ? 'selected' : '' }}>Lost</option>
+                        <option value="new" {{ old('status', 'new') == 'new' ? 'selected' : '' }}>New</option>
+                        <option value="contacted" {{ old('status') == 'contacted' ? 'selected' : '' }}>Contacted</option>
+                        <option value="qualified" {{ old('status') == 'qualified' ? 'selected' : '' }}>Qualified</option>
+                        <option value="proposal_sent" {{ old('status') == 'proposal_sent' ? 'selected' : '' }}>Proposal Sent</option>
+                        <option value="closed_won" {{ old('status') == 'closed_won' ? 'selected' : '' }}>Closed Won</option>
+                        <option value="closed_lost" {{ old('status') == 'closed_lost' ? 'selected' : '' }}>Closed Lost</option>
                     </select>
                     @error('status')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

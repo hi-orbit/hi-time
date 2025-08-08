@@ -6,8 +6,18 @@
 <!-- Sun Editor CSS -->
 <link href="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/css/suneditor.min.css" rel="stylesheet">
 <style>
-    /* Custom styles for Sun Editor */
-    .sun-editor {
+    /* Custom styles for Sun E        placeholder: \`Enter your proposal template content here...
+
+Use variables like:
+• @{{client_name}} for client name
+• @{{project_name}} for project name
+• @{{amount}} for project amount
+• @{{date}} for current date
+
+Example:
+Dear @{{client_name}},
+
+We are pleased to submit this proposal for @{{project_name}}...\`, .sun-editor {
         border: 1px solid #d1d5db;
         border-radius: 0.375rem;
     }
@@ -18,14 +28,6 @@
         padding: 1rem;
         font-family: inherit;
         line-height: 1.6;
-    }
-    /* Fix for form token refresh */
-    .csrf-refresh-indicator {
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-    .csrf-refresh-indicator.active {
-        opacity: 1;
     }
 </style>
 @endpush
@@ -51,9 +53,8 @@
             </div>
 
             <!-- Form -->
-            <form method="POST" action="{{ route('proposal-templates.update', $proposalTemplate) }}">
+            <form method="POST" action="{{ route('proposal-templates.update.post', $proposalTemplate) }}" id="template-form">
                 @csrf
-                @method('PUT')
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Left Column -->
@@ -137,11 +138,6 @@
                         <div>
                             <label for="content" class="block text-sm font-medium text-gray-700 mb-2">Template Content</label>
 
-                            <!-- CSRF Token Refresh Indicator -->
-                            <div class="csrf-refresh-indicator mb-2 text-xs text-green-600" id="csrf-refresh-status">
-                                CSRF token refreshed successfully
-                            </div>
-
                             <!-- Hidden textarea for form submission -->
                             <textarea id="content" name="content" style="display: none;" required>{{ old('content', $proposalTemplate->content) }}</textarea>
 
@@ -155,7 +151,7 @@
                             @enderror
 
                             <div class="mt-2 text-xs text-gray-500">
-                                💡 Tip: Use variables like @{{client_name}}, @{{project_name}}, @{{amount}}, @{{date}} in your content
+                                💡 Tip: Use variables like @{{client_name}}, @{{project_name}}, @{{amount}}, @{{date}}, @{{client_address}}, @{{client_company_number}}, @{{valid_until}}, @{{client_email}} in your content
                             </div>
                         </div>
 
@@ -165,7 +161,8 @@
                             <div class="text-sm text-blue-800 space-y-1">
                                 <p>• Use double curly braces to create variables: <code class="bg-blue-100 px-1 rounded">@{{variable_name}}</code></p>
                                 <p>• Variables will be automatically detected and can be filled when creating proposals</p>
-                                <p>• Common variables: client_name, project_name, amount, date, description</p>
+                                <p>• Available client variables: client_name, client_email, client_address, client_company_number</p>
+                                <p>• Other variables: project_name, amount, date, valid_until, proposal_title</p>
                                 <p>• Variables are case-sensitive and should use underscore naming</p>
                             </div>
                         </div>
@@ -238,8 +235,28 @@
 @verbatim
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded, initializing Sun Editor...');
+
+    // Declare editor variable in function scope
+    let editor;
+
+    // Check if Sun Editor is available
+    if (typeof SUNEDITOR === 'undefined') {
+        console.error('SUNEDITOR is not defined - check if the CDN loaded properly');
+        return;
+    }
+
+    // Check if the container exists
+    const container = document.getElementById('suneditor-container');
+    if (!container) {
+        console.error('suneditor-container not found');
+        return;
+    }
+
+    console.log('Container found, creating Sun Editor...');
+
     // Initialize Sun Editor
-    const editor = SUNEDITOR.create('suneditor-container', {
+    editor = SUNEDITOR.create('suneditor-container', {
         lang: SUNEDITOR_LANG['en'],
         width: '100%',
         height: '400px',
@@ -277,88 +294,114 @@ We are pleased to submit this proposal for {{project_name}}...`,
         ]
     });
 
+    console.log('Sun Editor created successfully:', editor);
+
     // Get initial content and set it in the editor
     const hiddenTextarea = document.getElementById('content');
+    if (!hiddenTextarea) {
+        console.error('Hidden textarea with id "content" not found');
+        return;
+    }
+
     const initialContent = hiddenTextarea.value;
+    console.log('Initial content length:', initialContent ? initialContent.length : 0);
+
     if (initialContent) {
-        editor.setContents(initialContent);
-    }
-
-    // Update hidden textarea when editor content changes
-    editor.onChange = function(contents) {
-        hiddenTextarea.value = contents;
-    };
-
-    // CSRF Token Refresh Function
-    function refreshCSRFToken() {
-        fetch('/csrf-token', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.csrf_token) {
-                // Update CSRF token in meta tag
-                document.querySelector('meta[name="csrf-token"]').setAttribute('content', data.csrf_token);
-
-                // Update CSRF token in form
-                const csrfInput = document.querySelector('input[name="_token"]');
-                if (csrfInput) {
-                    csrfInput.value = data.csrf_token;
-                }
-
-                // Show refresh indicator briefly
-                const indicator = document.getElementById('csrf-refresh-status');
-                if (indicator) {
-                    indicator.classList.add('active');
-                    setTimeout(() => {
-                        indicator.classList.remove('active');
-                    }, 2000);
-                }
-
-                console.log('CSRF token refreshed successfully');
-            }
-        })
-        .catch(error => {
-            console.error('Failed to refresh CSRF token:', error);
-        });
-    }
-
-    // Refresh CSRF token every 5 minutes (300000ms)
-    setInterval(refreshCSRFToken, 300000);
-
-    // Refresh CSRF token when user starts typing (once per session)
-    let hasRefreshedOnEdit = false;
-    editor.onInput = function() {
-        if (!hasRefreshedOnEdit) {
-            refreshCSRFToken();
-            hasRefreshedOnEdit = true;
+        try {
+            editor.setContents(initialContent);
+            console.log('Initial content set successfully');
+        } catch (error) {
+            console.error('Error setting initial content:', error);
         }
-    };
+    }
 
-    // Form submission handling
-    const form = document.querySelector('form');
+    // Variable to track if CSRF has been refreshed on edit
+    let hasRefreshedOnEdit = false;
+
+        // AJAX form submission to avoid CSRF issues with large forms
+    const form = document.getElementById('template-form');
     if (form) {
         form.addEventListener('submit', function(e) {
-            // Ensure the hidden textarea has the latest content before submission
-            hiddenTextarea.value = editor.getContents();
+            e.preventDefault(); // Always prevent default for AJAX
+
+            console.log('AJAX form submission started...');
+
+            // Update the hidden textarea with current Sun Editor content
+            const hiddenTextarea = document.getElementById('content');
+            if (hiddenTextarea && editor) {
+                const editorContent = editor.getContents();
+                hiddenTextarea.value = editorContent;
+                console.log('Updated hidden textarea with content length:', editorContent.length);
+            } else {
+                console.error('Could not sync content - hiddenTextarea or editor missing');
+                return;
+            }
 
             // Show loading state
             const submitButton = form.querySelector('button[type="submit"]');
+            const originalButtonContent = submitButton.innerHTML;
             if (submitButton) {
                 submitButton.disabled = true;
-                submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Updating Template...';
+                submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Updating Template...';
             }
+
+            // Prepare form data
+            const formData = new FormData(form);
+
+            // Get CSRF token from meta tag
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            console.log('Using CSRF token:', csrfToken.substring(0, 10) + '...');
+
+            // Submit via AJAX
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (response.ok) {
+                    // Success - redirect to index page
+                    console.log('Form submitted successfully, redirecting...');
+                    window.location.href = '/proposal-templates';
+                } else if (response.status === 419) {
+                    throw new Error('CSRF token mismatch. Please refresh the page and try again.');
+                } else if (response.status === 422) {
+                    // Validation errors
+                    return response.json().then(data => {
+                        throw new Error('Validation failed: ' + JSON.stringify(data.errors));
+                    });
+                } else {
+                    throw new Error('Server error: ' + response.status);
+                }
+            })
+            .catch(error => {
+                console.error('Form submission error:', error);
+                alert('Error: ' + error.message);
+
+                // Re-enable the submit button
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonContent;
+                }
+            });
         });
     }
 
     // Auto-save functionality (optional)
     let autoSaveTimeout;
+    const originalOnChange = editor.onChange;
     editor.onChange = function(contents) {
         hiddenTextarea.value = contents;
+
+        // Call the original onChange if it exists
+        if (originalOnChange) {
+            originalOnChange(contents);
+        }
 
         // Clear existing timeout
         clearTimeout(autoSaveTimeout);
@@ -368,6 +411,12 @@ We are pleased to submit this proposal for {{project_name}}...`,
             // Auto-save logic can go here
             console.log('Content auto-saved locally');
         }, 2000);
+
+        // CSRF refresh on first edit
+        if (!hasRefreshedOnEdit) {
+            refreshCSRFToken();
+            hasRefreshedOnEdit = true;
+        }
     };
 });
 </script>

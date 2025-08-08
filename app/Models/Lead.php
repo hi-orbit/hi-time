@@ -13,12 +13,12 @@ class Lead extends Model
         'email',
         'phone',
         'company',
+        'company_number',
         'address',
-        'notes',
-        'status',
         'source',
-        'converted_customer_id',
-        'converted_at',
+        'status',
+        'notes',
+        'contacted_at',
     ];
 
     protected $casts = [
@@ -48,6 +48,7 @@ class Lead extends Model
     {
         $customer = Customer::create([
             'name' => $this->company ?: $this->name,
+            'company_number' => $this->company_number,
             'email' => $this->email,
             'phone' => $this->phone,
             'address' => $this->address,

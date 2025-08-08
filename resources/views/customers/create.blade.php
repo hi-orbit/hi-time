@@ -28,6 +28,24 @@
                         @enderror
                     </div>
 
+                    <!-- Company Number -->
+                    <div class="mb-4">
+                        <label for="company_number" class="block text-sm font-medium text-gray-700">
+                            Company Number
+                        </label>
+                        <input
+                            type="text"
+                            name="company_number"
+                            id="company_number"
+                            value="{{ old('company_number') }}"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('company_number') border-red-500 @enderror"
+                            placeholder="e.g., 123456789"
+                        >
+                        @error('company_number')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <!-- Contact Person -->
                     <div class="mb-4">
                         <label for="contact_person" class="block text-sm font-medium text-gray-700">

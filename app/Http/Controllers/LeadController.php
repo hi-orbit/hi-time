@@ -35,15 +35,16 @@ class LeadController extends Controller
             'email' => 'required|email|unique:leads,email',
             'phone' => 'nullable|string|max:255',
             'company' => 'nullable|string|max:255',
+            'company_number' => 'nullable|string|max:255',
             'address' => 'nullable|string',
             'notes' => 'nullable|string',
-            'status' => 'nullable|in:active,converted,lost',
+            'status' => 'nullable|in:new,contacted,qualified,proposal_sent,closed_won,closed_lost',
             'source' => 'nullable|string|max:255',
         ]);
 
         // Set default status if not provided
         if (!isset($validated['status'])) {
-            $validated['status'] = 'active';
+            $validated['status'] = 'new';
         }
 
         Lead::create($validated);
@@ -79,14 +80,16 @@ class LeadController extends Controller
             'email' => 'required|email|unique:leads,email,' . $lead->id,
             'phone' => 'nullable|string|max:255',
             'company' => 'nullable|string|max:255',
+            'company_number' => 'nullable|string|max:255',
             'address' => 'nullable|string',
             'notes' => 'nullable|string',
-            'status' => 'required|in:active,converted,lost',
+            'status' => 'required|in:new,contacted,qualified,proposal_sent,closed_won,closed_lost',
+            'source' => 'nullable|string|max:255',
         ]);
 
         $lead->update($validated);
 
-        return redirect()->route('leads.index')
+        return redirect()->route('leads.show', $lead)
             ->with('success', 'Lead updated successfully.');
     }
 

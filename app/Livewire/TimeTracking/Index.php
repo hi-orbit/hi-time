@@ -14,15 +14,20 @@ class Index extends Component
     public $description = '';
     public $hours = 0;
     public $minutes = 0;
+    public $entryDate;
 
     protected $rules = [
         'selectedTaskId' => 'required|exists:tasks,id',
         'hours' => 'nullable|integer|min:0|max:23',
         'minutes' => 'required|integer|min:0|max:59',
+        'entryDate' => 'required|date',
     ];
 
     public function mount()
     {
+        // Set default entry date to today
+        $this->entryDate = now()->format('Y-m-d');
+
         if (request()->has('task')) {
             $this->selectedTaskId = request('task');
         }
@@ -82,6 +87,7 @@ class Index extends Component
             TimeEntry::create([
                 'task_id' => $this->selectedTaskId,
                 'user_id' => Auth::id(),
+                'entry_date' => $this->entryDate,
                 'description' => $this->description,
                 'duration_minutes' => $totalMinutes,
                 'is_running' => false,
@@ -89,6 +95,7 @@ class Index extends Component
 
             session()->flash('message', 'Time logged successfully!');
             $this->reset(['description', 'hours', 'minutes']);
+            // Keep the entry date as is, don't reset it
         }
     }
 

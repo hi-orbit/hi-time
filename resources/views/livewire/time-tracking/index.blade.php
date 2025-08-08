@@ -85,6 +85,12 @@
                                 </select>
                                 @error('selectedTaskId') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                             </div>
+                            <div class="mb-4">
+                                <label for="entry-date" class="block text-sm font-medium text-gray-700 mb-2">Date <span class="text-red-500">*</span></label>
+                                <input wire:model="entryDate" type="date" id="entry-date" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                @error('entryDate') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                            </div>
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label for="hours" class="block text-sm font-medium text-gray-700 mb-2">Hours <span class="text-gray-500 text-xs">(optional)</span></label>
@@ -144,7 +150,7 @@
                                                 {{ $entry->formatted_duration }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ $entry->created_at->format('M j, Y H:i') }}
+                                                {{ $entry->entry_date ? $entry->entry_date->format('M j, Y') : $entry->created_at->format('M j, Y') }}
                                             </td>
                                         </tr>
                                     @endforeach

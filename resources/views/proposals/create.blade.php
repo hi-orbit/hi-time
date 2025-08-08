@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@push('styles')
+<link href="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/css/suneditor.min.css" rel="stylesheet">
+@endpush
+
 @section('content')
 <div class="py-6">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -23,7 +27,7 @@
         </div>
 
         <!-- Form -->
-        <form action="{{ route('proposals.store') }}" method="POST" class="space-y-6">
+        <form action="{{ route('proposals.create.post') }}" method="POST" class="space-y-6">
             @csrf
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -54,8 +58,13 @@
                                     <option value="">Choose a lead...</option>
                                     @foreach($leads as $lead)
                                         <option value="{{ $lead->id }}"
+                                                data-name="{{ $lead->name }}"
+                                                data-email="{{ $lead->email }}"
+                                                data-company="{{ $lead->company }}"
+                                                data-address="{{ $lead->address }}"
+                                                data-company-number="{{ $lead->company_number }}"
                                                 {{ old('lead_id', $selectedLead?->id) == $lead->id ? 'selected' : '' }}>
-                                            {{ $lead->company_name }} - {{ $lead->contact_name }}
+                                            {{ $lead->company }} - {{ $lead->name }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -72,6 +81,11 @@
                                     <option value="">Choose a customer...</option>
                                     @foreach($customers as $customer)
                                         <option value="{{ $customer->id }}"
+                                                data-name="{{ $customer->name }}"
+                                                data-email="{{ $customer->email }}"
+                                                data-company="{{ $customer->name }}"
+                                                data-address="{{ $customer->address }}"
+                                                data-company-number="{{ $customer->company_number }}"
                                                 {{ old('customer_id', $selectedCustomer?->id) == $customer->id ? 'selected' : '' }}>
                                             {{ $customer->name }}
                                         </option>
@@ -156,33 +170,41 @@
 
                         <div class="mb-4">
                             <label for="content" class="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                            <textarea name="content" id="content" rows="15"
-                                      class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('content') border-red-300 @enderror"
-                                      placeholder="Enter your proposal content here...">{{ old('content') }}</textarea>
+
+                            <!-- Hidden textarea for form submission -->
+                            <textarea id="content" name="content" style="display: none;" required>{{ old('content') }}</textarea>
+
+                            <!-- Sun Editor Container -->
+                            <div id="suneditor-container" class="@error('content') border-red-300 @enderror">
+                                <!-- Sun Editor will be initialized here -->
+                            </div>
+
                             @error('content')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
+
+                            <div class="mt-2 text-xs text-gray-500">
+                                💡 Tip: Use variables like @{{client_name}}, @{{project_name}}, @{{amount}}, @{{date}} in your content
+                            </div>
                         </div>
 
-                        <!-- Content Help -->
-                        <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                                    </svg>
-                                </div>
-                                <div class="ml-3">
-                                    <h3 class="text-sm font-medium text-blue-800">Content Tips</h3>
-                                    <div class="mt-2 text-sm text-blue-700">
-                                        <p>You can use variables in your content that will be replaced with actual values:</p>
-                                        <ul class="list-disc list-inside mt-1 space-y-1">
-                                            <li><code>@{client_name}</code> - Client's name</li>
-                                            <li><code>@{client_email}</code> - Client's email</li>
-                                            <li><code>@{proposal_title}</code> - Proposal title</li>
-                                            <li><code>@{amount}</code> - Proposal amount</li>
-                                            <li><code>@{date}</code> - Current date</li>
-                                        </ul>
+                        <!-- Variable Instructions -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h4 class="text-sm font-medium text-blue-900 mb-2">Available Variables</h4>
+                            <div class="text-sm text-blue-800 space-y-1">
+                                <p>• Use double curly braces to create variables: <code class="bg-blue-100 px-1 rounded">@{{variable_name}}</code></p>
+                                <div class="grid grid-cols-2 gap-2 mt-2">
+                                    <div class="space-y-1">
+                                        <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{client_name}}</code>
+                                        <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{client_email}}</code>
+                                        <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{client_address}}</code>
+                                        <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{client_company_number}}</code>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{amount}}</code>
+                                        <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{date}}</code>
+                                        <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{valid_until}}</code>
+                                        <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{proposal_title}}</code>
                                     </div>
                                 </div>
                             </div>
@@ -215,7 +237,7 @@
                     <!-- Preview -->
                     <div class="bg-white shadow rounded-lg p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Quick Preview</h3>
-                        <div id="content-preview" class="prose prose-sm max-w-none bg-gray-50 p-3 rounded border min-h-[200px]">
+                        <div id="content-preview" class="bg-white p-4 rounded border min-h-[200px] sun-editor-editable" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; font-size: 14px;">
                             <p class="text-gray-500 italic">Select a template or start typing to see preview...</p>
                         </div>
                     </div>
@@ -244,6 +266,11 @@
     </div>
 </div>
 
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/src/lang/en.js"></script>
+@endpush
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const leadSelect = document.getElementById('lead_id');
@@ -253,6 +280,108 @@ document.addEventListener('DOMContentLoaded', function() {
     const contentTextarea = document.getElementById('content');
     const contentPreview = document.getElementById('content-preview');
     const templateVariables = document.getElementById('template-variables');
+
+    // Initialize Sun Editor
+    const sunEditor = SUNEDITOR.create('suneditor-container', {
+        lang: SUNEDITOR_LANG['en'],
+        width: '100%',
+        height: '400px',
+        placeholder: `Enter your proposal content here...
+
+Use variables like:
+• @{{client_name}} for client name
+• @{{client_email}} for client email
+• @{{client_address}} for client address
+• @{{client_company_number}} for company number
+• @{{amount}} for proposal amount
+• @{{date}} for current date
+• @{{valid_until}} for validity date
+• @{{proposal_title}} for proposal title
+
+Example:
+Dear @{{client_name}},
+
+We are pleased to submit this proposal for your consideration.
+
+The total investment for this project is @{{amount}}.
+
+This proposal is valid until @{{valid_until}}.
+
+Thank you for considering our services.
+
+Best regards,
+Your Company Name`,
+        buttonList: [
+            ['undo', 'redo'],
+            ['fontSize', 'formatBlock'],
+            ['bold', 'underline', 'italic', 'strike', 'subscript', 'superscript'],
+            ['fontColor', 'hiliteColor'],
+            ['align', 'list', 'lineHeight'],
+            ['outdent', 'indent'],
+            ['table', 'link'],
+            ['removeFormat'],
+            ['preview', 'print'],
+            ['fullScreen', 'showBlocks', 'codeView']
+        ],
+        formats: ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+        colorList: [
+            '#333333', '#666666', '#999999', '#cccccc',
+            '#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff'
+        ]
+    });
+
+    // Set initial content if available
+    if (contentTextarea.value) {
+        sunEditor.setContents(contentTextarea.value);
+    } else {
+        // Set comprehensive test content with all placeholders
+        const placeholders = {
+            start: '{' + '{',
+            end: '}' + '}'
+        };
+
+        const testContent = '<h1>Service Proposal</h1>' +
+        '<h2>' + placeholders.start + 'proposal_title' + placeholders.end + '</h2>' +
+        '<p><strong>Date:</strong> ' + placeholders.start + 'date' + placeholders.end + '</p>' +
+        '<p><strong>Valid Until:</strong> ' + placeholders.start + 'valid_until' + placeholders.end + '</p>' +
+        '<hr>' +
+        '<h3>Client Information</h3>' +
+        '<p>Dear ' + placeholders.start + 'client_name' + placeholders.end + ',</p>' +
+        '<p>We are pleased to submit this proposal for your consideration.</p>' +
+        '<p><strong>Client Details:</strong></p>' +
+        '<ul>' +
+        '<li><strong>Name:</strong> ' + placeholders.start + 'client_name' + placeholders.end + '</li>' +
+        '<li><strong>Email:</strong> ' + placeholders.start + 'client_email' + placeholders.end + '</li>' +
+        '<li><strong>Address:</strong> ' + placeholders.start + 'client_address' + placeholders.end + '</li>' +
+        '<li><strong>Company:</strong> ' + placeholders.start + 'company_name' + placeholders.end + '</li>' +
+        '<li><strong>Company Number:</strong> ' + placeholders.start + 'client_company_number' + placeholders.end + '</li>' +
+        '</ul>' +
+        '<h3>Proposal Details</h3>' +
+        '<p>The total investment for this project is <strong>' + placeholders.start + 'amount' + placeholders.end + '</strong>.</p>' +
+        '<p>This proposal is valid until <strong>' + placeholders.start + 'valid_until' + placeholders.end + '</strong>.</p>' +
+        '<h3>Additional Information</h3>' +
+        '<p>First Name: ' + placeholders.start + 'first_name' + placeholders.end + '</p>' +
+        '<p>Last Name: ' + placeholders.start + 'last_name' + placeholders.end + '</p>' +
+        '<p>Current Date: ' + placeholders.start + 'date' + placeholders.end + '</p>' +
+        '<p>Company Address: ' + placeholders.start + 'company_address' + placeholders.end + '</p>' +
+        '<br>' +
+        '<p>Thank you for considering our services.</p>' +
+        '<p>Best regards,<br>Your Company Name</p>';
+
+        sunEditor.setContents(testContent);
+        contentTextarea.value = testContent;
+
+        // Set some sample form data to demonstrate replacements
+        document.getElementById('title').value = 'Website Development Proposal';
+        document.getElementById('amount').value = '5000.00';
+        document.getElementById('valid_until').value = '2025-08-31';
+    }
+
+    // Update hidden textarea when editor content changes
+    sunEditor.onChange = function(contents) {
+        contentTextarea.value = contents;
+        updatePreview(contents);
+    };
 
     // Handle lead/customer selection
     function updateClientSelection() {
@@ -270,8 +399,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    leadSelect.addEventListener('change', updateClientSelection);
-    customerSelect.addEventListener('change', updateClientSelection);
+    leadSelect.addEventListener('change', function() {
+        updateClientSelection();
+        updatePreview(); // Update preview when lead changes
+    });
+    customerSelect.addEventListener('change', function() {
+        updateClientSelection();
+        updatePreview(); // Update preview when customer changes
+    });
+
+    // Add event listeners for form fields that affect preview
+    document.getElementById('title').addEventListener('input', updatePreview);
+    document.getElementById('amount').addEventListener('input', updatePreview);
+    document.getElementById('valid_until').addEventListener('change', updatePreview);
+    document.getElementById('client_name').addEventListener('input', updatePreview);
+    document.getElementById('client_email').addEventListener('input', updatePreview);
 
     // Handle template selection
     templateSelect.addEventListener('change', function() {
@@ -279,25 +421,115 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selectedOption.value) {
             const templateContent = selectedOption.getAttribute('data-content');
             if (templateContent) {
+                sunEditor.setContents(templateContent);
                 contentTextarea.value = templateContent;
-                updatePreview();
+                updatePreview(templateContent);
             }
         }
     });
 
-    // Update content preview
-    function updatePreview() {
-        const content = contentTextarea.value;
-        if (content.trim()) {
-            // Simple preview - replace line breaks with <br> tags
-            const preview = content.replace(/\n/g, '<br>');
-            contentPreview.innerHTML = preview;
-        } else {
-            contentPreview.innerHTML = '<p class="text-gray-500 italic">Select a template or start typing to see preview...</p>';
+    // Debounce function to limit preview requests
+    let previewTimeout = null;
+    const PREVIEW_DEBOUNCE_DELAY = 1000; // Wait 1 second after user stops typing
+
+    // Update content preview using server-side processing (simplified)
+    function updatePreview(content = null) {
+        // Clear existing timeout
+        if (previewTimeout) {
+            clearTimeout(previewTimeout);
         }
+
+        // Debounce the preview update
+        previewTimeout = setTimeout(() => {
+            performPreviewUpdate(content);
+        }, PREVIEW_DEBOUNCE_DELAY);
     }
 
-    contentTextarea.addEventListener('input', updatePreview);
+    function performPreviewUpdate(content = null) {
+        let editorContent = content || sunEditor.getContents();
+
+        if (!editorContent || !editorContent.trim()) {
+            contentPreview.innerHTML = '<p class="text-gray-500 italic">Select a template or start typing to see preview...</p>';
+            return;
+        }
+
+        // Show loading state
+        contentPreview.innerHTML = '<p class="text-blue-500 italic">Loading preview...</p>';
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfToken) {
+            contentPreview.innerHTML = '<p class="text-red-500 italic">CSRF token not found. Please refresh the page.</p>';
+            return;
+        }
+
+        // Prepare form data
+        const requestData = {
+            content: editorContent,
+            lead_id: document.getElementById('lead_id').value || '',
+            customer_id: document.getElementById('customer_id').value || '',
+            title: document.getElementById('title').value || '',
+            amount: document.getElementById('amount').value || '',
+            valid_until: document.getElementById('valid_until').value || '',
+            client_name: document.getElementById('client_name').value || '',
+            client_email: document.getElementById('client_email').value || '',
+            _token: csrfToken.getAttribute('content')
+        };
+
+        // Debug: Log what we're sending
+        console.log('Preview requestData:', {
+            lead_id: requestData.lead_id,
+            customer_id: requestData.customer_id,
+            title: requestData.title,
+            amount: requestData.amount,
+            content_length: requestData.content.length
+        });
+
+        // Make preview request
+        fetch('{{ route("proposals.live-preview") }}', {
+            method: 'POST',
+            body: JSON.stringify(requestData),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': requestData._token,
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                contentPreview.innerHTML = data.preview;
+            } else {
+                contentPreview.innerHTML = '<p class="text-red-500 italic">Error loading preview: ' + (data.message || 'Unknown error') + '</p>';
+            }
+        })
+        .catch(error => {
+            contentPreview.innerHTML = '<p class="text-red-500 italic">Error loading preview: ' + error.message + '</p>';
+        });
+    }
+
+    // Handle submit button clicks - sync editor content to hidden field
+    const form = document.querySelector('form');
+    const submitButtons = form.querySelectorAll('button[type="submit"]');
+
+    submitButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            // Sync editor content to hidden textarea before form submission
+            const editorContent = sunEditor.getContents();
+            contentTextarea.value = editorContent;
+
+            // Simple validation - only prevent if content is truly empty
+            if (!editorContent || editorContent.trim() === '') {
+                e.preventDefault();
+                alert('Please enter proposal content before submitting.');
+                return false;
+            }
+
+            // Let the form submit naturally - no interference with form submission
+        });
+    });
 
     // Initialize
     updateClientSelection();

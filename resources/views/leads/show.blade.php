@@ -13,7 +13,7 @@
                         </svg>
                     </a>
                     <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-                        {{ $lead->company_name }}
+                        {{ $lead->company ?: $lead->name }}
                     </h1>
                 </div>
                 <p class="mt-1 text-sm text-gray-500">
@@ -48,11 +48,15 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Company Name</label>
-                                <p class="mt-1 text-sm text-gray-900">{{ $lead->company_name }}</p>
+                                <p class="mt-1 text-sm text-gray-900">{{ $lead->company ?: 'Not provided' }}</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Contact Name</label>
-                                <p class="mt-1 text-sm text-gray-900">{{ $lead->contact_name }}</p>
+                                <p class="mt-1 text-sm text-gray-900">{{ $lead->name }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Company Number</label>
+                                <p class="mt-1 text-sm text-gray-900">{{ $lead->company_number ?: 'Not provided' }}</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Email</label>
@@ -116,6 +120,13 @@
                                 </p>
                             </div>
                         </div>
+
+                        @if($lead->address)
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700">Address</label>
+                                <p class="mt-1 text-sm text-gray-900">{{ $lead->address }}</p>
+                            </div>
+                        @endif
 
                         @if($lead->notes)
                             <div>

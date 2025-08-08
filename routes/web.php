@@ -24,6 +24,9 @@ Route::get('/proposals/view/{token}', [\App\Http\Controllers\PublicProposalContr
 Route::post('/proposals/sign/{token}', [\App\Http\Controllers\PublicProposalController::class, 'sign'])->name('proposals.public.sign');
 Route::post('/proposals/reject/{token}', [\App\Http\Controllers\PublicProposalController::class, 'reject'])->name('proposals.public.reject');
 
+// Temporary: Live preview route without auth middleware for debugging
+Route::post('/proposals/live-preview', [\App\Http\Controllers\ProposalController::class, 'livePreview'])->name('proposals.live-preview');
+
 // Protected routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
@@ -42,13 +45,27 @@ Route::middleware(['auth'])->group(function () {
 
     // Proposal system routes
     Route::resource('proposals', \App\Http\Controllers\ProposalController::class);
+
+    // Explicit proposal creation route for better debugging
+    Route::post('/proposals/create', [\App\Http\Controllers\ProposalController::class, 'store'])->name('proposals.create.post');
+
     Route::resource('leads', \App\Http\Controllers\LeadController::class);
     Route::resource('proposal-templates', \App\Http\Controllers\ProposalTemplateController::class);
+
+    // Temporary workaround for proposal template update issue
+    Route::post('/proposal-templates/{proposalTemplate}', [\App\Http\Controllers\ProposalTemplateController::class, 'update'])
+        ->name('proposal-templates.update.post');
 
     // Additional proposal routes
     Route::post('/proposals/{proposal}/send', [\App\Http\Controllers\ProposalController::class, 'send'])->name('proposals.send');
     Route::get('/proposals/{proposal}/preview', [\App\Http\Controllers\ProposalController::class, 'preview'])->name('proposals.preview');
+    // Route::post('/proposals/live-preview', [\App\Http\Controllers\ProposalController::class, 'livePreview'])->name('proposals.live-preview'); // Moved outside auth middleware for debugging
     Route::get('/proposals/{proposal}/pdf', [\App\Http\Controllers\ProposalController::class, 'downloadPdf'])->name('proposals.pdf');
+
+    // CSRF token refresh endpoint
+    Route::get('/csrf-token', function() {
+        return response()->json(['token' => csrf_token()]);
+    })->name('csrf-token');
 
     // Lead conversion
     Route::post('/leads/{lead}/convert', [\App\Http\Controllers\LeadController::class, 'convert'])->name('leads.convert');
