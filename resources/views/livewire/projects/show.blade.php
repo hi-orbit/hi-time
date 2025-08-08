@@ -633,7 +633,7 @@
                                 <h5 class="text-sm font-medium text-gray-900 mb-2">Upload Files (Auto-upload)</h5>
                                 <livewire:dropzone
                                     wire:model="dropzoneFiles"
-                                    :rules="['file', 'max:20480', 'mimes:jpg,jpeg,png,gif,pdf,doc,docx,txt,zip,csv,xlsx,xls,mp4,avi,mov,wmv,flv,webm,mkv,m4v,3gp']"
+                                    :rules="['file', 'mimes:jpg,jpeg,png,gif,pdf,doc,docx,txt,zip,csv,xlsx,xls,mp4,avi,mov,wmv,flv,webm,mkv,m4v,3gp']"
                                     :multiple="true"
                                     :key="'task-dropzone-' . ($selectedTask->id ?? 'new')" />
 
@@ -794,7 +794,7 @@ function showVideoPreview(videoUrl, title) {
     const videoPlayer = document.getElementById('videoPreviewPlayer');
     const videoSource = document.getElementById('videoPreviewSource');
     const videoTitle = document.getElementById('videoPreviewTitle');
-    
+
     // Set the video source and type
     videoSource.src = videoUrl;
     // Try to determine the video type from the URL
@@ -812,7 +812,7 @@ function showVideoPreview(videoUrl, title) {
         '3gp': 'video/3gpp'
     };
     videoSource.type = mimeTypes[extension] || 'video/mp4';
-    
+
     videoTitle.textContent = title;
     videoPlayer.load(); // Reload the video element
     document.getElementById('videoPreviewModal').classList.remove('hidden');
@@ -821,7 +821,7 @@ function showVideoPreview(videoUrl, title) {
 function closeVideoPreview() {
     const videoPlayer = document.getElementById('videoPreviewPlayer');
     const videoSource = document.getElementById('videoPreviewSource');
-    
+
     videoPlayer.pause();
     videoPlayer.currentTime = 0;
     videoSource.src = '';

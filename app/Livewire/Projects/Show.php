@@ -863,6 +863,24 @@ class Show extends Component
                     continue;
                 }
 
+                // Check file size limits based on file type
+                $videoExtensions = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 'm4v', '3gp'];
+                $extension = strtolower($fileData['extension'] ?? '');
+                $isVideo = in_array($extension, $videoExtensions);
+                $fileSize = $fileData['size'] ?? 0;
+
+                // Size validation
+                $maxSizeBytes = $isVideo ? 20 * 1024 * 1024 : 10 * 1024 * 1024; // 20MB vs 10MB
+                if ($fileSize > $maxSizeBytes) {
+                    $maxSizeMB = $isVideo ? 20 : 10;
+                    $actualSizeMB = round($fileSize / 1024 / 1024, 2);
+                    Log::warning("File too large: {$fileData['name']} - {$actualSizeMB}MB exceeds {$maxSizeMB}MB limit");
+                    session()->flash('error', "File '{$fileData['name']}' is too large ({$actualSizeMB}MB). " .
+                        ($isVideo ? "Videos" : "Files") . " must be under {$maxSizeMB}MB.");
+                    $errorCount++;
+                    continue;
+                }
+
                 // Create a temporary uploaded file from the path
                 $tempFile = \Livewire\Features\SupportFileUploads\TemporaryUploadedFile::createFromLivewire($fileData['tmpFilename']);
 
@@ -927,11 +945,29 @@ class Show extends Component
         Log::info('Dropzone files updated - auto-processing', [
             'count' => count($this->dropzoneFiles ?? []),
             'selectedTask' => $this->selectedTask ? $this->selectedTask->id : 'null',
+            'files_details' => array_map(function($file) {
+                if (is_array($file)) {
+                    return [
+                        'name' => $file['name'] ?? 'unknown',
+                        'size' => $file['size'] ?? 'unknown',
+                        'extension' => $file['extension'] ?? 'unknown'
+                    ];
+                }
+                return 'not_array';
+            }, $this->dropzoneFiles ?? [])
         ]);
 
         if (!empty($this->dropzoneFiles)) {
-            // Automatically process the files
-            $this->processDropzoneFiles();
+            try {
+                // Automatically process the files
+                $this->processDropzoneFiles();
+            } catch (\Exception $e) {
+                Log::error('Error in updatedDropzoneFiles', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                session()->flash('error', 'Upload failed: ' . $e->getMessage());
+            }
         }
 
         // Force a re-render to update the UI
