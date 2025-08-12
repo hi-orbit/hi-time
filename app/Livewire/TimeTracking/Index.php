@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class Index extends Component
 {
+    public $selectedProjectId = '';
     public $selectedTaskId = '';
     public $description = '';
     public $hours = 0;
@@ -31,6 +32,12 @@ class Index extends Component
         if (request()->has('task')) {
             $this->selectedTaskId = request('task');
         }
+    }
+
+    public function updatedSelectedProjectId($value)
+    {
+        // Reset task selection when project changes
+        $this->selectedTaskId = '';
     }
 
     public function startTimer()
@@ -113,13 +120,24 @@ class Index extends Component
             ->take(10)
             ->get();
 
-        $tasks = Task::whereIn('project_id', function($query) {
-            $query->select('id')->from('projects');
-        })->with('project')->get();
+        // Get all active projects for the dropdown
+        $projects = Project::where('status', 'active')
+            ->orderBy('name')
+            ->get();
+
+        // Get tasks based on selected project
+        $tasks = collect();
+        if ($this->selectedProjectId) {
+            $tasks = Task::where('project_id', $this->selectedProjectId)
+                ->with('project')
+                ->orderBy('title')
+                ->get();
+        }
 
         return view('livewire.time-tracking.index', [
             'runningEntries' => $runningEntries,
             'recentEntries' => $recentEntries,
+            'projects' => $projects,
             'tasks' => $tasks,
         ]);
     }

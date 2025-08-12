@@ -1,4 +1,4 @@
-<div class="py-12">
+<div class="py-12" x-data="timeTrackingData()">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6 bg-white border-b border-gray-200">
@@ -27,7 +27,7 @@
                                             @endif
                                         </div>
                                         <div class="text-right">
-                                            <span class="text-sm font-medium text-green-600">{{ $entry->formatted_duration }}</span>
+                                            <span class="text-sm font-medium text-green-600">{{ $entry->formatted_decimal_hours }}</span>
                                             <button wire:click="stopTimer({{ $entry->id }})"
                                                     class="block mt-2 text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200">
                                                 ⏹ Stop
@@ -47,12 +47,25 @@
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Start Timer</h3>
                         <form wire:submit.prevent="startTimer">
                             <div class="mb-4">
+                                <label for="project-timer" class="block text-sm font-medium text-gray-700 mb-2">Select Project</label>
+                                <select x-model="selectedProjectId"
+                                        wire:model="selectedProjectId"
+                                        id="project-timer"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">Choose a project first...</option>
+                                    @foreach($projects as $project)
+                                        <option value="{{ $project->id }}">{{ $project->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="mb-4">
                                 <label for="task-timer" class="block text-sm font-medium text-gray-700 mb-2">Select Task</label>
                                 <select wire:model="selectedTaskId" id="task-timer"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                                    <option value="">Choose a task...</option>
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                        x-bind:disabled="!selectedProjectId">
+                                    <option value="" x-text="selectedProjectId ? 'Choose a task...' : 'Select a project first'"></option>
                                     @foreach($tasks as $task)
-                                        <option value="{{ $task->id }}">{{ $task->project->name }} - {{ $task->title }}</option>
+                                        <option value="{{ $task->id }}">{{ $task->title }}</option>
                                     @endforeach
                                 </select>
                                 @error('selectedTaskId') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
@@ -75,12 +88,25 @@
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Log Manual Time</h3>
                         <form wire:submit.prevent="logManualTime">
                             <div class="mb-4">
+                                <label for="project-manual" class="block text-sm font-medium text-gray-700 mb-2">Select Project</label>
+                                <select x-model="selectedProjectId"
+                                        wire:model="selectedProjectId"
+                                        id="project-manual"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">Choose a project first...</option>
+                                    @foreach($projects as $project)
+                                        <option value="{{ $project->id }}">{{ $project->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="mb-4">
                                 <label for="task-manual" class="block text-sm font-medium text-gray-700 mb-2">Select Task</label>
                                 <select wire:model="selectedTaskId" id="task-manual"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                                    <option value="">Choose a task...</option>
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                        x-bind:disabled="!selectedProjectId">
+                                    <option value="" x-text="selectedProjectId ? 'Choose a task...' : 'Select a project first'"></option>
                                     @foreach($tasks as $task)
-                                        <option value="{{ $task->id }}">{{ $task->project->name }} - {{ $task->title }}</option>
+                                        <option value="{{ $task->id }}">{{ $task->title }}</option>
                                     @endforeach
                                 </select>
                                 @error('selectedTaskId') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
@@ -147,7 +173,7 @@
                                                 {{ $entry->description ?: '-' }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ $entry->formatted_duration }}
+                                                {{ $entry->formatted_decimal_hours }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {{ $entry->entry_date ? $entry->entry_date->format('M j, Y') : $entry->created_at->format('M j, Y') }}
@@ -162,4 +188,34 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function timeTrackingData() {
+            return {
+                selectedProjectId: '',
+
+                init() {
+                    // Load from localStorage on page load
+                    this.selectedProjectId = localStorage.getItem('time_tracking_project_id') || '';
+
+                    // Set Livewire component property if we have a saved value
+                    if (this.selectedProjectId) {
+                        this.$wire.set('selectedProjectId', this.selectedProjectId);
+                    }
+
+                    // Watch for changes and save to localStorage
+                    this.$watch('selectedProjectId', (value) => {
+                        if (value) {
+                            localStorage.setItem('time_tracking_project_id', value);
+                        } else {
+                            localStorage.removeItem('time_tracking_project_id');
+                        }
+
+                        // Update Livewire component
+                        this.$wire.set('selectedProjectId', value);
+                    });
+                }
+            }
+        }
+    </script>
 </div>

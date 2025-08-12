@@ -14,7 +14,7 @@
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS CDN (fallback) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Custom Styles Stack -->

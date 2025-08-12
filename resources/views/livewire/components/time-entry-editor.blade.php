@@ -1,18 +1,37 @@
-<div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+<div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 relative z-10">
     @if($isEditing)
         <!-- Edit Form -->
-        <div class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-4 relative z-20 bg-white border border-gray-300 rounded-lg p-4 shadow-lg">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Duration Input -->
                 <div>
-                    <label for="duration{{ $timeEntry->id }}" class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                    <label for="duration{{ $timeEntry->id }}" class="block text-sm font-medium text-gray-700">
+                        Duration (minutes)
+                        @if($timeEntry->is_running)
+                            <span class="text-xs text-green-600 font-normal">(currently elapsed)</span>
+                        @endif
+                    </label>
                     <input type="number"
                            wire:model="duration"
                            id="duration{{ $timeEntry->id }}"
-                           min="1"
+                           min="0.01"
+                           step="0.01"
                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                            placeholder="Enter duration in minutes">
+                    @if($timeEntry->is_running)
+                        <p class="mt-1 text-xs text-gray-500">Editing will adjust the start time to maintain the timer running state.</p>
+                    @endif
                     @error('duration') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- Date Input -->
+                <div>
+                    <label for="entryDate{{ $timeEntry->id }}" class="block text-sm font-medium text-gray-700">Date</label>
+                    <input type="date"
+                           wire:model="entryDate"
+                           id="entryDate{{ $timeEntry->id }}"
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    @error('entryDate') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
 
                 <!-- Task/Project Info (Read-only) -->
@@ -63,7 +82,12 @@
                 <div class="flex items-center space-x-3 mb-2">
                     <!-- Duration -->
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                        {{ $timeEntry->formatted_duration }}
+                        {{ $timeEntry->formatted_decimal_hours }}
+                    </span>
+
+                    <!-- Date -->
+                    <span class="text-sm text-gray-500">
+                        {{ $timeEntry->entry_date ? $timeEntry->entry_date->format('M j, Y') : $timeEntry->created_at->format('M j, Y') }}
                     </span>
 
                     <!-- Time -->

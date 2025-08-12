@@ -53,7 +53,13 @@ class TimeByUserLivewire extends Component
             })
             ->leftJoin('customers', 'projects.customer_id', '=', 'customers.id')
             ->join('users', 'time_entries.user_id', '=', 'users.id')
-            ->whereBetween('time_entries.created_at', [$startDate, $endDate])
+            ->where(function($query) use ($startDate, $endDate) {
+                $query->whereBetween('time_entries.entry_date', [$startDate, $endDate])
+                      ->orWhere(function($subQuery) use ($startDate, $endDate) {
+                          $subQuery->whereNull('time_entries.entry_date')
+                                   ->whereBetween('time_entries.created_at', [$startDate, $endDate]);
+                      });
+            })
             ->orderBy('users.name')
             ->orderBy('projects.name')
             ->get();

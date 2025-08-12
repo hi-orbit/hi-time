@@ -33,7 +33,13 @@ class MyTimeToday extends Component
 
         $this->timeEntries = TimeEntry::with(['task.project', 'user'])
             ->where('user_id', Auth::id())
-            ->whereDate('created_at', $date)
+            ->where(function($query) use ($date) {
+                $query->whereDate('entry_date', $date)
+                      ->orWhere(function($subQuery) use ($date) {
+                          $subQuery->whereNull('entry_date')
+                                   ->whereDate('created_at', $date);
+                      });
+            })
             ->orderBy('created_at', 'desc')
             ->get();
 

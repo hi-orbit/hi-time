@@ -5,6 +5,12 @@
                 <div class="flex justify-between items-center mb-6">
                     <div>
                         <h2 class="text-2xl font-bold text-gray-900">{{ $project->name }}</h2>
+                        <div class="mt-1">
+                            <a href="{{ route('projects.index') }}"
+                               class="text-sm text-gray-500 hover:text-gray-700">
+                                ← Back to Projects
+                            </a>
+                        </div>
                         @if($project->customer)
                             <div class="mt-2">
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
@@ -30,11 +36,61 @@
                             <p class="text-gray-600 mt-1">{{ $project->description }}</p>
                         @endif
                     </div>
-                    <div class="flex space-x-3">
-                        <a href="{{ route('projects.index') }}"
-                           class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium">
-                            ← Back to Projects
-                        </a>
+                    <div class="flex items-center space-x-3">
+                        <!-- Search Section -->
+                        <div class="relative">
+                            <div class="relative">
+                                <input type="text"
+                                       id="search"
+                                       wire:model.live="searchQuery"
+                                       placeholder="Search tasks..."
+                                       class="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                                @if($searchQuery)
+                                    <button wire:click="clearSearch"
+                                            class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                        <svg class="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                @endif
+                            </div>
+                            
+                            <!-- Search Results Dropdown -->
+                            @if($showSearchResults && count($searchResults) > 0)
+                                <div class="absolute z-50 mt-1 w-80 bg-white shadow-lg border border-gray-300 rounded-md max-h-60 overflow-auto">
+                                    @foreach($searchResults as $task)
+                                        <div wire:click="selectSearchResult({{ $task->id }})"
+                                             class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                                            <div class="font-medium text-sm text-gray-900">{{ $task->title }}</div>
+                                            @if($task->description)
+                                                <div class="text-xs text-gray-500 mt-1 line-clamp-2">{{ Str::limit($task->description, 100) }}</div>
+                                            @endif
+                                            <div class="flex items-center mt-2 space-x-2">
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                                    {{ $task->status === 'todo' ? 'bg-gray-100 text-gray-800' : '' }}
+                                                    {{ $task->status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' : '' }}
+                                                    {{ $task->status === 'done' ? 'bg-green-100 text-green-800' : '' }}
+                                                    {{ $task->status === 'backlog' ? 'bg-blue-100 text-blue-800' : '' }}">
+                                                    {{ ucfirst(str_replace('_', ' ', $task->status)) }}
+                                                </span>
+                                                @if($task->assignedUser)
+                                                    <span class="text-xs text-gray-500">{{ $task->assignedUser->name }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @elseif($showSearchResults && $searchQuery && count($searchResults) === 0)
+                                <div class="absolute z-50 mt-1 w-80 bg-white shadow-lg border border-gray-300 rounded-md p-3">
+                                    <div class="text-sm text-gray-500">No tasks found matching "{{ $searchQuery }}"</div>
+                                </div>
+                            @endif
+                        </div>
                         @if(auth()->user()->isAdmin())
                             <a href="{{ route('projects.edit', $project) }}"
                                class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium">
@@ -240,6 +296,19 @@
                             </select>
                             @error('status') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
+                        @if($editingTask)
+                        <div class="mb-4">
+                            <label for="moveToProjectId" class="block text-sm font-medium text-gray-700 mb-2">Move to Project</label>
+                            <select wire:model="moveToProjectId" id="moveToProjectId"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">Keep in current project</option>
+                                @foreach(App\Models\Project::where('id', '!=', $project->id)->where('status', 'active')->orderBy('name')->get() as $proj)
+                                    <option value="{{ $proj->id }}">{{ $proj->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('moveToProjectId') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                        </div>
+                        @endif
                         <div class="flex justify-end space-x-3">
                             <button type="button" wire:click="closeTaskModal"
                                     class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
@@ -501,7 +570,7 @@
                                         <div class="text-xs bg-white border rounded p-2 mb-2">
                                             <div class="flex justify-between">
                                                 <span class="font-medium">{{ $entry->user->name }}</span>
-                                                <span>{{ $entry->formatted_duration }}</span>
+                                                <span>{{ $entry->formatted_decimal_hours }}</span>
                                             </div>
                                             @if($entry->description)
                                                 <p class="text-gray-600 mt-1">{{ $entry->description }}</p>

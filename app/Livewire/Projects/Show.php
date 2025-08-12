@@ -24,14 +24,23 @@ class Show extends Component
     public $showTaskModal = false;
     public $showTimeModal = false;
     public $showTaskDetailsModal = false;
+    public $showMoveTaskModal = false;
     public $selectedTask = null;
     public $editingTask = false;
+
+    // Search functionality
+    public $searchQuery = '';
+    public $showSearchResults = false;
+    public $searchResults = [];
 
     // Task creation/editing fields
     public $title = '';
     public $description = '';
     public $assigned_to = '';
     public $status = 'backlog';
+
+    // Move task fields
+    public $moveToProjectId = '';
 
     // Time tracking fields
     public $timeDescription = '';
@@ -306,6 +315,7 @@ class Show extends Component
         $this->description = $task->description;
         $this->assigned_to = $task->assigned_to;
         $this->status = $task->status;
+        $this->moveToProjectId = ''; // Initialize as empty (keep in current project)
         $this->selectedTask = $task;
         $this->editingTask = true;
 
@@ -321,18 +331,41 @@ class Show extends Component
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'assigned_to' => 'nullable|exists:users,id',
-                'status' => 'required|in:backlog,in_progress,in_test,ready_to_release,done',
+                'status' => 'required|in:backlog,in_progress,in_test,failed_testing,ready_to_release,done',
+                'moveToProjectId' => 'nullable|exists:projects,id',
             ]);
 
             $oldAssignedTo = $this->selectedTask->assigned_to;
             $oldStatus = $this->selectedTask->status;
+            $oldProjectId = $this->selectedTask->project_id;
 
+            // Update basic task fields
             $this->selectedTask->update([
                 'title' => $this->title,
                 'description' => $this->description,
                 'assigned_to' => $this->assigned_to ?: null,
                 'status' => $this->status,
             ]);
+
+            // Handle project move if specified
+            if ($this->moveToProjectId && $this->moveToProjectId != $oldProjectId) {
+                $newProject = Project::find($this->moveToProjectId);
+
+                if ($newProject) {
+                    // Update the task's project
+                    $this->selectedTask->update(['project_id' => $this->moveToProjectId]);
+
+                    // Clear the selectedTask since it's no longer in this project
+                    $this->selectedTask = null;
+
+                    session()->flash('message', 'Task moved to "' . $newProject->name . '" successfully.');
+
+                    // Close the modal and refresh the page
+                    $this->reset(['title', 'description', 'assigned_to', 'status', 'showTaskModal', 'editingTask', 'moveToProjectId']);
+                    $this->mount($this->project);
+                    return;
+                }
+            }
 
             // Send notifications for assignment changes
             if ($this->assigned_to != $oldAssignedTo) {
@@ -491,6 +524,47 @@ class Show extends Component
     {
         $task = Task::findOrFail($taskId);
         $task->update(['status' => $newStatus]);
+    }
+
+    // Search functionality
+    public function updatedSearchQuery()
+    {
+        if (strlen($this->searchQuery) >= 2) {
+            $this->performSearch();
+            $this->showSearchResults = true;
+        } else {
+            $this->searchResults = [];
+            $this->showSearchResults = false;
+        }
+    }
+
+    public function performSearch()
+    {
+        $this->searchResults = Task::where('project_id', $this->project->id)
+            ->where(function ($query) {
+                $query->where('title', 'LIKE', '%' . $this->searchQuery . '%')
+                      ->orWhere('description', 'LIKE', '%' . $this->searchQuery . '%');
+            })
+            ->with(['assignedUser'])
+            ->orderBy('title')
+            ->get();
+    }
+
+    public function selectSearchResult($taskId)
+    {
+        $task = Task::findOrFail($taskId);
+        $this->selectedTask = $task;
+        $this->showTaskDetailsModal = true;
+        $this->searchQuery = '';
+        $this->showSearchResults = false;
+        $this->searchResults = [];
+    }
+
+    public function clearSearch()
+    {
+        $this->searchQuery = '';
+        $this->showSearchResults = false;
+        $this->searchResults = [];
     }
 
     public function startTimer($taskId)

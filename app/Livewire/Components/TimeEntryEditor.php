@@ -12,6 +12,7 @@ class TimeEntryEditor extends Component
     public $isEditing = false;
     public $duration;
     public $description;
+    public $entryDate;
     public $showViewTaskLink = true;
     public $showDeleteButton = true;
 
@@ -31,8 +32,17 @@ class TimeEntryEditor extends Component
         }
 
         $this->isEditing = true;
-        $this->duration = $this->timeEntry->duration_minutes;
+
+        // For running timers, calculate current elapsed time and round to 2 decimal places
+        if ($this->timeEntry->is_running) {
+            $elapsedMinutes = $this->timeEntry->start_time->diffInMinutes(now());
+            $this->duration = round($elapsedMinutes, 2);
+        } else {
+            $this->duration = round($this->timeEntry->duration_minutes, 2);
+        }
+
         $this->description = $this->timeEntry->description ?? '';
+        $this->entryDate = $this->timeEntry->entry_date ? $this->timeEntry->entry_date->format('Y-m-d') : $this->timeEntry->created_at->format('Y-m-d');
     }
 
     public function cancelEdit()
@@ -49,14 +59,27 @@ class TimeEntryEditor extends Component
         }
 
         $this->validate([
-            'duration' => 'required|integer|min:1',
+            'duration' => 'required|numeric|min:0.01',
             'description' => 'nullable|string|max:1000',
+            'entryDate' => 'required|date',
         ]);
 
-        $this->timeEntry->update([
-            'duration_minutes' => (int) $this->duration,
+        $updateData = [
             'description' => $this->description,
-        ]);
+            'entry_date' => $this->entryDate,
+        ];
+
+        // Handle running vs stopped timers differently
+        if ($this->timeEntry->is_running) {
+            // For running timers, adjust the start_time to reflect the new duration
+            $newStartTime = now()->subMinutes((float) $this->duration);
+            $updateData['start_time'] = $newStartTime;
+        } else {
+            // For stopped timers, just update the duration_minutes
+            $updateData['duration_minutes'] = (float) $this->duration;
+        }
+
+        $this->timeEntry->update($updateData);
 
         $this->isEditing = false;
         $this->resetEditFields();
@@ -83,6 +106,7 @@ class TimeEntryEditor extends Component
     {
         $this->duration = '';
         $this->description = '';
+        $this->entryDate = '';
     }
 
     public function render()

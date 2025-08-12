@@ -67,4 +67,15 @@ class TimeEntry extends Model
 
         return sprintf('%dh %dm', $hours, $mins);
     }
+
+    public function getDecimalHoursAttribute()
+    {
+        $minutes = $this->duration;
+        return round($minutes / 60, 2);
+    }
+
+    public function getFormattedDecimalHoursAttribute()
+    {
+        return number_format($this->decimal_hours, 2) . 'h';
+    }
 }
