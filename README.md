@@ -1,61 +1,271 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Hi-Time Project Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Hi-Time is a comprehensive project management application built with Laravel 12 and Livewire 3. It features task management with Kanban boards, time tracking, customer management, proposal generation, file attachments (including video support), and reporting capabilities.
 
-## About Laravel
+## 🚀 Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Project Management**: Create and manage projects with Kanban-style task boards
+- **Task Management**: Drag-and-drop task organization with status tracking
+- **File Attachments**: Upload documents and videos (up to 20MB for videos, 10MB for documents)
+- **Time Tracking**: Built-in time tracking with detailed reporting
+- **Customer Management**: Maintain customer records and relationships
+- **Proposal System**: Generate, preview, and send professional proposals with PDF export
+- **Lead Management**: Convert leads to customers and projects
+- **User Management**: Role-based access control with admin features
+- **Reporting**: Comprehensive time and project reports
+- **Real-time Updates**: Livewire-powered reactive interface
+- **Notifications**: Simple notification system for important events
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 📋 Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **PHP**: ^8.2
+- **Composer**: Latest version
+- **Node.js**: ^18.0
+- **Database**: SQLite (default) or MySQL/PostgreSQL
+- **Web Server**: Apache/Nginx or Laravel's built-in server
 
-## Learning Laravel
+## 🛠️ Installation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Option 1: Standard Laravel Installation
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd hi-time.test
+   ```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+2. **Install PHP dependencies**
+   ```bash
+   composer install
+   ```
 
-## Laravel Sponsors
+3. **Install Node.js dependencies**
+   ```bash
+   npm install
+   ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+4. **Environment setup**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-### Premium Partners
+5. **Database setup**
+   ```bash
+   php artisan migrate --seed
+   ```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+6. **Build assets**
+   ```bash
+   npm run build
+   ```
 
-## Contributing
+7. **Start the development server**
+   ```bash
+   php artisan serve
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Option 2: Docker Deployment
 
-## Code of Conduct
+For production or containerized environments, use the Docker configuration:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+1. **Configure PHP settings**
+   
+   Mount the provided `docker-configs/php-custom.conf` to your PHP-FPM container at `/usr/local/etc/php/conf.d/custom.conf` to support video uploads up to 20MB.
 
-## Security Vulnerabilities
+2. **Use Laravel Sail (recommended for development)**
+   ```bash
+   ./vendor/bin/sail up -d
+   ./vendor/bin/sail artisan migrate --seed
+   ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## ⚙️ Configuration
 
-## License
+### Environment Variables
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Key environment variables to configure:
+
+```bash
+APP_NAME="Hi-Time"
+APP_URL=http://your-domain.com
+
+# Database (SQLite is default)
+DB_CONNECTION=sqlite
+
+# Mail configuration (for proposal sending)
+MAIL_MAILER=smtp
+MAIL_HOST=your-smtp-host
+MAIL_PORT=587
+MAIL_USERNAME=your-email
+MAIL_PASSWORD=your-password
+MAIL_FROM_ADDRESS=your-email
+```
+
+### File Upload Configuration
+
+The application supports differential file size limits:
+- **Videos**: 20MB maximum (MP4, AVI, MOV, WMV, FLV, WebM, MKV, M4V, 3GP)
+- **Documents/Images**: 10MB maximum
+
+For production deployments, ensure your web server and PHP configuration support these limits:
+
+```ini
+upload_max_filesize = 20M
+post_max_size = 25M
+max_file_uploads = 20
+max_execution_time = 300
+memory_limit = 256M
+```
+
+## 👤 Default Users
+
+After running the database seeder, you'll have access to default accounts:
+
+- **Admin User**: Check the `database/seeders/DatabaseSeeder.php` for default credentials
+- **Regular Users**: Additional test users may be created by the seeder
+
+## 🎯 Getting Started
+
+1. **Login** to the application using the default credentials
+2. **Create a Customer** from the customers section
+3. **Create a Project** and assign it to the customer
+4. **Add Tasks** to your project using the Kanban board
+5. **Upload Files** by clicking on tasks and using the file upload area
+6. **Track Time** using the built-in time tracking features
+7. **Generate Reports** to analyze project progress and time allocation
+
+## 📁 Project Structure
+
+```
+app/
+├── Http/Controllers/          # API and web controllers
+├── Livewire/                 # Livewire components
+├── Models/                   # Eloquent models
+└── Services/                 # Business logic services
+
+resources/
+├── views/                    # Blade templates
+├── css/                      # Styling (Tailwind CSS)
+└── js/                       # Frontend JavaScript
+
+database/
+├── migrations/               # Database schema
+└── seeders/                  # Sample data
+
+docker-configs/               # Docker configuration files
+```
+
+## 🔧 Key Technologies
+
+- **Backend**: Laravel 12, Livewire 3, PHP 8.2+
+- **Frontend**: Alpine.js, Tailwind CSS 4.0, Vite
+- **Database**: SQLite/MySQL with Eloquent ORM
+- **File Upload**: Custom dropzone integration with differential size validation
+- **PDF Generation**: DomPDF for proposal exports
+- **Containerization**: Docker support with custom PHP configurations
+
+## 📊 Available Reports
+
+- Time tracking by customer (current/previous month)
+- Time tracking by user with enhanced filtering
+- Individual daily time reports
+- Project progress and task completion metrics
+
+## 🚀 Development
+
+### Running in Development Mode
+
+```bash
+# Start the Laravel development server
+php artisan serve
+
+# Watch and compile assets
+npm run dev
+
+# Run background queue processing (if needed)
+php artisan queue:work
+```
+
+### Database Management
+
+```bash
+# Create new migration
+php artisan make:migration create_example_table
+
+# Run migrations
+php artisan migrate
+
+# Rollback migrations
+php artisan migrate:rollback
+
+# Seed database with sample data
+php artisan db:seed
+```
+
+### Creating New Features
+
+```bash
+# Generate Livewire component
+php artisan make:livewire ComponentName
+
+# Generate controller
+php artisan make:controller ExampleController
+
+# Generate model with migration
+php artisan make:model Example -m
+```
+
+## 🐛 Troubleshooting
+
+### File Upload Issues
+
+If video uploads fail:
+1. Check PHP configuration limits (`upload_max_filesize`, `post_max_size`)
+2. Verify web server configuration
+3. Ensure storage directory permissions are correct
+4. Check Laravel logs for detailed error messages
+
+### Permission Issues
+
+```bash
+# Fix storage permissions
+chmod -R 775 storage bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
+```
+
+### Cache Issues
+
+```bash
+# Clear all caches
+php artisan optimize:clear
+
+# Or individually
+php artisan cache:clear
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the Laravel framework license for details.
+
+## 🙋‍♂️ Support
+
+For support and questions:
+- Check the Laravel documentation
+- Review the Livewire documentation for component-specific issues
+- Check GitHub issues for known problems
+- Create a new issue for bug reports or feature requests
+
+---
+
+**Built with ❤️ using Laravel, Livewire, and modern web technologies**
