@@ -5,12 +5,6 @@
                 <div class="flex justify-between items-center mb-6">
                     <div>
                         <h2 class="text-2xl font-bold text-gray-900">{{ $project->name }}</h2>
-                        <div class="mt-1">
-                            <a href="{{ route('projects.index') }}"
-                               class="text-sm text-gray-500 hover:text-gray-700">
-                                ← Back to Projects
-                            </a>
-                        </div>
                         @if($project->customer)
                             <div class="mt-2">
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
@@ -19,9 +13,19 @@
                                     </svg>
                                     {{ $project->customer->name }}
                                 </span>
-                                @if($project->customer->contact_person)
-                                    <span class="ml-2 text-sm text-gray-500">{{ $project->customer->contact_person }}</span>
-                                @endif
+                                <div class="mt-1">
+                                    <a href="{{ route('projects.index') }}"
+                                       class="text-sm text-gray-500 hover:text-gray-700">
+                                        ← Back to Projects
+                                    </a>
+                                </div>
+                            </div>
+                        @else
+                            <div class="mt-1">
+                                <a href="{{ route('projects.index') }}"
+                                   class="text-sm text-gray-500 hover:text-gray-700">
+                                    ← Back to Projects
+                                </a>
                             </div>
                         @endif
                         @if($project->archived)
@@ -59,7 +63,7 @@
                                     </button>
                                 @endif
                             </div>
-                            
+
                             <!-- Search Results Dropdown -->
                             @if($showSearchResults && count($searchResults) > 0)
                                 <div class="absolute z-50 mt-1 w-80 bg-white shadow-lg border border-gray-300 rounded-md max-h-60 overflow-auto">
