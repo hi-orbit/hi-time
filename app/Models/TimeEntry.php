@@ -44,16 +44,21 @@ class TimeEntry extends Model
 
     public function getDurationAttribute()
     {
-        if ($this->duration_minutes) {
-            return $this->duration_minutes;
-        }
-
+        // First, try to calculate from start and end times if both exist
         if ($this->start_time && $this->end_time) {
-            return $this->start_time->diffInMinutes($this->end_time);
+            $diffInMinutes = $this->start_time->diffInMinutes($this->end_time);
+            return max(0, $diffInMinutes);
         }
 
+        // If running, calculate current duration
         if ($this->start_time && $this->is_running) {
-            return $this->start_time->diffInMinutes(Carbon::now());
+            $diffInMinutes = $this->start_time->diffInMinutes(Carbon::now());
+            return max(0, $diffInMinutes);
+        }
+
+        // Finally, fall back to stored duration_minutes
+        if ($this->duration_minutes && $this->duration_minutes > 0) {
+            return $this->duration_minutes;
         }
 
         return 0;

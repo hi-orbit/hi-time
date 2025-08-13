@@ -17,11 +17,22 @@ class Index extends Component
     public $minutes = 0;
     public $entryDate;
 
+    // Edit properties
+    public $editingEntryId = null;
+    public $editEntryDate;
+    public $editStartTime;
+    public $editEndTime;
+    public $editDescription;
+
     protected $rules = [
         'selectedTaskId' => 'required|exists:tasks,id',
         'hours' => 'nullable|integer|min:0|max:23',
         'minutes' => 'required|integer|min:0|max:59',
         'entryDate' => 'required|date',
+        'editEntryDate' => 'required|date',
+        'editStartTime' => 'nullable|date_format:H:i',
+        'editEndTime' => 'nullable|date_format:H:i',
+        'editDescription' => 'nullable|string',
     ];
 
     public function mount()
@@ -104,6 +115,77 @@ class Index extends Component
             $this->reset(['description', 'hours', 'minutes']);
             // Keep the entry date as is, don't reset it
         }
+    }
+
+    public function editEntry($entryId)
+    {
+        $entry = TimeEntry::where('id', $entryId)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if ($entry) {
+            $this->editingEntryId = $entryId;
+            $this->editEntryDate = $entry->entry_date ? $entry->entry_date->format('Y-m-d') : $entry->created_at->format('Y-m-d');
+            $this->editStartTime = $entry->start_time ? $entry->start_time->format('H:i') : '';
+            $this->editEndTime = $entry->end_time ? $entry->end_time->format('H:i') : '';
+            $this->editDescription = $entry->description;
+        }
+    }
+
+    public function updateEntry()
+    {
+        $this->validate([
+            'editEntryDate' => 'required|date',
+            'editStartTime' => 'nullable|date_format:H:i',
+            'editEndTime' => 'nullable|date_format:H:i',
+            'editDescription' => 'nullable|string',
+        ]);
+
+        $entry = TimeEntry::where('id', $this->editingEntryId)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if ($entry) {
+            $updateData = [
+                'entry_date' => $this->editEntryDate,
+                'description' => $this->editDescription,
+            ];
+
+            // Handle time updates
+            if ($this->editStartTime) {
+                $updateData['start_time'] = $this->editEntryDate . ' ' . $this->editStartTime;
+            }
+
+            if ($this->editEndTime && $this->editStartTime) {
+                $updateData['end_time'] = $this->editEntryDate . ' ' . $this->editEndTime;
+                
+                // Calculate duration if both times are provided
+                $start = \Carbon\Carbon::parse($updateData['start_time']);
+                $end = \Carbon\Carbon::parse($updateData['end_time']);
+                
+                if ($end->greaterThan($start)) {
+                    $updateData['duration_minutes'] = $start->diffInMinutes($end);
+                    $updateData['is_running'] = false;
+                } else {
+                    // If end time is before start time, don't update duration
+                    unset($updateData['end_time']);
+                }
+            }
+
+            $entry->update($updateData);
+            
+            session()->flash('message', 'Time entry updated successfully!');
+            $this->cancelEdit();
+        }
+    }
+
+    public function cancelEdit()
+    {
+        $this->editingEntryId = null;
+        $this->editEntryDate = '';
+        $this->editStartTime = '';
+        $this->editEndTime = '';
+        $this->editDescription = '';
     }
 
     public function render()

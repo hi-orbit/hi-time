@@ -158,27 +158,87 @@
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Time</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Time</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     @foreach($recentEntries as $entry)
-                                        <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {{ $entry->task->title }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ $entry->task->project->name }}
-                                            </td>
-                                            <td class="px-6 py-4 text-sm text-gray-500">
-                                                {{ $entry->description ?: '-' }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ $entry->formatted_decimal_hours }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ $entry->entry_date ? $entry->entry_date->format('M j, Y') : $entry->created_at->format('M j, Y') }}
-                                            </td>
-                                        </tr>
+                                        @if($editingEntryId === $entry->id)
+                                            <!-- Edit Form Row -->
+                                            <tr class="bg-yellow-50">
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    {{ $entry->task->title }}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {{ $entry->task->project->name }}
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <input wire:model="editDescription" type="text"
+                                                           class="w-full text-sm px-2 py-1 border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500"
+                                                           placeholder="Description">
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {{ $entry->formatted_decimal_hours }}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <input wire:model="editEntryDate" type="date"
+                                                           class="text-sm px-2 py-1 border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500">
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <input wire:model="editStartTime" type="time"
+                                                           class="text-sm px-2 py-1 border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500">
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <input wire:model="editEndTime" type="time"
+                                                           class="text-sm px-2 py-1 border border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500">
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                    <div class="flex space-x-2">
+                                                        <button wire:click="updateEntry"
+                                                                class="text-green-600 hover:text-green-900 font-medium">
+                                                            Save
+                                                        </button>
+                                                        <button wire:click="cancelEdit"
+                                                                class="text-gray-600 hover:text-gray-900 font-medium">
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @else
+                                            <!-- Display Row -->
+                                            <tr>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    {{ $entry->task->title }}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {{ $entry->task->project->name }}
+                                                </td>
+                                                <td class="px-6 py-4 text-sm text-gray-500">
+                                                    {{ $entry->description ?: '-' }}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {{ $entry->formatted_decimal_hours }}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {{ $entry->entry_date ? $entry->entry_date->format('M j, Y') : $entry->created_at->format('M j, Y') }}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {{ $entry->start_time ? $entry->start_time->format('H:i') : '-' }}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {{ $entry->end_time ? $entry->end_time->format('H:i') : '-' }}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                    <button wire:click="editEntry({{ $entry->id }})"
+                                                            class="text-indigo-600 hover:text-indigo-900 font-medium">
+                                                        Edit
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        @endif
                                     @endforeach
                                 </tbody>
                             </table>
