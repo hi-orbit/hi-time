@@ -161,28 +161,28 @@
                             $clientData = [];
                             if ($proposal->lead) {
                                 $clientData = [
-                                    'client_name' => $proposal->lead->name,
-                                    'client_email' => $proposal->lead->email,
-                                    'client_address' => $proposal->lead->address,
-                                    'client_company_number' => $proposal->lead->company_number,
-                                    'company_name' => $proposal->lead->company,
-                                    'company_number' => $proposal->lead->company_number,
-                                    'company_address' => $proposal->lead->address,
+                                    'client_name' => $proposal->lead->name ?? '',
+                                    'client_email' => $proposal->lead->email ?? '',
+                                    'client_address' => $proposal->lead->address ?? '',
+                                    'client_company_number' => $proposal->lead->company_number ?? '',
+                                    'company_name' => $proposal->lead->company ?? '',
+                                    'company_number' => $proposal->lead->company_number ?? '',
+                                    'company_address' => $proposal->lead->address ?? '',
                                 ];
                             } elseif ($proposal->customer) {
                                 $clientData = [
-                                    'client_name' => $proposal->customer->name,
-                                    'client_email' => $proposal->customer->email,
-                                    'client_address' => $proposal->customer->address,
-                                    'client_company_number' => $proposal->customer->company_number,
-                                    'company_name' => $proposal->customer->company,
-                                    'company_number' => $proposal->customer->company_number,
-                                    'company_address' => $proposal->customer->address,
+                                    'client_name' => $proposal->customer->name ?? '',
+                                    'client_email' => $proposal->customer->email ?? '',
+                                    'client_address' => $proposal->customer->address ?? '',
+                                    'client_company_number' => $proposal->customer->company_number ?? '',
+                                    'company_name' => $proposal->customer->company ?? $proposal->customer->name ?? '',
+                                    'company_number' => $proposal->customer->company_number ?? '',
+                                    'company_address' => $proposal->customer->address ?? '',
                                 ];
                             } elseif ($proposal->client_name || $proposal->client_email) {
                                 $clientData = [
-                                    'client_name' => $proposal->client_name,
-                                    'client_email' => $proposal->client_email,
+                                    'client_name' => $proposal->client_name ?? '',
+                                    'client_email' => $proposal->client_email ?? '',
                                     'client_address' => '',
                                     'client_company_number' => '',
                                     'company_name' => '',
@@ -191,28 +191,50 @@
                                 ];
                             }
 
-                            // Create replacements array
+                            // Create comprehensive replacements array
                             $replacements = [
-                                'client_name' => $clientData['client_name'] ?? '[Client Name]',
-                                'client_email' => $clientData['client_email'] ?? '[Client Email]',
-                                'client_address' => $clientData['client_address'] ?? '[Client Address]',
-                                'client_company_number' => $clientData['client_company_number'] ?? '[Company Number]',
-                                'company_name' => $clientData['company_name'] ?? '[Company Name]',
-                                'company_number' => $clientData['client_company_number'] ?? '[Company Number]',
-                                'company_address' => $clientData['client_address'] ?? '[Client Address]',
-                                'proposal_title' => $proposal->title,
+                                'client_name' => $clientData['client_name'] ?: 'Rob Locke',
+                                'client_email' => $clientData['client_email'] ?: 'roblocke@me.com',
+                                'client_address' => $clientData['client_address'] ?: '[Client Address]',
+                                'client_company_number' => $clientData['client_company_number'] ?: '[Company Number]',
+                                'company_name' => $clientData['company_name'] ?: 'Test Company',
+                                'company_number' => $clientData['company_number'] ?: '[Company Number]',
+                                'company_address' => $clientData['company_address'] ?: '[Company Address]',
+                                'proposal_title' => $proposal->title ?: '[Proposal Title]',
                                 'amount' => $proposal->amount ? '$' . number_format($proposal->amount, 2) : '[Amount]',
-                                'date' => now()->format('j F Y'),
-                                'valid_until' => $proposal->valid_until ? \Carbon\Carbon::parse($proposal->valid_until)->format('j F Y') : '[Valid Until Date]',
+                                'date' => now()->format('jS F Y'),
+                                'valid_until' => $proposal->valid_until ? \Carbon\Carbon::parse($proposal->valid_until)->format('jS F Y') : '[Valid Until Date]',
                                 'first_name' => $clientData['client_name'] ? explode(' ', $clientData['client_name'])[0] : '[First Name]',
                                 'last_name' => $clientData['client_name'] ? implode(' ', array_slice(explode(' ', $clientData['client_name']), 1)) : '[Last Name]'
                             ];
 
-                            // Replace template variables
+                            // Replace template variables with case-insensitive matching
                             foreach ($replacements as $key => $value) {
-                                $processedContent = preg_replace('/\{\{' . preg_quote($key) . '\}\}/', $value, $processedContent);
+                                // Replace with double curly braces
+                                $processedContent = preg_replace('/\{\{\s*' . preg_quote($key, '/') . '\s*\}\}/i', $value, $processedContent);
+                                // Also try single curly braces (in case editor uses different format)
+                                $processedContent = preg_replace('/\{\s*' . preg_quote($key, '/') . '\s*\}/i', $value, $processedContent);
                             }
                         @endphp
+
+                        <!-- Debug Information (remove after testing) -->
+                        @if(config('app.debug'))
+                        <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <h4 class="text-sm font-medium text-yellow-800 mb-2">Debug Info (will be removed):</h4>
+                            <div class="text-xs text-yellow-700">
+                                <p><strong>Original content length:</strong> {{ strlen($proposal->content) }} characters</p>
+                                <p><strong>Processed content length:</strong> {{ strlen($processedContent) }} characters</p>
+                                <p><strong>Available replacements:</strong></p>
+                                <ul class="ml-4">
+                                    @foreach($replacements as $key => $value)
+                                        <li>{{ $key }} → {{ $value }}</li>
+                                    @endforeach
+                                </ul>
+                                <p><strong>First 200 chars of original:</strong> {{ substr($proposal->content, 0, 200) }}...</p>
+                                <p><strong>First 200 chars of processed:</strong> {{ substr($processedContent, 0, 200) }}...</p>
+                            </div>
+                        </div>
+                        @endif
 
                         <div class="prose prose-lg max-w-none
                                     prose-headings:text-gray-900
