@@ -158,11 +158,11 @@ class Index extends Component
 
             if ($this->editEndTime && $this->editStartTime) {
                 $updateData['end_time'] = $this->editEntryDate . ' ' . $this->editEndTime;
-                
+
                 // Calculate duration if both times are provided
                 $start = \Carbon\Carbon::parse($updateData['start_time']);
                 $end = \Carbon\Carbon::parse($updateData['end_time']);
-                
+
                 if ($end->greaterThan($start)) {
                     $updateData['duration_minutes'] = $start->diffInMinutes($end);
                     $updateData['is_running'] = false;
@@ -173,7 +173,7 @@ class Index extends Component
             }
 
             $entry->update($updateData);
-            
+
             session()->flash('message', 'Time entry updated successfully!');
             $this->cancelEdit();
         }
