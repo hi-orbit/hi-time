@@ -46,9 +46,6 @@ Route::middleware(['auth'])->group(function () {
     // Proposal system routes
     Route::resource('proposals', \App\Http\Controllers\ProposalController::class);
 
-    // Explicit proposal creation route for better debugging
-    Route::post('/proposals/create', [\App\Http\Controllers\ProposalController::class, 'store'])->name('proposals.create.post');
-
     Route::resource('leads', \App\Http\Controllers\LeadController::class);
     Route::resource('proposal-templates', \App\Http\Controllers\ProposalTemplateController::class);
 

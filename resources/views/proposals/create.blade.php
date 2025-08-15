@@ -27,7 +27,7 @@
         </div>
 
         <!-- Form -->
-        <form action="{{ route('proposals.create.post') }}" method="POST" class="space-y-6">
+        <form action="{{ route('proposals.store') }}" method="POST" class="space-y-6">
             @csrf
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

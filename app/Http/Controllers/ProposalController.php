@@ -49,6 +49,24 @@ class ProposalController extends Controller
      */
     public function store(Request $request)
     {
+        // Debug the raw request
+        Log::info('Raw Request Debug:', [
+            'method' => $request->method(),
+            'uri' => $request->getRequestUri(),
+            'headers' => $request->headers->all(),
+            'content_type' => $request->header('Content-Type'),
+            'content_length' => $request->header('Content-Length'),
+            'raw_content' => $request->getContent(),
+            'php_raw_input' => file_get_contents('php://input'),
+            'input_all' => $request->all(),
+            'input_json' => $request->json() ? $request->json()->all() : null,
+            'has_files' => $request->hasFile('*'),
+            'request_size' => strlen($request->getContent()),
+            'php_input_size' => strlen(file_get_contents('php://input')),
+            'server_content_length' => $_SERVER['CONTENT_LENGTH'] ?? 'not_set',
+            'post_data' => $_POST,
+        ]);
+
         Log::info('ProposalController store method called:', [
             'request_method' => $request->method(),
             'request_uri' => $request->getRequestUri(),
