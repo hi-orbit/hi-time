@@ -115,9 +115,8 @@ class ReportsController extends Controller
             $customerName = $entry->customer_name ?? 'No Customer';
             $projectName = $entry->project_name ?? 'Unknown Project';
 
-            // Calculate hours from duration_minutes (the actual field in our DB)
-            $minutes = $entry->duration ?? $entry->duration_minutes ?? 0;
-            $hours = $minutes / 60;
+            // Calculate hours using the model's corrected duration calculation
+            $hours = $entry->decimal_hours;
 
             // Determine activity description for display
             $activityDescription = $entry->activity_type ?? $entry->task_title ?? 'Unknown Activity';
@@ -208,9 +207,8 @@ class ReportsController extends Controller
             $customerName = $entry->customer_name ?? 'No Customer';
             $projectName = $entry->project_name ?? 'Unknown Project';
 
-            // Calculate hours from duration_minutes
-            $minutes = $entry->duration ?? $entry->duration_minutes ?? 0;
-            $hours = $minutes / 60;
+            // Calculate hours using the model's corrected duration calculation
+            $hours = $entry->decimal_hours;
 
             // Determine activity description for display
             $activityDescription = $entry->activity_type ?? $entry->task_title ?? 'Unknown Activity';

@@ -108,7 +108,7 @@
                                                                 @endif
                                                             </div>
                                                             <div class="flex items-center space-x-3">
-                                                                <span class="font-medium text-gray-900">{{ number_format($entry->hours + ($entry->minutes / 60), 2) }}h</span>
+                                                                <span class="font-medium text-gray-900">{{ number_format($entry->decimal_hours, 2) }}h</span>
                                                                 <span class="text-gray-500">{{ \Carbon\Carbon::parse($entry->created_at)->format('M j') }}</span>
                                                             </div>
                                                         </div>
