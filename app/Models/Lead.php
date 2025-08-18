@@ -56,7 +56,7 @@ class Lead extends Model
         ]);
 
         $this->update([
-            'status' => 'converted',
+            'status' => 'closed_won', // Updated to use the correct enum value
             'converted_customer_id' => $customer->id,
             'converted_at' => now(),
         ]);
@@ -69,7 +69,7 @@ class Lead extends Model
      */
     public function isConverted(): bool
     {
-        return $this->status === 'converted';
+        return $this->status === 'closed_won'; // Updated to use the correct enum value
     }
 
     /**

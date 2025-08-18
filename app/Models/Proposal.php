@@ -138,7 +138,7 @@ class Proposal extends Model
     public function accept(array $signatureData = []): void
     {
         $this->update([
-            'status' => 'accepted',
+            'status' => 'signed', // Change from 'accepted' to 'signed'
             'responded_at' => now(),
             'signature_data' => $signatureData,
         ]);
@@ -178,7 +178,7 @@ class Proposal extends Model
             'draft' => 'gray',
             'sent' => 'blue',
             'viewed' => 'yellow',
-            'accepted' => 'green',
+            'signed' => 'green',
             'rejected' => 'red',
             'cancelled' => 'gray',
             default => 'gray',
@@ -190,7 +190,7 @@ class Proposal extends Model
      */
     public function canBeEdited(): bool
     {
-        return in_array($this->status, ['draft']);
+        return !in_array($this->status, ['accepted', 'signed']);
     }
 
     /**
@@ -199,5 +199,13 @@ class Proposal extends Model
     public function canBeSent(): bool
     {
         return in_array($this->status, ['draft']);
+    }
+
+    /**
+     * Check if proposal can be deleted
+     */
+    public function canBeDeleted(): bool
+    {
+        return !in_array($this->status, ['accepted', 'signed']);
     }
 }

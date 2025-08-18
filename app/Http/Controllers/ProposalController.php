@@ -6,6 +6,7 @@ use App\Models\Proposal;
 use App\Models\Lead;
 use App\Models\Customer;
 use App\Models\ProposalTemplate;
+use App\Mail\ProposalInvitation;
 use App\Helpers\SunEditorHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -133,7 +134,38 @@ class ProposalController extends Controller
 
         $proposal = Proposal::create($validated);
 
-        $message = $status === 'sent' ? 'Proposal created and sent successfully!' : 'Proposal saved as draft successfully!';
+        // If status is 'sent', automatically send the proposal email
+        if ($status === 'sent') {
+            try {
+                // Generate PDF first
+                $this->generatePdf($proposal);
+
+                // Send email invitation
+                Mail::send(new ProposalInvitation($proposal));
+
+                // Mark as sent
+                $proposal->markAsSent();
+
+                $message = 'Proposal created and sent successfully!';
+                Log::info('Proposal email sent successfully', [
+                    'proposal_id' => $proposal->id,
+                    'recipient_email' => $proposal->recipient_email
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send proposal email', [
+                    'proposal_id' => $proposal->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+
+                // Update status back to draft if email failed
+                $proposal->update(['status' => 'draft']);
+
+                $message = 'Proposal created but failed to send email: ' . $e->getMessage();
+            }
+        } else {
+            $message = 'Proposal saved as draft successfully!';
+        }
 
         return redirect()->route('proposals.show', $proposal)
             ->with('success', $message);
@@ -204,7 +236,7 @@ class ProposalController extends Controller
      */
     public function destroy(Proposal $proposal)
     {
-        if (!$proposal->canBeEdited()) {
+        if (!$proposal->canBeDeleted()) {
             return redirect()->route('proposals.index')
                 ->with('error', 'This proposal cannot be deleted in its current status.');
         }
@@ -238,14 +270,25 @@ class ProposalController extends Controller
         // Generate PDF
         $this->generatePdf($proposal);
 
-        // Send email (placeholder - will implement proper mailer)
+        // Send email using the ProposalInvitation mailable
         try {
-            // TODO: Implement actual email sending
+            Mail::send(new ProposalInvitation($proposal));
             $proposal->markAsSent();
+
+            Log::info('Proposal email sent successfully via send method', [
+                'proposal_id' => $proposal->id,
+                'recipient_email' => $proposal->recipient_email
+            ]);
 
             return redirect()->route('proposals.show', $proposal)
                 ->with('success', 'Proposal sent successfully.');
         } catch (\Exception $e) {
+            Log::error('Failed to send proposal email via send method', [
+                'proposal_id' => $proposal->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return redirect()->route('proposals.show', $proposal)
                 ->with('error', 'Failed to send proposal: ' . $e->getMessage());
         }
