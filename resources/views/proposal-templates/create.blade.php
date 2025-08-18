@@ -298,12 +298,12 @@ Your Company Name`,
         },
         onImageUploadBefore: function(files, info, core) {
             console.log('Custom upload handler - About to upload files:', files);
-            
+
             // Handle each file upload with proper authentication
             Array.from(files).forEach((file, index) => {
                 const formData = new FormData();
                 formData.append('file-' + index, file);
-                
+
                 // Use fetch with proper credentials and CSRF
                 fetch('/proposal-templates/upload-image', {
                     method: 'POST',
@@ -317,10 +317,10 @@ Your Company Name`,
                 })
                 .then(async response => {
                     const contentType = response.headers.get('content-type');
-                    
+
                     if (!response.ok) {
                         let errorMessage = `HTTP ${response.status}`;
-                        
+
                         if (contentType && contentType.includes('application/json')) {
                             const errorData = await response.json();
                             errorMessage = errorData.message || errorMessage;
@@ -328,10 +328,10 @@ Your Company Name`,
                             const errorText = await response.text();
                             errorMessage = errorText || errorMessage;
                         }
-                        
+
                         throw new Error(errorMessage);
                     }
-                    
+
                     if (contentType && contentType.includes('application/json')) {
                         return response.json();
                     } else {
@@ -340,27 +340,27 @@ Your Company Name`,
                 })
                 .then(data => {
                     console.log('Upload response:', data);
-                    
+
                     if (data.errorMessage) {
                         throw new Error(data.errorMessage);
                     }
-                    
+
                     if (data.result && data.result.length > 0) {
                         // Insert the uploaded image into the editor
                         const imageUrl = data.result[0].url;
                         const imageName = data.result[0].name;
-                        
+
                         // Create image element and insert it
                         const img = document.createElement('img');
                         img.src = imageUrl;
                         img.alt = imageName;
                         img.style.maxWidth = '100%';
                         img.style.height = 'auto';
-                        
+
                         // Insert the image at the current cursor position
                         sunEditor.insertHTML(img.outerHTML);
                         console.log('Image uploaded and inserted successfully:', imageUrl);
-                        
+
                         // Show success message
                         alert('Image uploaded successfully!');
                     } else {
@@ -372,7 +372,7 @@ Your Company Name`,
                     alert('Failed to upload image: ' + error.message);
                 });
             });
-            
+
             return false; // Prevent SunEditor's default upload behavior
         },
         callBackSave: function (contents) {

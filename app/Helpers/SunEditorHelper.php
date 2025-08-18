@@ -245,15 +245,15 @@ class SunEditorHelper
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof SUNEDITOR !== 'undefined') {
                 const editor = SUNEDITOR.create('{$elementSelector}', {$configJson});
-                
+
                 // Store editor instance globally for access
                 window.sunEditor = editor;
-                
+
                 // Handle image upload success
                 editor.onImageUpload = function(targetElement, index, state, imageInfo, remainingFilesCount) {
                     console.log('Image uploaded:', imageInfo);
                 };
-                
+
                 // Handle image upload error
                 editor.onImageUploadError = function(errorMessage, result) {
                     console.error('Image upload error:', errorMessage, result);
