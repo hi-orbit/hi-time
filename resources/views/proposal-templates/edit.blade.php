@@ -233,193 +233,319 @@ We are pleased to submit this proposal for @{{project_name}}...\`, .sun-editor {
 <script src="https://cdn.jsdelivr.net/npm/suneditor@latest/src/lang/en.js"></script>
 
 @verbatim
+@push('scripts')
+<!-- Sun Editor JS -->
+<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/src/lang/en.js"></script>
+
+@push('scripts')
+<!-- Sun Editor JS -->
+<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/src/lang/en.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded, initializing Sun Editor...');
+    if (typeof SUNEDITOR !== 'undefined') {
+        const editor = SUNEDITOR.create('suneditor-container', {
+            plugins: [
+                'align',
+                'font',
+                'fontSize',
+                'fontColor',
+                'hiliteColor',
+                'horizontalRule',
+                'list',
+                'lineHeight',
+                'table',
+                'link',
+                'image'
+            ],
+            buttonList: [
+                ['undo', 'redo'],
+                ['bold', 'underline', 'italic', 'strike', 'subscript', 'superscript'],
+                ['fontColor', 'hiliteColor'],
+                ['removeFormat'],
+                ['outdent', 'indent'],
+                ['align', 'horizontalRule', 'list', 'lineHeight'],
+                ['table', 'link', 'image'],
+                ['fullScreen', 'showBlocks', 'codeView'],
+                ['preview', 'print']
+            ],
+            imageUploadUrl: '',
+            imageUploadSizeLimit: 5 * 1024 * 1024, // 5MB
+            imageUploadHeader: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            imageUploadBefore: function(files, info, uploadHandler) {
+                // Custom upload handler with proper authentication
+                if (!files || files.length === 0) return false;
 
-    // Declare editor variable in function scope
-    let editor;
+                const formData = new FormData();
+                formData.append('file-0', files[0]);
 
-    // Check if Sun Editor is available
-    if (typeof SUNEDITOR === 'undefined') {
-        console.error('SUNEDITOR is not defined - check if the CDN loaded properly');
-        return;
-    }
+                fetch('/proposal-templates/upload-image', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.errorMessage) {
+                        throw new Error(data.errorMessage);
+                    }
 
-    // Check if the container exists
-    const container = document.getElementById('suneditor-container');
-    if (!container) {
-        console.error('suneditor-container not found');
-        return;
-    }
+                    // Call the upload handler with successful result
+                    if (data.result && data.result.length > 0) {
+                        uploadHandler(data.result[0].url, data.result[0].name, null);
+                    }
+                })
+                .catch(error => {
+                    console.error('Upload error:', error);
+                    uploadHandler(null, null, error.message || 'Upload failed');
+                });
 
-    console.log('Container found, creating Sun Editor...');
-
-    // Initialize Sun Editor
-    editor = SUNEDITOR.create('suneditor-container', {
-        lang: SUNEDITOR_LANG['en'],
-        width: '100%',
-        height: '400px',
-        placeholder: `Enter your proposal template content here...
+                // Return false to prevent default upload
+                return false;
+            },
+            imageMultipleFile: true,
+            imageAccept: '.jpg,.jpeg,.png,.gif,.webp',
+            height: '400px',
+            minHeight: '200px',
+            placeholder: `Enter your proposal template content here...
 
 Use variables like:
 • {{client_name}} for client name
+• {{client_email}} for client email
+• {{client_address}} for client address
+• {{client_company_number}} for company number
 • {{project_name}} for project name
 • {{amount}} for project amount
 • {{date}} for current date
+• {{valid_until}} for validity date
 
 Example:
 Dear {{client_name}},
 
-We are pleased to submit this proposal for {{project_name}}...`,
-        buttonList: [
-            ['undo', 'redo'],
-            ['fontSize', 'formatBlock'],
-            ['bold', 'underline', 'italic', 'strike', 'subscript', 'superscript'],
-            ['fontColor', 'hiliteColor'],
-            ['align', 'list', 'lineHeight'],
-            ['outdent', 'indent'],
-            ['table', 'link'],
-            ['removeFormat'],
-            ['preview', 'print'],
-            ['fullScreen', 'showBlocks', 'codeView']
-        ],
-        formats: ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
-        colorList: [
-            ['#000000', '#424242', '#666666', '#999999', '#cccccc', '#eeeeee', '#f3f3f3', '#ffffff'],
-            ['#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#9900ff', '#ff00ff'],
-            ['#f4cccc', '#fce5cd', '#fff2cc', '#d9ead3', '#d0e0e3', '#cfe2f3', '#d9d2e9', '#ead1dc'],
-            ['#ea9999', '#f9cb9c', '#ffe599', '#b6d7a8', '#a2c4c9', '#9fc5e8', '#b4a7d6', '#d5a6bd'],
-            ['#e06666', '#f6b26b', '#ffd966', '#93c47d', '#76a5af', '#6fa8dc', '#8e7cc3', '#c27ba0']
-        ]
-    });
+We are pleased to submit this proposal for {{project_name}}.
 
-    console.log('Sun Editor created successfully:', editor);
+Company: {{client_name}}
+Address: {{client_address}}
+Company Number: {{client_company_number}}
+Email: {{client_email}}
 
-    // Get initial content and set it in the editor
-    const hiddenTextarea = document.getElementById('content');
-    if (!hiddenTextarea) {
-        console.error('Hidden textarea with id "content" not found');
-        return;
-    }
+The total investment for this project is {{amount}}.
 
-    const initialContent = hiddenTextarea.value;
-    console.log('Initial content length:', initialContent ? initialContent.length : 0);
+This proposal is valid until {{valid_until}}.
 
-    if (initialContent) {
-        try {
-            editor.setContents(initialContent);
-            console.log('Initial content set successfully');
-        } catch (error) {
-            console.error('Error setting initial content:', error);
-        }
-    }
+Thank you for considering our services.
 
-    // Variable to track if CSRF has been refreshed on edit
-    let hasRefreshedOnEdit = false;
-
-        // AJAX form submission to avoid CSRF issues with large forms
-    const form = document.getElementById('template-form');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault(); // Always prevent default for AJAX
-
-            console.log('AJAX form submission started...');
-
-            // Update the hidden textarea with current Sun Editor content
-            const hiddenTextarea = document.getElementById('content');
-            if (hiddenTextarea && editor) {
-                const editorContent = editor.getContents();
-                hiddenTextarea.value = editorContent;
-                console.log('Updated hidden textarea with content length:', editorContent.length);
-            } else {
-                console.error('Could not sync content - hiddenTextarea or editor missing');
-                return;
-            }
-
-            // Show loading state
-            const submitButton = form.querySelector('button[type="submit"]');
-            const originalButtonContent = submitButton.innerHTML;
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Updating Template...';
-            }
-
-            // Prepare form data
-            const formData = new FormData(form);
-
-            // Get CSRF token from meta tag
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            console.log('Using CSRF token:', csrfToken.substring(0, 10) + '...');
-
-            // Submit via AJAX
-            fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                credentials: 'same-origin'
-            })
-            .then(response => {
-                console.log('Response status:', response.status);
-                if (response.ok) {
-                    // Success - redirect to index page
-                    console.log('Form submitted successfully, redirecting...');
-                    window.location.href = '/proposal-templates';
-                } else if (response.status === 419) {
-                    throw new Error('CSRF token mismatch. Please refresh the page and try again.');
-                } else if (response.status === 422) {
-                    // Validation errors
-                    return response.json().then(data => {
-                        throw new Error('Validation failed: ' + JSON.stringify(data.errors));
-                    });
-                } else {
-                    throw new Error('Server error: ' + response.status);
-                }
-            })
-            .catch(error => {
-                console.error('Form submission error:', error);
-                alert('Error: ' + error.message);
-
-                // Re-enable the submit button
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = originalButtonContent;
-                }
-            });
+Best regards,
+Your Company Name`,
+            resizingBar: true,
+            showPathLabel: false,
+            charCounter: true,
+            maxCharCount: 50000
         });
+
+        // Store editor instance globally for access
+        window.sunEditor = editor;
+
+        // Get initial content and set it in the editor
+        const hiddenTextarea = document.getElementById('content');
+        const initialContent = hiddenTextarea.value || `{!! addslashes(old('content', $proposalTemplate->content ?? '')) !!}`;
+        if (initialContent) {
+            editor.setContents(initialContent);
+        }
+
+        // Combined editor change handler for content syncing and auto-save
+        let autoSaveTimeout;
+        editor.onChange = function(contents) {
+            // Update hidden textarea for form submission
+            hiddenTextarea.value = contents;
+
+            // Clear existing auto-save timeout
+            clearTimeout(autoSaveTimeout);
+
+            // Set new timeout for auto-save (optional feature)
+            autoSaveTimeout = setTimeout(function() {
+                console.log('Template content auto-saved locally');
+            }, 2000);
+        };
+
+        // Handle image upload success
+        editor.onImageUpload = function(targetElement, index, state, imageInfo, remainingFilesCount) {
+            console.log('Image uploaded:', imageInfo);
+        };
+
+        // Handle image upload error
+        editor.onImageUploadError = function(errorMessage, result) {
+            console.error('Image upload error:', errorMessage, result);
+            alert('Image upload failed: ' + errorMessage);
+        };
+
+        // Custom form submission for edit template
+        const form = document.getElementById('template-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // Ensure the hidden textarea has the latest content
+                hiddenTextarea.value = editor.getContents();
+
+                // Show loading state
+                const submitButton = form.querySelector('button[type="submit"]');
+                const originalButtonContent = submitButton ? submitButton.innerHTML : '';
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Updating Template...';
+                }
+
+                // Prepare form data
+                const formData = new FormData(form);
+
+                // Get CSRF token from meta tag
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                // Submit via AJAX
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Success - redirect to index page
+                        window.location.href = '/proposal-templates';
+                    } else if (response.status === 419) {
+                        throw new Error('CSRF token mismatch. Please refresh the page and try again.');
+                    } else if (response.status === 422) {
+                        // Validation errors
+                        return response.json().then(data => {
+                            throw new Error('Validation failed: ' + JSON.stringify(data.errors));
+                        });
+                    } else {
+                        throw new Error('Server error: ' + response.status);
+                    }
+                })
+                .catch(error => {
+                    console.error('Form submission error:', error);
+                    alert('Error: ' + error.message);
+
+                    // Re-enable the submit button
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalButtonContent;
+                    }
+                });
+            });
+        }
+
+    } else {
+        console.error('SunEditor is not loaded. Please include the SunEditor library.');
     }
-
-    // Auto-save functionality (optional)
-    let autoSaveTimeout;
-    const originalOnChange = editor.onChange;
-    editor.onChange = function(contents) {
-        hiddenTextarea.value = contents;
-
-        // Call the original onChange if it exists
-        if (originalOnChange) {
-            originalOnChange(contents);
-        }
-
-        // Clear existing timeout
-        clearTimeout(autoSaveTimeout);
-
-        // Set new timeout for auto-save (you can implement this if needed)
-        autoSaveTimeout = setTimeout(function() {
-            // Auto-save logic can go here
-            console.log('Content auto-saved locally');
-        }, 2000);
-
-        // CSRF refresh on first edit
-        if (!hasRefreshedOnEdit) {
-            refreshCSRFToken();
-            hasRefreshedOnEdit = true;
-        }
-    };
 });
 </script>
+@endpush
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Additional functionality for template editing
+    if (window.sunEditor) {
+        // Get initial content and set it in the editor
+        const hiddenTextarea = document.getElementById('content');
+        const initialContent = hiddenTextarea.value || `{!! addslashes(old('content', $proposalTemplate->content ?? '')) !!}`;
+        if (initialContent) {
+            window.sunEditor.setContents(initialContent);
+        }
+
+        // Combined editor change handler for content syncing and auto-save
+        let autoSaveTimeout;
+        window.sunEditor.onChange = function(contents) {
+            // Update hidden textarea for form submission
+            hiddenTextarea.value = contents;
+
+            // Clear existing auto-save timeout
+            clearTimeout(autoSaveTimeout);
+
+            // Set new timeout for auto-save (optional feature)
+            autoSaveTimeout = setTimeout(function() {
+                console.log('Template content auto-saved locally');
+            }, 2000);
+        };
+
+        // Custom form submission for edit template
+        const form = document.getElementById('template-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // Ensure the hidden textarea has the latest content
+                hiddenTextarea.value = window.sunEditor.getContents();
+
+                // Show loading state
+                const submitButton = form.querySelector('button[type="submit"]');
+                const originalButtonContent = submitButton ? submitButton.innerHTML : '';
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Updating Template...';
+                }
+
+                // Prepare form data
+                const formData = new FormData(form);
+
+                // Get CSRF token from meta tag
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                // Submit via AJAX
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Success - redirect to index page
+                        window.location.href = '/proposal-templates';
+                    } else if (response.status === 419) {
+                        throw new Error('CSRF token mismatch. Please refresh the page and try again.');
+                    } else if (response.status === 422) {
+                        // Validation errors
+                        return response.json().then(data => {
+                            throw new Error('Validation failed: ' + JSON.stringify(data.errors));
+                        });
+                    } else {
+                        throw new Error('Server error: ' + response.status);
+                    }
+                })
+                .catch(error => {
+                    console.error('Form submission error:', error);
+                    alert('Error: ' + error.message);
+
+                    // Re-enable the submit button
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalButtonContent;
+                    }
+                });
+            });
+        }
+    }
+});
+</script>
+@endpush
 @endverbatim
 @endpush
 @endsection

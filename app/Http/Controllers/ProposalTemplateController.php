@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProposalTemplate;
+use App\Helpers\SunEditorHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -108,5 +109,13 @@ class ProposalTemplateController extends Controller
 
         return redirect()->route('proposal-templates.index')
             ->with('success', 'Template deleted successfully.');
+    }
+
+    /**
+     * Handle image uploads for template content
+     */
+    public function uploadImage(Request $request)
+    {
+        return SunEditorHelper::uploadImage($request, 'template-images');
     }
 }

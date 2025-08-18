@@ -6,10 +6,12 @@ use App\Models\Proposal;
 use App\Models\Lead;
 use App\Models\Customer;
 use App\Models\ProposalTemplate;
+use App\Helpers\SunEditorHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class ProposalController extends Controller
@@ -502,5 +504,13 @@ class ProposalController extends Controller
                 'error_code' => 'INTERNAL_ERROR'
             ], 500);
         }
+    }
+
+    /**
+     * Handle image uploads for proposal content
+     */
+    public function uploadImage(Request $request)
+    {
+        return SunEditorHelper::uploadImage($request, 'proposal-images');
     }
 }

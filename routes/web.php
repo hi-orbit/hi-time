@@ -58,6 +58,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/proposals/{proposal}/preview', [\App\Http\Controllers\ProposalController::class, 'preview'])->name('proposals.preview');
     // Route::post('/proposals/live-preview', [\App\Http\Controllers\ProposalController::class, 'livePreview'])->name('proposals.live-preview'); // Moved outside auth middleware for debugging
     Route::get('/proposals/{proposal}/pdf', [\App\Http\Controllers\ProposalController::class, 'downloadPdf'])->name('proposals.pdf');
+    Route::post('/proposals/upload-image', [\App\Http\Controllers\ProposalController::class, 'uploadImage'])->name('proposals.upload-image');
+
+    // Proposal template image upload route
+    Route::post('/proposal-templates/upload-image', [\App\Http\Controllers\ProposalTemplateController::class, 'uploadImage'])->name('proposal-templates.upload-image');
 
     // CSRF token refresh endpoint
     Route::get('/csrf-token', function() {

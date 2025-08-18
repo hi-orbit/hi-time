@@ -318,7 +318,7 @@ Your Company Name`,
             ['fontColor', 'hiliteColor'],
             ['align', 'list', 'lineHeight'],
             ['outdent', 'indent'],
-            ['table', 'link'],
+            ['table', 'link', 'image'], // Added image button
             ['removeFormat'],
             ['preview', 'print'],
             ['fullScreen', 'showBlocks', 'codeView']
@@ -327,7 +327,33 @@ Your Company Name`,
         colorList: [
             '#333333', '#666666', '#999999', '#cccccc',
             '#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff'
-        ]
+        ],
+        // Image upload configuration
+        imageUploadUrl: '{{ route("proposals.upload-image") }}',
+        imageUploadSizeLimit: 5 * 1024 * 1024, // 5MB limit
+        imageUploadHeader: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        // Configure file input name - SunEditor uses 'file-0' by default
+        imageMultipleFile: true, // Multiple file upload
+        imageFileInput: true, // Enable file upload tab
+        imageUrlInput: true, // Enable URL input tab
+        imageAccept: '.jpg,.jpeg,.png,.gif,.webp', // Accepted file types
+        onImageUpload: function(targetElement, index, state, info, remainingFilesCount, core) {
+            console.log('Image upload started', info);
+        },
+        onImageUploadError: function(errorMessage, result, core) {
+            console.error('Image upload error:', errorMessage, result);
+            alert('Failed to upload image: ' + errorMessage);
+        },
+        onImageUploadBefore: function(files, info, core) {
+            console.log('About to upload files:', files);
+            return true; // Continue with upload
+        },
+        callBackSave: function (contents) {
+            console.log('Content saved');
+        }
     });
 
     // Set initial content if available

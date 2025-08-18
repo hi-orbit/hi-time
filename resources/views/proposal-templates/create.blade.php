@@ -196,63 +196,6 @@
                                 </div>
                             </div>
                         </div>
-                        </div>
-
-                        <!-- Template Preview -->
-                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                            <h4 class="text-sm font-medium text-gray-900 mb-2">Template Guidelines</h4>
-                            <div class="text-sm text-gray-600 space-y-2">
-                                <div class="flex items-start">
-                                    <svg class="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <span>Use clear, professional language</span>
-                                </div>
-                                <div class="flex items-start">
-                                    <svg class="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <span>Include your company branding and contact information</span>
-                                </div>
-                                <div class="flex items-start">
-                                    <svg class="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <span>Define project scope, timeline, and deliverables</span>
-                                </div>
-                                <div class="flex items-start">
-                                    <svg class="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <span>Include terms and conditions</span>
-                                </div>
-                                <div class="flex items-start">
-                                    <svg class="w-4 h-4 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <span>Use variables for dynamic content that changes per proposal</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Example Variables -->
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                            <h4 class="text-sm font-medium text-yellow-900 mb-2">Common Variables</h4>
-                            <div class="grid grid-cols-2 gap-2 text-sm">
-                                <div class="space-y-1">
-                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{client_name}}</code>
-                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{project_name}}</code>
-                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{amount}}</code>
-                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{date}}</code>
-                                </div>
-                                <div class="space-y-1">
-                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{company_name}}</code>
-                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{timeline}}</code>
-                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{description}}</code>
-                                    <code class="bg-yellow-100 px-2 py-1 rounded text-yellow-800 block">@{{contact_email}}</code>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -278,59 +221,43 @@
 </div>
 
 @push('scripts')
-<!-- Sun Editor JS -->
 <script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/suneditor@latest/src/lang/en.js"></script>
 
-@verbatim
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, attempting to initialize Sun Editor...');
+    const contentTextarea = document.getElementById('content');
 
-    // Check if Sun Editor is loaded
-    if (typeof SUNEDITOR === 'undefined') {
-        console.error('SUNEDITOR is not defined. Check if the script loaded correctly.');
-        document.getElementById('editor-loading').innerHTML = '<div class="text-center text-red-600"><p>Error: Editor failed to load. Please refresh the page.</p></div>';
-        return;
-    }
-
-    if (typeof SUNEDITOR_LANG === 'undefined') {
-        console.error('SUNEDITOR_LANG is not defined. Check if the language script loaded correctly.');
-        document.getElementById('editor-loading').innerHTML = '<div class="text-center text-red-600"><p>Error: Editor language pack failed to load. Please refresh the page.</p></div>';
-        return;
-    }
-
-    try {
-        // Initialize Sun Editor
-        const editor = SUNEDITOR.create('suneditor-container', {
-            lang: SUNEDITOR_LANG['en'],
-            width: '100%',
-            height: '400px',
-            placeholder: `Enter your proposal template content here...
+    // Initialize Sun Editor with working configuration from proposals
+    const sunEditor = SUNEDITOR.create('suneditor-container', {
+        lang: SUNEDITOR_LANG['en'],
+        width: '100%',
+        height: '400px',
+        placeholder: `Enter your proposal template content here...
 
 Use variables like:
-• {{client_name}} for client name
-• {{client_email}} for client email
-• {{client_address}} for client address
-• {{client_company_number}} for company number
-• {{project_name}} for project name
-• {{amount}} for project amount
-• {{date}} for current date
-• {{valid_until}} for validity date
+• @{{client_name}} for client name
+• @{{client_email}} for client email
+• @{{client_address}} for client address
+• @{{client_company_number}} for company number
+• @{{project_name}} for project name
+• @{{amount}} for project amount
+• @{{date}} for current date
+• @{{valid_until}} for validity date
 
 Example:
-Dear {{client_name}},
+Dear @{{client_name}},
 
-We are pleased to submit this proposal for {{project_name}}.
+We are pleased to submit this proposal for @{{project_name}}.
 
-Company: {{client_name}}
-Address: {{client_address}}
-Company Number: {{client_company_number}}
-Email: {{client_email}}
+Company: @{{client_name}}
+Address: @{{client_address}}
+Company Number: @{{client_company_number}}
+Email: @{{client_email}}
 
-The total investment for this project is {{amount}}.
+The total investment for this project is @{{amount}}.
 
-This proposal is valid until {{valid_until}}.
+This proposal is valid until @{{valid_until}}.
 
 Thank you for considering our services.
 
@@ -343,115 +270,155 @@ Your Company Name`,
             ['fontColor', 'hiliteColor'],
             ['align', 'list', 'lineHeight'],
             ['outdent', 'indent'],
-            ['table', 'link'],
+            ['table', 'link', 'image'],
             ['removeFormat'],
             ['preview', 'print'],
             ['fullScreen', 'showBlocks', 'codeView']
         ],
         formats: ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
         colorList: [
-            ['#000000', '#424242', '#666666', '#999999', '#cccccc', '#eeeeee', '#f3f3f3', '#ffffff'],
-            ['#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#9900ff', '#ff00ff'],
-            ['#f4cccc', '#fce5cd', '#fff2cc', '#d9ead3', '#d0e0e3', '#cfe2f3', '#d9d2e9', '#ead1dc'],
-            ['#ea9999', '#f9cb9c', '#ffe599', '#b6d7a8', '#a2c4c9', '#9fc5e8', '#b4a7d6', '#d5a6bd'],
-            ['#e06666', '#f6b26b', '#ffd966', '#93c47d', '#76a5af', '#6fa8dc', '#8e7cc3', '#c27ba0']
-        ]
+            '#333333', '#666666', '#999999', '#cccccc',
+            '#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff'
+        ],
+        // Image upload configuration - completely disable built-in upload
+        imageUploadUrl: '', // Empty string to disable
+        imageUploadSizeLimit: 5 * 1024 * 1024, // 5MB limit
+        imageUploadHeader: null, // Not needed for custom handler
+        // Configure file input name - SunEditor uses 'file-0' by default
+        imageMultipleFile: true, // Multiple file upload
+        imageFileInput: true, // Enable file upload tab
+        imageUrlInput: true, // Enable URL input tab
+        imageAccept: '.jpg,.jpeg,.png,.gif,.webp', // Accepted file types
+        onImageUpload: function(targetElement, index, state, info, remainingFilesCount, core) {
+            console.log('Image upload started', info);
+        },
+        onImageUploadError: function(errorMessage, result, core) {
+            console.error('Image upload error:', errorMessage, result);
+            alert('Failed to upload image: ' + errorMessage);
+        },
+        onImageUploadBefore: function(files, info, core) {
+            console.log('Custom upload handler - About to upload files:', files);
+            
+            // Handle each file upload with proper authentication
+            Array.from(files).forEach((file, index) => {
+                const formData = new FormData();
+                formData.append('file-' + index, file);
+                
+                // Use fetch with proper credentials and CSRF
+                fetch('/proposal-templates/upload-image', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin' // Include cookies for authentication
+                })
+                .then(async response => {
+                    const contentType = response.headers.get('content-type');
+                    
+                    if (!response.ok) {
+                        let errorMessage = `HTTP ${response.status}`;
+                        
+                        if (contentType && contentType.includes('application/json')) {
+                            const errorData = await response.json();
+                            errorMessage = errorData.message || errorMessage;
+                        } else {
+                            const errorText = await response.text();
+                            errorMessage = errorText || errorMessage;
+                        }
+                        
+                        throw new Error(errorMessage);
+                    }
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json();
+                    } else {
+                        throw new Error('Server returned non-JSON response');
+                    }
+                })
+                .then(data => {
+                    console.log('Upload response:', data);
+                    
+                    if (data.errorMessage) {
+                        throw new Error(data.errorMessage);
+                    }
+                    
+                    if (data.result && data.result.length > 0) {
+                        // Insert the uploaded image into the editor
+                        const imageUrl = data.result[0].url;
+                        const imageName = data.result[0].name;
+                        
+                        // Create image element and insert it
+                        const img = document.createElement('img');
+                        img.src = imageUrl;
+                        img.alt = imageName;
+                        img.style.maxWidth = '100%';
+                        img.style.height = 'auto';
+                        
+                        // Insert the image at the current cursor position
+                        sunEditor.insertHTML(img.outerHTML);
+                        console.log('Image uploaded and inserted successfully:', imageUrl);
+                        
+                        // Show success message
+                        alert('Image uploaded successfully!');
+                    } else {
+                        throw new Error('No image data received from server');
+                    }
+                })
+                .catch(error => {
+                    console.error('Upload error:', error);
+                    alert('Failed to upload image: ' + error.message);
+                });
+            });
+            
+            return false; // Prevent SunEditor's default upload behavior
+        },
+        callBackSave: function (contents) {
+            console.log('Content saved');
+        }
     });
 
-    // Get initial content and set it in the editor
-    const hiddenTextarea = document.getElementById('content');
-    const initialContent = hiddenTextarea.value;
-    if (initialContent) {
-        editor.setContents(initialContent);
+    // Debug: Check the actual configuration
+    console.log('SunEditor configuration:', {
+        imageUploadUrl: sunEditor.options.imageUploadUrl,
+        imageUploadHeader: sunEditor.options.imageUploadHeader
+    });
+
+    // Set initial content if available
+    if (contentTextarea.value) {
+        sunEditor.setContents(contentTextarea.value);
     }
 
-    // Combined editor change handler for content syncing and auto-save
-    let autoSaveTimeout;
-    editor.onChange = function(contents) {
-        // Update hidden textarea for form submission
-        hiddenTextarea.value = contents;
-
-        // Clear existing auto-save timeout
-        clearTimeout(autoSaveTimeout);
-
-        // Set new timeout for auto-save (optional feature)
-        autoSaveTimeout = setTimeout(function() {
-            console.log('Content auto-saved locally');
-        }, 2000);
+    // Update hidden textarea when editor content changes
+    sunEditor.onChange = function(contents) {
+        contentTextarea.value = contents;
     };
 
-    // CSRF Token Refresh Function
-    function refreshCSRFToken() {
-        fetch('/csrf-token', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.csrf_token) {
-                // Update CSRF token in meta tag
-                document.querySelector('meta[name="csrf-token"]').setAttribute('content', data.csrf_token);
-
-                // Update CSRF token in form
-                const csrfInput = document.querySelector('input[name="_token"]');
-                if (csrfInput) {
-                    csrfInput.value = data.csrf_token;
-                }
-
-                // Show refresh indicator briefly
-                const indicator = document.getElementById('csrf-refresh-status');
-                if (indicator) {
-                    indicator.style.opacity = '1';
-                    setTimeout(() => {
-                        indicator.style.opacity = '0';
-                    }, 2000);
-                }
-
-                console.log('CSRF token refreshed successfully');
-            }
-        })
-        .catch(error => {
-            console.error('Failed to refresh CSRF token:', error);
-        });
-    }
-
-    // Refresh CSRF token every 5 minutes (300000ms)
-    setInterval(refreshCSRFToken, 300000);
-
-    // Refresh CSRF token when user starts typing (once per session)
-    let hasRefreshedOnEdit = false;
-    editor.onInput = function() {
-        if (!hasRefreshedOnEdit) {
-            refreshCSRFToken();
-            hasRefreshedOnEdit = true;
-        }
-    };
-
-    // Form submission handling
+    // Handle submit button clicks - sync editor content to hidden field
     const form = document.querySelector('form');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            // Ensure the hidden textarea has the latest content before submission
-            hiddenTextarea.value = editor.getContents();
+    const submitButtons = form.querySelectorAll('button[type="submit"]');
+
+    submitButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            // Sync editor content to hidden textarea before form submission
+            const editorContent = sunEditor.getContents();
+            contentTextarea.value = editorContent;
+
+            // Simple validation - only prevent if content is truly empty
+            if (!editorContent || editorContent.trim() === '') {
+                e.preventDefault();
+                alert('Please enter template content before submitting.');
+                return false;
+            }
 
             // Show loading state
-            const submitButton = form.querySelector('button[type="submit"]');
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Creating Template...';
-            }
+            button.disabled = true;
+            button.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Creating Template...';
         });
-    }
-
-    } catch (error) {
-        console.error('Error initializing Sun Editor:', error);
-        document.getElementById('editor-loading').innerHTML = '<div class="text-center text-red-600"><p>Error: Failed to initialize editor. Please refresh the page.</p></div>';
-    }
+    });
 });
 </script>
-@endverbatim
 @endpush
 @endsection
