@@ -650,7 +650,7 @@
                                 </form>
 
                                 <!-- Notes List -->
-                                <div class="max-h-48 overflow-y-auto mb-6" wire:key="notes-list-{{ $selectedTask->id }}">
+                                <div class="mb-6" wire:key="notes-list-{{ $selectedTask->id }}">
                                     @if($selectedTask->notes && $selectedTask->notes->count() > 0)
                                         @foreach($selectedTask->notes->sortByDesc('created_at') as $note)
                                             <div class="bg-white border rounded-lg p-3 mb-3" wire:key="note-{{ $note->id }}">
@@ -664,6 +664,16 @@
                                                             <p class="text-xs text-gray-500">{{ $note->created_at->format('M j, Y H:i') }}</p>
                                                         </div>
                                                     </div>
+                                                    @if($note->user_id === auth()->id())
+                                                        <button wire:click="deleteNote({{ $note->id }})" 
+                                                                onclick="return confirm('Are you sure you want to delete this note?')"
+                                                                class="text-red-600 hover:text-red-800 p-1 rounded"
+                                                                title="Delete note">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                            </svg>
+                                                        </button>
+                                                    @endif
                                                 </div>
                                                 <p class="text-sm text-gray-700">{{ $note->content }}</p>
                                             </div>

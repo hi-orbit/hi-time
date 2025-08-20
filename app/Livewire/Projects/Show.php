@@ -274,6 +274,27 @@ class Show extends Component
             // Use dispatch instead of session flash to avoid component refresh issues
             $this->dispatch('note-added', message: 'Note added successfully!');
         }
+    }
+
+    public function deleteNote($noteId)
+    {
+        $note = TaskNote::find($noteId);
+
+        if ($note && $note->task_id === $this->selectedTask->id) {
+            // Only allow deletion by the note creator
+            if ($note->user_id === Auth::id()) {
+                $note->delete();
+
+                // Refresh the selected task to show updated notes
+                $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader'])->findOrFail($this->selectedTask->id);
+
+                $this->dispatch('note-deleted', message: 'Note deleted successfully!');
+            } else {
+                $this->dispatch('note-error', message: 'You can only delete your own notes.');
+            }
+        } else {
+            $this->dispatch('note-error', message: 'Note not found.');
+        }
     }    public function createTask()
     {
         $this->validate([
