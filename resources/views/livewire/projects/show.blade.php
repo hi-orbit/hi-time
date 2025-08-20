@@ -665,7 +665,7 @@
                                                         </div>
                                                     </div>
                                                     @if($note->user_id === auth()->id())
-                                                        <button wire:click="deleteNote({{ $note->id }})" 
+                                                        <button wire:click="deleteNote({{ $note->id }})"
                                                                 onclick="return confirm('Are you sure you want to delete this note?')"
                                                                 class="text-red-600 hover:text-red-800 p-1 rounded"
                                                                 title="Delete note">
