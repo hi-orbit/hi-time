@@ -64,7 +64,6 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
             'status' => 'required|in:active,completed,archived',
             'customer_id' => 'nullable|exists:customers,id',
-            'due_date' => 'nullable|date|after:today',
             'assigned_users' => 'nullable|array',
             'assigned_users.*' => 'exists:users,id',
         ]);
@@ -74,7 +73,6 @@ class ProjectController extends Controller
             'description' => $request->description,
             'status' => $request->status,
             'customer_id' => $request->customer_id,
-            'due_date' => $request->due_date,
             'created_by' => Auth::id(),
         ]);
 
@@ -138,7 +136,6 @@ class ProjectController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|in:active,completed,archived',
-            'due_date' => 'nullable|date|after_or_equal:today',
             'customer_id' => 'nullable|exists:customers,id',
             'assigned_users' => 'nullable|array',
             'assigned_users.*' => 'exists:users,id',
@@ -148,7 +145,6 @@ class ProjectController extends Controller
             'name' => $validated['name'],
             'description' => $validated['description'],
             'status' => $validated['status'],
-            'due_date' => $validated['due_date'],
             'customer_id' => $validated['customer_id'],
         ]);
 

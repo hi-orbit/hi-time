@@ -115,24 +115,6 @@
                         @enderror
                     </div>
 
-                    <!-- Due Date -->
-                    <div class="mb-6">
-                        <label for="due_date" class="block text-sm font-medium text-gray-700">
-                            Due Date
-                        </label>
-                        <input
-                            type="date"
-                            name="due_date"
-                            id="due_date"
-                            value="{{ old('due_date') }}"
-                            min="{{ date('Y-m-d') }}"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('due_date') border-red-500 @enderror"
-                        >
-                        @error('due_date')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
                     <!-- Submit Buttons -->
                     <div class="flex items-center justify-end space-x-3">
                         <a href="{{ route('projects.index') }}" class="bg-gray-200 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
