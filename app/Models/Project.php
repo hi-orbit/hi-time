@@ -13,6 +13,7 @@ class Project extends Model
         'status',
         'created_by',
         'customer_id',
+        'due_date',
         'archived',
         'archived_at',
     ];
@@ -20,6 +21,7 @@ class Project extends Model
     protected $casts = [
         'archived' => 'boolean',
         'archived_at' => 'datetime',
+        'due_date' => 'date',
     ];
 
     public function creator()
@@ -30,6 +32,11 @@ class Project extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function assignedUsers()
+    {
+        return $this->belongsToMany(User::class, 'project_users');
     }
 
     public function tasks()

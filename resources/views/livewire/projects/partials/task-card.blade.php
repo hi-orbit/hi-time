@@ -45,24 +45,28 @@
 
     <!-- Time Tracking & Actions -->
     <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-        <div class="flex space-x-2">
-            @if($task->isRunning() && $task->runningTimeEntry && $task->runningTimeEntry->user_id === auth()->id())
-                <button wire:click.stop="stopTimer({{ $task->id }})"
-                        class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200">
-                    ⏹ Stop
-                </button>
-            @else
-                <button wire:click.stop="startTimer({{ $task->id }})"
-                        class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200">
-                    ▶ Start
-                </button>
-            @endif
+        @if(!auth()->user()->isCustomer())
+            <div class="flex space-x-2">
+                @if($task->isRunning() && $task->runningTimeEntry && $task->runningTimeEntry->user_id === auth()->id())
+                    <button wire:click.stop="stopTimer({{ $task->id }})"
+                            class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200">
+                        ⏹ Stop
+                    </button>
+                @else
+                    <button wire:click.stop="startTimer({{ $task->id }})"
+                            class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200">
+                        ▶ Start
+                    </button>
+                @endif
 
-            <button wire:click.stop="openTimeModal({{ $task->id }})"
-                    class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200">
-                + Log
-            </button>
-        </div>
+                <button wire:click.stop="openTimeModal({{ $task->id }})"
+                        class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200">
+                    + Log
+                </button>
+            </div>
+        @else
+            <div></div>
+        @endif
 
         <!-- Notes indicator -->
         @if($task->notes && $task->notes->count() > 0)
@@ -75,11 +79,13 @@
         @endif
     </div>
 
-    <!-- Total Time -->
-    @if($task->timeEntries && $task->timeEntries->count() > 0)
-        <div class="mt-2 text-xs text-gray-500">
-            Total: {{ number_format($task->total_time / 60, 1) }}h
-        </div>
+    @if(!auth()->user()->isCustomer())
+        <!-- Total Time -->
+        @if($task->timeEntries && $task->timeEntries->count() > 0)
+            <div class="mt-2 text-xs text-gray-500">
+                Total: {{ number_format($task->total_time / 60, 1) }}h
+            </div>
+        @endif
     @endif
 
     <!-- Drop zones for ordering -->

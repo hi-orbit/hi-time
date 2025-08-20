@@ -120,9 +120,20 @@ class Index extends Component
 
     public function render()
     {
-        $query = Project::with(['creator', 'tasks', 'customer'])
-            ->withCount('tasks')
-            ->orderBy('created_at', 'desc');
+        $user = Auth::user();
+
+        if ($user->isCustomer()) {
+            // Customers can only see projects they're assigned to
+            $query = $user->assignedProjects()
+                ->with(['creator', 'tasks', 'customer'])
+                ->withCount('tasks')
+                ->orderBy('created_at', 'desc');
+        } else {
+            // Admin, users, and contractors can see all projects
+            $query = Project::with(['creator', 'tasks', 'customer'])
+                ->withCount('tasks')
+                ->orderBy('created_at', 'desc');
+        }
 
         if ($this->showArchived) {
             $projects = $query->archived()->get();

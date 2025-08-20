@@ -106,6 +106,8 @@
                                     class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium">
                                 + Log General Time
                             </button>
+                        @endif
+                        @if(auth()->user()->isAdmin() || auth()->user()->isUser() || auth()->user()->isCustomer())
                             <button wire:click="openTaskModal"
                                     class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium">
                                 + New Task
@@ -416,34 +418,36 @@
 
                     <!-- Buttons Row -->
                     <div class="flex justify-end items-center space-x-2 mb-6">
-                        <!-- Time Tracking Buttons -->
-                        @php
-                            $hasRunningTimer = auth()->user()->timeEntries()
-                                ->where('task_id', $selectedTask->id)
-                                ->where('is_running', true)
-                                ->exists();
-                        @endphp
+                        @if(!auth()->user()->isCustomer())
+                            <!-- Time Tracking Buttons -->
+                            @php
+                                $hasRunningTimer = auth()->user()->timeEntries()
+                                    ->where('task_id', $selectedTask->id)
+                                    ->where('is_running', true)
+                                    ->exists();
+                            @endphp
 
-                        @if($hasRunningTimer)
-                            <button wire:click="stopTimer({{ $selectedTask->id }})"
-                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium">
-                                ⏹ Stop Timer
-                            </button>
-                        @else
-                            <button wire:click="startTimer({{ $selectedTask->id }})"
-                                    class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium">
-                                ▶ Start Timer
+                            @if($hasRunningTimer)
+                                <button wire:click="stopTimer({{ $selectedTask->id }})"
+                                        class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium">
+                                    ⏹ Stop Timer
+                                </button>
+                            @else
+                                <button wire:click="startTimer({{ $selectedTask->id }})"
+                                        class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium">
+                                    ▶ Start Timer
+                                </button>
+                            @endif
+
+                            <button wire:click="toggleTimeForm"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium">
+                                @if($showTimeForm)
+                                    ✕ Hide
+                                @else
+                                    + Log Time
+                                @endif
                             </button>
                         @endif
-
-                        <button wire:click="toggleTimeForm"
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium">
-                            @if($showTimeForm)
-                                ✕ Hide
-                            @else
-                                + Log Time
-                            @endif
-                        </button>
 
                         <!-- Shareable Link Button -->
                         <button onclick="copyShareableLink({{ $selectedTask->id }})"
@@ -560,76 +564,82 @@
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label class="text-sm font-medium text-gray-700">Total time tracked:</label>
-                                    <p class="text-sm text-gray-900 mt-1">{{ number_format($selectedTask->total_time / 60, 1) }}h</p>
-                                </div>
+                                @if(!auth()->user()->isCustomer())
+                                    <div>
+                                        <label class="text-sm font-medium text-gray-700">Total time tracked:</label>
+                                        <p class="text-sm text-gray-900 mt-1">{{ number_format($selectedTask->total_time / 60, 1) }}h</p>
+                                    </div>
+                                @endif
                             </div>
 
-                            <!-- Time Entries -->
-                            @if($selectedTask->timeEntries && $selectedTask->timeEntries->count() > 0)
-                                <h5 class="text-md font-medium text-gray-900 mb-2">Recent Time Entries</h5>
-                                <div class="max-h-48 overflow-y-auto">
-                                    @foreach($selectedTask->timeEntries->take(5) as $entry)
-                                        <div class="text-xs bg-white border rounded p-2 mb-2">
-                                            <div class="flex justify-between">
-                                                <span class="font-medium">{{ $entry->user->name }}</span>
-                                                <span>{{ $entry->formatted_decimal_hours }}</span>
+                            @if(!auth()->user()->isCustomer())
+                                <!-- Time Entries -->
+                                @if($selectedTask->timeEntries && $selectedTask->timeEntries->count() > 0)
+                                    <h5 class="text-md font-medium text-gray-900 mb-2">Recent Time Entries</h5>
+                                    <div class="max-h-48 overflow-y-auto">
+                                        @foreach($selectedTask->timeEntries->take(5) as $entry)
+                                            <div class="text-xs bg-white border rounded p-2 mb-2">
+                                                <div class="flex justify-between">
+                                                    <span class="font-medium">{{ $entry->user->name }}</span>
+                                                    <span>{{ $entry->formatted_decimal_hours }}</span>
+                                                </div>
+                                                @if($entry->description)
+                                                    <p class="text-gray-600 mt-1">{{ $entry->description }}</p>
+                                                @endif
+                                                <p class="text-gray-500 mt-1">{{ $entry->created_at->format('M j, Y H:i') }}</p>
                                             </div>
-                                            @if($entry->description)
-                                                <p class="text-gray-600 mt-1">{{ $entry->description }}</p>
-                                            @endif
-                                            <p class="text-gray-500 mt-1">{{ $entry->created_at->format('M j, Y H:i') }}</p>
-                                        </div>
-                                    @endforeach
-                                </div>
+                                        @endforeach
+                                    </div>
+                                @endif
                             @endif
                         </div>
 
                         <!-- Right Column: Notes and Attachments -->
                         <div>
-                                                        <!-- Collapsible Time Tracking Section -->
-                            @if($showTimeForm)
-                                <div wire:key="time-tracking-section-{{ $selectedTask->id }}" class="mb-6">
-                                    <h4 class="text-lg font-medium text-gray-900 mb-3">Log Time</h4>
+                            @if(!auth()->user()->isCustomer())
+                                <!-- Collapsible Time Tracking Section -->
+                                @if($showTimeForm)
+                                    <div wire:key="time-tracking-section-{{ $selectedTask->id }}" class="mb-6">
+                                        <h4 class="text-lg font-medium text-gray-900 mb-3">Log Time</h4>
 
-                                    <!-- Manual Time Entry Form -->
-                                    <form wire:submit.prevent="logTimeInline" class="bg-gray-50 rounded-lg p-4">
-                                        <div class="mb-4">
-                                            <label for="timeDescription" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                                            <textarea wire:model="timeDescription" id="timeDescription" rows="2"
-                                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                                                      placeholder="What did you work on?"></textarea>
-                                            @error('timeDescription') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                                        </div>
-
-                                        <div class="grid grid-cols-2 gap-4 mb-4">
-                                            <div>
-                                                <label for="hours" class="block text-sm font-medium text-gray-700 mb-2">Hours <span class="text-gray-500 text-xs">(optional)</span></label>
-                                                <input wire:model="hours" type="number" id="hours" min="0" max="23" placeholder="0"
-                                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                                                @error('hours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                        <!-- Manual Time Entry Form -->
+                                        <form wire:submit.prevent="logTimeInline" class="bg-gray-50 rounded-lg p-4">
+                                            <div class="mb-4">
+                                                <label for="timeDescription" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                                <textarea wire:model="timeDescription" id="timeDescription" rows="2"
+                                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                                          placeholder="What did you work on?"></textarea>
+                                                @error('timeDescription') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                             </div>
-                                            <div>
-                                                <label for="minutes" class="block text-sm font-medium text-gray-700 mb-2">Minutes <span class="text-red-500">*</span></label>
-                                                <input wire:model="minutes" type="number" id="minutes" min="0" max="59" required
-                                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                                                @error('minutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                                            </div>
-                                        </div>
 
-                                        <div class="flex justify-end space-x-2">
-                                            <button type="button" wire:click="toggleTimeForm"
-                                                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                                                Cancel
-                                            </button>
-                                            <button type="submit"
-                                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                                                Log Time
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
+                                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                                <div>
+                                                    <label for="hours" class="block text-sm font-medium text-gray-700 mb-2">Hours <span class="text-gray-500 text-xs">(optional)</span></label>
+                                                    <input wire:model="hours" type="number" id="hours" min="0" max="23" placeholder="0"
+                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                                    @error('hours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                                </div>
+                                                <div>
+                                                    <label for="minutes" class="block text-sm font-medium text-gray-700 mb-2">Minutes <span class="text-red-500">*</span></label>
+                                                    <input wire:model="minutes" type="number" id="minutes" min="0" max="59" required
+                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                                    @error('minutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                                </div>
+                                            </div>
+
+                                            <div class="flex justify-end space-x-2">
+                                                <button type="button" wire:click="toggleTimeForm"
+                                                        class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                                    Cancel
+                                                </button>
+                                                <button type="submit"
+                                                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                                    Log Time
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                @endif
                             @endif
                             <!-- Notes Section -->
                             <div wire:key="notes-section-{{ $selectedTask->id }}">

@@ -33,55 +33,51 @@ Route::middleware(['auth'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
-    // Project routes
-    Route::resource('projects', \App\Http\Controllers\ProjectController::class);
+    // Project routes with customer access middleware
+    Route::resource('projects', \App\Http\Controllers\ProjectController::class)->middleware('customer.project');
 
     // Task attachment routes
     Route::post('/tasks/{task}/upload-attachment', [\App\Http\Controllers\TaskAttachmentController::class, 'upload'])->name('tasks.upload-attachment');
     Route::post('/tasks/{task}/dropzone-upload', [\App\Http\Controllers\TaskAttachmentController::class, 'dropzoneUpload'])->name('tasks.dropzone-upload');
 
-    // Customer routes
-    Route::resource('customers', \App\Http\Controllers\CustomerController::class);
+    // Routes restricted from customers
+    Route::middleware('restrict.customer')->group(function () {
+        // Customer entity routes (different from customer role users)
+        Route::resource('customers', \App\Http\Controllers\CustomerController::class);
 
-    // Proposal system routes
-    Route::resource('proposals', \App\Http\Controllers\ProposalController::class);
+        // Proposal system routes
+        Route::resource('proposals', \App\Http\Controllers\ProposalController::class);
+        Route::resource('leads', \App\Http\Controllers\LeadController::class);
+        Route::resource('proposal-templates', \App\Http\Controllers\ProposalTemplateController::class);
 
-    Route::resource('leads', \App\Http\Controllers\LeadController::class);
-    Route::resource('proposal-templates', \App\Http\Controllers\ProposalTemplateController::class);
+        // Temporary workaround for proposal template update issue
+        Route::post('/proposal-templates/{proposalTemplate}', [\App\Http\Controllers\ProposalTemplateController::class, 'update'])
+            ->name('proposal-templates.update.post');
 
-    // Temporary workaround for proposal template update issue
-    Route::post('/proposal-templates/{proposalTemplate}', [\App\Http\Controllers\ProposalTemplateController::class, 'update'])
-        ->name('proposal-templates.update.post');
+        // Additional proposal routes
+        Route::post('/proposals/{proposal}/send', [\App\Http\Controllers\ProposalController::class, 'send'])->name('proposals.send');
+        Route::get('/proposals/{proposal}/preview', [\App\Http\Controllers\ProposalController::class, 'preview'])->name('proposals.preview');
+        Route::get('/proposals/{proposal}/pdf', [\App\Http\Controllers\ProposalController::class, 'downloadPdf'])->name('proposals.pdf');
+        Route::post('/proposals/upload-image', [\App\Http\Controllers\ProposalController::class, 'uploadImage'])->name('proposals.upload-image');
 
-    // Additional proposal routes
-    Route::post('/proposals/{proposal}/send', [\App\Http\Controllers\ProposalController::class, 'send'])->name('proposals.send');
-    Route::get('/proposals/{proposal}/preview', [\App\Http\Controllers\ProposalController::class, 'preview'])->name('proposals.preview');
-    // Route::post('/proposals/live-preview', [\App\Http\Controllers\ProposalController::class, 'livePreview'])->name('proposals.live-preview'); // Moved outside auth middleware for debugging
-    Route::get('/proposals/{proposal}/pdf', [\App\Http\Controllers\ProposalController::class, 'downloadPdf'])->name('proposals.pdf');
-    Route::post('/proposals/upload-image', [\App\Http\Controllers\ProposalController::class, 'uploadImage'])->name('proposals.upload-image');
+        // Proposal template image upload route
+        Route::post('/proposal-templates/upload-image', [\App\Http\Controllers\ProposalTemplateController::class, 'uploadImage'])->name('proposal-templates.upload-image');
 
-    // Proposal template image upload route
-    Route::post('/proposal-templates/upload-image', [\App\Http\Controllers\ProposalTemplateController::class, 'uploadImage'])->name('proposal-templates.upload-image');
+        // Lead conversion
+        Route::post('/leads/{lead}/convert', [\App\Http\Controllers\LeadController::class, 'convert'])->name('leads.convert');
 
-    // CSRF token refresh endpoint
-    Route::get('/csrf-token', function() {
-        return response()->json(['token' => csrf_token()]);
-    })->name('csrf-token');
+        // Reports routes
+        Route::get('/reports', [\App\Http\Controllers\ReportsController::class, 'index'])->name('reports.index');
+        Route::get('/reports/time-by-customer-this-month', [\App\Http\Controllers\ReportsController::class, 'timeByCustomerThisMonth'])->name('reports.time-by-customer-this-month');
+        Route::get('/reports/time-by-customer-last-month', [\App\Http\Controllers\ReportsController::class, 'timeByCustomerLastMonth'])->name('reports.time-by-customer-last-month');
+        Route::get('/reports/time-by-user', [\App\Http\Controllers\ReportsController::class, 'timeByUser'])->name('reports.time-by-user');
+        Route::get('/reports/time-by-user-enhanced', \App\Livewire\Reports\TimeByUserLivewire::class)->name('reports.time-by-user-enhanced');
+        Route::get('/reports/my-time-today', \App\Livewire\Reports\MyTimeToday::class)->name('reports.my-time-today');
 
-    // Lead conversion
-    Route::post('/leads/{lead}/convert', [\App\Http\Controllers\LeadController::class, 'convert'])->name('leads.convert');
-
-    // Reports routes
-    Route::get('/reports', [\App\Http\Controllers\ReportsController::class, 'index'])->name('reports.index');
-    Route::get('/reports/time-by-customer-this-month', [\App\Http\Controllers\ReportsController::class, 'timeByCustomerThisMonth'])->name('reports.time-by-customer-this-month');
-    Route::get('/reports/time-by-customer-last-month', [\App\Http\Controllers\ReportsController::class, 'timeByCustomerLastMonth'])->name('reports.time-by-customer-last-month');
-    Route::get('/reports/time-by-user', [\App\Http\Controllers\ReportsController::class, 'timeByUser'])->name('reports.time-by-user');
-    Route::get('/reports/time-by-user-enhanced', \App\Livewire\Reports\TimeByUserLivewire::class)->name('reports.time-by-user-enhanced');
-    Route::get('/reports/my-time-today', \App\Livewire\Reports\MyTimeToday::class)->name('reports.my-time-today');
-
-    Route::get('/time-tracking', function () {
-        return view('time-tracking.index');
-    })->name('time-tracking.index');
+        Route::get('/time-tracking', function () {
+            return view('time-tracking.index');
+        })->name('time-tracking.index');
+    });
 
     // Simple notification system endpoints
     Route::get('/api/notifications/pending', function () {

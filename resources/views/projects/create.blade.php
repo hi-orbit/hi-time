@@ -50,22 +50,36 @@
                         @enderror
                     </div>
 
-                    <!-- Due Date -->
+                    <!-- Assigned Customer Users -->
                     <div class="mb-4">
-                        <label for="due_date" class="block text-sm font-medium text-gray-700">
-                            Due Date
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Assigned Customer Users
                         </label>
-                        <input
-                            type="date"
-                            name="due_date"
-                            id="due_date"
-                            value="{{ old('due_date') }}"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 @error('due_date') border-red-500 @enderror"
-                        >
-                        @error('due_date')
+                        <div class="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-md p-3">
+                            @foreach($customerUsers as $customerUser)
+                                <label class="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        name="assigned_users[]"
+                                        value="{{ $customerUser->id }}"
+                                        {{ in_array($customerUser->id, old('assigned_users', [])) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                    <span class="ml-2 text-sm text-gray-700">{{ $customerUser->name }} ({{ $customerUser->email }})</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        @if($customerUsers->count() === 0)
+                            <p class="mt-1 text-sm text-gray-500">
+                                No customer users available. Customer users can only view projects they're assigned to.
+                            </p>
+                        @endif
+                        @error('assigned_users')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
-                    </div>                    <!-- Description -->
+                    </div>
+
+                    <!-- Description -->
                     <div class="mb-4">
                         <label for="description" class="block text-sm font-medium text-gray-700">
                             Description

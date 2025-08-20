@@ -35,7 +35,7 @@
                                 List
                             </button>
                         </div>
-                        @if(auth()->user()->isAdmin() && !$showArchived)
+                        @if(auth()->user()->isAdmin() && !$showArchived && !auth()->user()->isCustomer())
                             <a href="{{ route('projects.create') }}"
                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium">
                                 + New Project
@@ -99,26 +99,32 @@
                                             View Kanban Board →
                                         </a>
                                         @if(auth()->user()->isAdmin())
-                                            @if($showArchived)
-                                                <button wire:click="unarchiveProject({{ $project->id }})"
-                                                        onclick="return confirm('Are you sure you want to unarchive this project?')"
-                                                        class="text-green-600 hover:text-green-900 text-sm font-medium">
-                                                    Unarchive
-                                                </button>
-                                            @else
-                                                <div class="flex space-x-2">
-                                                    <button wire:click="archiveProject({{ $project->id }})"
-                                                            onclick="return confirm('Are you sure you want to archive this project? It will be hidden from the main view.')"
-                                                            class="text-orange-600 hover:text-orange-900 text-sm font-medium">
-                                                        Archive
+                                            <div class="flex items-center space-x-2">
+                                                <a href="{{ route('projects.edit', $project) }}"
+                                                   class="text-gray-600 hover:text-gray-900 text-sm font-medium">
+                                                    Edit
+                                                </a>
+                                                @if($showArchived)
+                                                    <button wire:click="unarchiveProject({{ $project->id }})"
+                                                            onclick="return confirm('Are you sure you want to unarchive this project?')"
+                                                            class="text-green-600 hover:text-green-900 text-sm font-medium">
+                                                        Unarchive
                                                     </button>
-                                                    <button wire:click="deleteProject({{ $project->id }})"
-                                                            onclick="return confirm('Are you sure you want to delete this project? This will permanently delete all tasks, time entries, and notes associated with this project.')"
-                                                            class="text-red-600 hover:text-red-900 text-sm font-medium">
-                                                        Delete
-                                                    </button>
-                                                </div>
-                                            @endif
+                                                @else
+                                                    <div class="flex space-x-2">
+                                                        <button wire:click="archiveProject({{ $project->id }})"
+                                                                onclick="return confirm('Are you sure you want to archive this project? It will be hidden from the main view.')"
+                                                                class="text-orange-600 hover:text-orange-900 text-sm font-medium">
+                                                            Archive
+                                                        </button>
+                                                        <button wire:click="deleteProject({{ $project->id }})"
+                                                                onclick="return confirm('Are you sure you want to delete this project? This will permanently delete all tasks, time entries, and notes associated with this project.')"
+                                                                class="text-red-600 hover:text-red-900 text-sm font-medium">
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                @endif
+                                            </div>
                                         @endif
                                     </div>
                                 </div>
@@ -193,6 +199,10 @@
                                                         View Board
                                                     </a>
                                                     @if(auth()->user()->isAdmin())
+                                                        <a href="{{ route('projects.edit', $project) }}"
+                                                           class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200">
+                                                            Edit
+                                                        </a>
                                                         @if($showArchived)
                                                             <button wire:click="unarchiveProject({{ $project->id }})"
                                                                     onclick="return confirm('Are you sure you want to unarchive this project?')"

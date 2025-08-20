@@ -55,6 +55,7 @@
                         <option value="admin" {{ old('role', $user->role) === 'admin' ? 'selected' : '' }}>Admin</option>
                         <option value="user" {{ old('role', $user->role) === 'user' ? 'selected' : '' }}>User</option>
                         <option value="contractor" {{ old('role', $user->role) === 'contractor' ? 'selected' : '' }}>Contractor</option>
+                        <option value="customer" {{ old('role', $user->role) === 'customer' ? 'selected' : '' }}>Customer</option>
                     </select>
                     @error('role')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -62,7 +63,8 @@
                     <p class="mt-1 text-sm text-gray-500">
                         <strong>Admin:</strong> Full access to all features including settings and user management.<br>
                         <strong>User:</strong> Standard access to projects and time tracking.<br>
-                        <strong>Contractor:</strong> Limited access, typically for external workers.
+                        <strong>Contractor:</strong> Limited access, typically for external workers.<br>
+                        <strong>Customer:</strong> Can only view assigned projects, no access to proposals, time tracking, or settings.
                     </p>
                 </div>
 

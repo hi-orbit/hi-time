@@ -26,6 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'customer.project' => \App\Http\Middleware\CustomerProjectAccess::class,
+            'restrict.customer' => \App\Http\Middleware\RestrictCustomerAccess::class,
         ]);
 
         // Exclude specific routes from CSRF for image uploads
