@@ -71,6 +71,8 @@
                                 <option value="Quote" {{ old('type') === 'Quote' ? 'selected' : '' }}>Quote</option>
                                 <option value="Estimate" {{ old('type') === 'Estimate' ? 'selected' : '' }}>Estimate</option>
                                 <option value="Contract" {{ old('type') === 'Contract' ? 'selected' : '' }}>Contract</option>
+                                <option value="Non-disclosure agreement" {{ old('type') === 'Non-disclosure agreement' ? 'selected' : '' }}>Non-disclosure agreement</option>
+                                <option value="Acceptance agreement" {{ old('type') === 'Acceptance agreement' ? 'selected' : '' }}>Acceptance agreement</option>
                                 <option value="Other" {{ old('type') === 'Other' ? 'selected' : '' }}>Other</option>
                             </select>
                             @error('type')
@@ -135,13 +137,7 @@
 
                             <!-- Sun Editor Container -->
                             <div id="suneditor-container" class="@error('content') border-red-300 @enderror">
-                                <!-- Fallback content while Sun Editor loads -->
-                                <div id="editor-loading" style="min-height: 400px; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 1rem; background-color: #f9fafb; display: flex; align-items: center; justify-content: center; color: #6b7280;">
-                                    <div class="text-center">
-                                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                                        <p>Loading editor...</p>
-                                    </div>
-                                </div>
+                                <!-- Sun Editor will be initialized here -->
                             </div>
 
                             @error('content')
@@ -280,10 +276,13 @@ Your Company Name`,
             '#333333', '#666666', '#999999', '#cccccc',
             '#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff'
         ],
-        // Image upload configuration - completely disable built-in upload
-        imageUploadUrl: '', // Empty string to disable
+        // Image upload configuration
+        imageUploadUrl: '{{ route("proposal-templates.upload-image") }}',
         imageUploadSizeLimit: 5 * 1024 * 1024, // 5MB limit
-        imageUploadHeader: null, // Not needed for custom handler
+        imageUploadHeader: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
         // Configure file input name - SunEditor uses 'file-0' by default
         imageMultipleFile: true, // Multiple file upload
         imageFileInput: true, // Enable file upload tab
@@ -297,93 +296,12 @@ Your Company Name`,
             alert('Failed to upload image: ' + errorMessage);
         },
         onImageUploadBefore: function(files, info, core) {
-            console.log('Custom upload handler - About to upload files:', files);
-
-            // Handle each file upload with proper authentication
-            Array.from(files).forEach((file, index) => {
-                const formData = new FormData();
-                formData.append('file-' + index, file);
-
-                // Use fetch with proper credentials and CSRF
-                fetch('/proposal-templates/upload-image', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    },
-                    credentials: 'same-origin' // Include cookies for authentication
-                })
-                .then(async response => {
-                    const contentType = response.headers.get('content-type');
-
-                    if (!response.ok) {
-                        let errorMessage = `HTTP ${response.status}`;
-
-                        if (contentType && contentType.includes('application/json')) {
-                            const errorData = await response.json();
-                            errorMessage = errorData.message || errorMessage;
-                        } else {
-                            const errorText = await response.text();
-                            errorMessage = errorText || errorMessage;
-                        }
-
-                        throw new Error(errorMessage);
-                    }
-
-                    if (contentType && contentType.includes('application/json')) {
-                        return response.json();
-                    } else {
-                        throw new Error('Server returned non-JSON response');
-                    }
-                })
-                .then(data => {
-                    console.log('Upload response:', data);
-
-                    if (data.errorMessage) {
-                        throw new Error(data.errorMessage);
-                    }
-
-                    if (data.result && data.result.length > 0) {
-                        // Insert the uploaded image into the editor
-                        const imageUrl = data.result[0].url;
-                        const imageName = data.result[0].name;
-
-                        // Create image element and insert it
-                        const img = document.createElement('img');
-                        img.src = imageUrl;
-                        img.alt = imageName;
-                        img.style.maxWidth = '100%';
-                        img.style.height = 'auto';
-
-                        // Insert the image at the current cursor position
-                        sunEditor.insertHTML(img.outerHTML);
-                        console.log('Image uploaded and inserted successfully:', imageUrl);
-
-                        // Show success message
-                        alert('Image uploaded successfully!');
-                    } else {
-                        throw new Error('No image data received from server');
-                    }
-                })
-                .catch(error => {
-                    console.error('Upload error:', error);
-                    alert('Failed to upload image: ' + error.message);
-                });
-            });
-
-            return false; // Prevent SunEditor's default upload behavior
+            console.log('About to upload files:', files);
+            return true; // Continue with upload
         },
         callBackSave: function (contents) {
             console.log('Content saved');
         }
-    });
-
-    // Debug: Check the actual configuration
-    console.log('SunEditor configuration:', {
-        imageUploadUrl: sunEditor.options.imageUploadUrl,
-        imageUploadHeader: sunEditor.options.imageUploadHeader
     });
 
     // Set initial content if available
@@ -413,9 +331,7 @@ Your Company Name`,
                 return false;
             }
 
-            // Show loading state
-            button.disabled = true;
-            button.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Creating Template...';
+            // Let the form submit naturally - no interference with form submission
         });
     });
 });

@@ -31,11 +31,16 @@ class ProposalTemplateController extends Controller
      */
     public function store(Request $request)
     {
+        // Debug: Log all request data
+        Log::info('ProposalTemplate store request data:', $request->all());
+        Log::info('Content field specifically:', ['content' => $request->get('content')]);
+        Log::info('Content length:', ['length' => strlen($request->get('content', ''))]);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'content' => 'required|string',
+            'content' => 'required|string|min:1',
             'is_active' => 'required|boolean',
         ]);
 

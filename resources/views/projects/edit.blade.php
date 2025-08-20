@@ -77,9 +77,9 @@
                                 @endforeach
                             </div>
                         @endif
-                        
+
                         @if($customerUsers->count() > 0)
-                            <select id="customerSelect" onchange="addCustomerUser(this)" 
+                            <select id="customerSelect" onchange="addCustomerUser(this)"
                                     class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                 <option value="">+ Assign Customer</option>
                                 @foreach($customerUsers as $customerUser)
@@ -89,7 +89,7 @@
                                 @endforeach
                             </select>
                         @endif
-                        
+
                         @if($customerUsers->count() === 0)
                             <p class="mt-1 text-sm text-gray-500">
                                 No customer users available. Customer users can only view projects they're assigned to.
@@ -155,18 +155,18 @@
 function addCustomerUser(select) {
     const selectedOption = select.options[select.selectedIndex];
     if (!selectedOption.value) return;
-    
+
     const userId = selectedOption.value;
     const userName = selectedOption.dataset.name;
     const userEmail = selectedOption.dataset.email;
-    
+
     // Check if user is already assigned
     const existingInput = document.querySelector(`input[name="assigned_users[]"][value="${userId}"]`);
     if (existingInput) {
         select.value = "";
         return;
     }
-    
+
     // Create the badge element
     const badge = document.createElement('span');
     badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800';
@@ -179,11 +179,11 @@ function addCustomerUser(select) {
         </button>
         <input type="hidden" name="assigned_users[]" value="${userId}">
     `;
-    
+
     // Add to the container
     const container = document.querySelector('.flex.flex-wrap.gap-2.mb-3') || createBadgeContainer();
     container.appendChild(badge);
-    
+
     // Hide the option in the select
     selectedOption.style.display = 'none';
     select.value = "";
@@ -193,13 +193,13 @@ function removeCustomerUser(userId) {
     // Remove the badge
     const badge = document.querySelector(`input[name="assigned_users[]"][value="${userId}"]`).closest('span');
     badge.remove();
-    
+
     // Show the option in the select again
     const option = document.querySelector(`#customerSelect option[value="${userId}"]`);
     if (option) {
         option.style.display = 'block';
     }
-    
+
     // Remove the container if no more badges
     const container = document.querySelector('.flex.flex-wrap.gap-2.mb-3');
     if (container && container.children.length === 0) {
@@ -210,10 +210,10 @@ function removeCustomerUser(userId) {
 function createBadgeContainer() {
     const container = document.createElement('div');
     container.className = 'flex flex-wrap gap-2 mb-3';
-    
+
     const select = document.getElementById('customerSelect');
     select.parentNode.insertBefore(container, select);
-    
+
     return container;
 }
 
