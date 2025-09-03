@@ -53,6 +53,42 @@ class Show extends Component
     public $newNote = '';
     public $newNoteHours = '';
     public $newNoteMinutes = '';
+    public $newNoteStartTime = '';
+    public $newNoteEndTime = '';
+
+    // Method to clear time fields when manual entry is used
+    public function updatedNewNoteHours()
+    {
+        if ($this->newNoteHours || $this->newNoteMinutes) {
+            $this->newNoteStartTime = '';
+            $this->newNoteEndTime = '';
+        }
+    }
+
+    public function updatedNewNoteMinutes()
+    {
+        if ($this->newNoteHours || $this->newNoteMinutes) {
+            $this->newNoteStartTime = '';
+            $this->newNoteEndTime = '';
+        }
+    }
+
+    // Method to clear manual entry when start/end times are used
+    public function updatedNewNoteStartTime()
+    {
+        if ($this->newNoteStartTime) {
+            $this->newNoteHours = '';
+            $this->newNoteMinutes = '';
+        }
+    }
+
+    public function updatedNewNoteEndTime()
+    {
+        if ($this->newNoteEndTime) {
+            $this->newNoteHours = '';
+            $this->newNoteMinutes = '';
+        }
+    }
 
     // File upload fields
     public $attachmentFiles = [];
@@ -100,6 +136,7 @@ class Show extends Component
         'newNote' => 'required|string|max:1000',
         'newNoteHours' => 'nullable|integer|min:0|max:23',
         'newNoteMinutes' => 'nullable|integer|min:0|max:59',
+        // Removed time validation rules to handle them manually
         // Note: dropzoneFiles validation is handled manually in processDropzoneFiles()
     ];
 
@@ -262,16 +299,95 @@ class Show extends Component
 
     public function addNote()
     {
-        $this->validate([
-            'newNote' => 'required|string|max:1000',
-            'newNoteHours' => 'nullable|integer|min:0|max:23',
-            'newNoteMinutes' => 'nullable|integer|min:0|max:59',
-        ]);
+        // Validate note content first
+        if (empty($this->newNote)) {
+            $this->addError('newNote', 'Note content is required.');
+            return;
+        }
+
+        if (strlen($this->newNote) > 1000) {
+            $this->addError('newNote', 'Note content cannot exceed 1000 characters.');
+            return;
+        }
+
+        // Normalize time formats BEFORE validation
+        if ($this->newNoteStartTime && strlen($this->newNoteStartTime) > 5) {
+            $this->newNoteStartTime = substr($this->newNoteStartTime, 0, 5);
+        }
+        if ($this->newNoteEndTime && strlen($this->newNoteEndTime) > 5) {
+            $this->newNoteEndTime = substr($this->newNoteEndTime, 0, 5);
+        }
+
+        // Custom validation for time fields
+        $validTimePattern = '/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/';
+
+        // Validate start/end times if provided
+        if ($this->newNoteStartTime && !preg_match($validTimePattern, $this->newNoteStartTime)) {
+            $this->addError('newNoteStartTime', 'Please enter a valid time in HH:MM format.');
+            return;
+        }
+
+        if ($this->newNoteEndTime && !preg_match($validTimePattern, $this->newNoteEndTime)) {
+            $this->addError('newNoteEndTime', 'Please enter a valid time in HH:MM format.');
+            return;
+        }
+
+        // Additional validation: if start time is provided, end time must also be provided
+        if ($this->newNoteStartTime && !$this->newNoteEndTime) {
+            $this->addError('newNoteEndTime', 'End time is required when start time is provided.');
+            return;
+        }
+
+        if (!$this->newNoteStartTime && $this->newNoteEndTime) {
+            $this->addError('newNoteStartTime', 'Start time is required when end time is provided.');
+            return;
+        }
+
+        // Validate manual hours/minutes if provided
+        if ($this->newNoteHours !== '' && (!is_numeric($this->newNoteHours) || $this->newNoteHours < 0 || $this->newNoteHours > 23)) {
+            $this->addError('newNoteHours', 'Hours must be between 0 and 23.');
+            return;
+        }
+
+        if ($this->newNoteMinutes !== '' && (!is_numeric($this->newNoteMinutes) || $this->newNoteMinutes < 0 || $this->newNoteMinutes > 59)) {
+            $this->addError('newNoteMinutes', 'Minutes must be between 0 and 59.');
+            return;
+        }
 
         if ($this->selectedTask) {
-            $hours = (int) $this->newNoteHours ?: 0;
-            $minutes = (int) $this->newNoteMinutes ?: 0;
-            $totalMinutes = ($hours * 60) + $minutes;
+            $hours = ($this->newNoteHours !== '') ? (int) $this->newNoteHours : 0;
+            $minutes = ($this->newNoteMinutes !== '') ? (int) $this->newNoteMinutes : 0;
+            $totalMinutes = 0;
+
+            // Calculate time based on start/end times if provided
+            if ($this->newNoteStartTime && $this->newNoteEndTime) {
+                try {
+                    $start = \Carbon\Carbon::createFromFormat('H:i', $this->newNoteStartTime);
+                    $end = \Carbon\Carbon::createFromFormat('H:i', $this->newNoteEndTime);
+
+                    // Handle overnight work (end time next day)
+                    if ($end->lessThan($start)) {
+                        $end->addDay();
+                    }
+
+                    $totalMinutes = $start->diffInMinutes($end);
+
+                    // Validate that the time difference is reasonable (max 24 hours)
+                    if ($totalMinutes > 1440) {
+                        $this->addError('newNoteEndTime', 'End time cannot be more than 24 hours after start time.');
+                        return;
+                    }
+
+                    $hours = intval($totalMinutes / 60);
+                    $minutes = $totalMinutes % 60;
+                } catch (\Exception $e) {
+                    $this->addError('newNoteStartTime', 'Invalid time format. Please use HH:MM format.');
+                    return;
+                }
+            } else {
+                // Use manual hours/minutes entry
+                $totalMinutes = ($hours * 60) + $minutes;
+            }
 
             // Create the note with time tracking data
             TaskNote::create([
@@ -285,21 +401,34 @@ class Show extends Component
 
             // If time was logged, also create a time entry for backwards compatibility
             if ($totalMinutes > 0) {
-                TimeEntry::create([
+                $timeEntryData = [
                     'task_id' => $this->selectedTask->id,
                     'user_id' => Auth::id(),
                     'description' => $this->newNote,
                     'duration_minutes' => $totalMinutes,
                     'is_running' => false,
                     'project_id' => $this->project->id,
-                ]);
+                ];
+
+                // Add start/end times if they were provided
+                if ($this->newNoteStartTime && $this->newNoteEndTime) {
+                    $today = now()->format('Y-m-d');
+                    $timeEntryData['start_time'] = $today . ' ' . $this->newNoteStartTime;
+                    $timeEntryData['end_time'] = $today . ' ' . $this->newNoteEndTime;
+                    $timeEntryData['entry_date'] = $today;
+                } else {
+                    // For manual time entries without specific times, use current time as base
+                    $timeEntryData['entry_date'] = now()->format('Y-m-d');
+                }
+
+                TimeEntry::create($timeEntryData);
             }
 
             // Refresh the selected task to show the new note and maintain all relationships
             $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader'])->findOrFail($this->selectedTask->id);
 
             // Reset form fields
-            $this->reset(['newNote', 'newNoteHours', 'newNoteMinutes']);
+            $this->reset(['newNote', 'newNoteHours', 'newNoteMinutes', 'newNoteStartTime', 'newNoteEndTime']);
 
             // Use dispatch instead of session flash to avoid component refresh issues
             $this->dispatch('note-added', message: 'Note added successfully!');

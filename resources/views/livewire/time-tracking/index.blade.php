@@ -113,22 +113,50 @@
                             </div>
                             <div class="mb-4">
                                 <label for="entry-date" class="block text-sm font-medium text-gray-700 mb-2">Date <span class="text-red-500">*</span></label>
-                                <input wire:model="entryDate" type="date" id="entry-date" required
+                                <input wire:model.live="entryDate" type="date" id="entry-date" required
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                 @error('entryDate') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                             </div>
-                            <div class="grid grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label for="hours" class="block text-sm font-medium text-gray-700 mb-2">Hours <span class="text-gray-500 text-xs">(optional)</span></label>
-                                    <input wire:model="hours" type="number" id="hours" min="0" max="23" placeholder="0"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                                    @error('hours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Time Duration</label>
+
+                                <!-- Manual Hours/Minutes Entry -->
+                                <div class="grid grid-cols-2 gap-4 mb-3">
+                                    <div>
+                                        <label for="hours" class="block text-sm text-gray-600 mb-1">Hours</label>
+                                        <input wire:model="hours" type="number" id="hours" min="0" max="23" placeholder="0"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                        @error('hours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div>
+                                        <label for="minutes" class="block text-sm text-gray-600 mb-1">Minutes</label>
+                                        <input wire:model="minutes" type="number" id="minutes" min="0" max="59" placeholder="0"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                        @error('minutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                    </div>
                                 </div>
-                                <div>
-                                    <label for="minutes" class="block text-sm font-medium text-gray-700 mb-2">Minutes <span class="text-red-500">*</span></label>
-                                    <input wire:model="minutes" type="number" id="minutes" min="0" max="59" required
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                                    @error('minutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+
+                                <!-- OR divider -->
+                                <div class="flex items-center my-3">
+                                    <div class="flex-grow border-t border-gray-300"></div>
+                                    <span class="mx-3 text-sm text-gray-500 font-medium">or</span>
+                                    <div class="flex-grow border-t border-gray-300"></div>
+                                </div>
+
+                                <!-- Start/End Time Entry -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="start-time" class="block text-sm text-gray-600 mb-1">Start Time</label>
+                                        <input wire:model="startTime" type="text" id="start-time"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                        @error('startTime') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div>
+                                        <label for="end-time" class="block text-sm text-gray-600 mb-1">End Time</label>
+                                        <input wire:model="endTime" type="text" id="end-time"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                        @error('endTime') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                    </div>
                                 </div>
                             </div>
                             <div class="mb-4">
@@ -143,6 +171,115 @@
                                 + Add Note & Log Time
                             </button>
                         </form>
+                    </div>
+                </div>
+
+                <!-- Daily Hours Chart -->
+                <div class="mt-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">📊 Hours Logged on {{ \Carbon\Carbon::parse($entryDate)->format('M j, Y') }}</h3>
+
+                    @php
+                        $totalMinutes = collect($chartData)->sum('duration_minutes');
+                        $totalHours = floor($totalMinutes / 60);
+                        $totalMins = $totalMinutes % 60;
+                    @endphp
+
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <!-- Timeline Header -->
+                        <div class="mb-4">
+                            <p class="text-lg font-semibold text-gray-700">
+                                Total: {{ $totalHours }}h {{ $totalMins }}m
+                            </p>
+                            <p class="text-sm text-gray-500">Hover over a task to see details</p>
+                        </div>
+
+                        <!-- Timeline Chart -->
+                        @php
+                            $maxLayer = count($chartData) > 0 ? max(array_column($chartData, 'layer')) : 0;
+                            $rowHeight = 50; // Height of each timeline row
+                            $chartHeight = max(100, ($maxLayer + 1) * $rowHeight + 50); // Proper padding for bottom entries
+                        @endphp
+
+                        <div class="relative" style="height: {{ $chartHeight }}px;">
+                            <!-- Hour markers -->
+                            <div class="absolute inset-0 flex text-xs text-gray-400 mb-2">
+                                @for($hour = 0; $hour < 24; $hour++)
+                                    <div class="flex flex-col items-start" style="width: {{ 100/24 }}%; position: relative;">
+                                        <span class="text-xs font-medium">{{ sprintf('%02d', $hour) }}</span>
+                                        <div class="absolute left-0 top-4 w-px bg-gray-300" style="height: {{ $chartHeight - 20 }}px;"></div>
+                                        <!-- 30-minute marker -->
+                                        <div class="absolute left-1/2 top-4 w-px bg-gray-200" style="height: {{ $chartHeight - 30 }}px;"></div>
+                                        <!-- Time labels for clarity -->
+                                        <div class="absolute left-1/2 top-0 text-xs text-gray-300 transform -translate-x-1/2">30</div>
+                                    </div>
+                                @endfor
+                            </div>
+
+                            <!-- Timeline bars -->
+                            <div class="absolute inset-0 mt-8">
+                                @if(count($chartData) > 0)
+                                    @foreach($chartData as $entry)
+                                        @php
+                                            // Calculate exact decimal hours for positioning
+                                            $startHour = $entry['start_time']->hour + ($entry['start_time']->minute / 60);
+                                            $endHour = $entry['end_time']->hour + ($entry['end_time']->minute / 60);
+
+                                            // Calculate position and width as percentage of 24-hour day
+                                            $left = ($startHour / 24) * 100;
+                                            $width = (($endHour - $startHour) / 24) * 100;
+
+                                            // Calculate vertical position based on layer
+                                            $topPosition = 15 + ($entry['layer'] * $rowHeight);
+
+                                            $durationHours = floor($entry['duration_minutes'] / 60);
+                                            $durationMins = $entry['duration_minutes'] % 60;
+                                        @endphp
+                                        <div class="absolute group"
+                                             style="left: {{ number_format($left, 2) }}%; width: {{ number_format($width, 2) }}%; top: {{ $topPosition }}px; height: 40px;">
+                                            <div class="w-full h-full rounded shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer border-2 border-white"
+                                                 style="background-color: {{ $entry['color'] }};">
+
+                                                <!-- Tooltip -->
+                                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
+                                                    <div class="bg-gray-800 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
+                                                        <div class="font-semibold">{{ $entry['task'] }}</div>
+                                                        <div class="text-gray-300">{{ $entry['project'] }}</div>
+                                                        <div class="mt-1">
+                                                            {{ $entry['start_time']->format('H:i') }} - {{ $entry['end_time']->format('H:i') }}
+                                                        </div>
+                                                        <div>Duration: {{ $durationHours }}h {{ $durationMins }}m</div>
+                                                        <!-- Arrow -->
+                                                        <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @else
+                                    <div class="flex items-center justify-center h-full">
+                                        <p class="text-gray-500 text-sm">No time logged for this date</p>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Legend -->
+                        @if(count($chartData) > 0)
+                            <div class="mt-1 pt-2 border-t border-gray-200">
+                                <h4 class="text-sm font-medium text-gray-700 mb-1">Tasks:</h4>
+                                <div class="flex flex-wrap gap-3">
+                                    @php
+                                        $uniqueTasks = collect($chartData)->unique('task');
+                                    @endphp
+                                    @foreach($uniqueTasks as $entry)
+                                        <div class="flex items-center">
+                                            <div class="w-3 h-3 rounded-sm mr-2" style="background-color: {{ $entry['color'] }};"></div>
+                                            <span class="text-sm text-gray-600">{{ $entry['task'] }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
 

@@ -584,16 +584,39 @@
                                     @if(!auth()->user()->isCustomer())
                                         <div class="mb-3">
                                             <label class="block text-sm font-medium text-gray-700 mb-2">Time spent (optional)</label>
-                                            <div class="grid grid-cols-2 gap-4">
+
+                                            <!-- Manual Hours/Minutes Entry -->
+                                            <div class="grid grid-cols-2 gap-4 mb-3">
                                                 <div>
-                                                    <input wire:model="newNoteHours" type="number" min="0" max="23" placeholder="Hours"
+                                                    <input wire:model="newNoteHours" type="number" min="0" max="23" placeholder="0"
                                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                                     @error('newNoteHours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                                 </div>
                                                 <div>
-                                                    <input wire:model="newNoteMinutes" type="number" min="0" max="59" placeholder="Minutes"
+                                                    <input wire:model="newNoteMinutes" type="number" min="0" max="59" placeholder="0"
                                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                                     @error('newNoteMinutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                                </div>
+                                            </div>
+
+                                            <!-- OR divider -->
+                                            <div class="flex items-center my-3">
+                                                <div class="flex-grow border-t border-gray-300"></div>
+                                                <span class="mx-3 text-sm text-gray-500 font-medium">or</span>
+                                                <div class="flex-grow border-t border-gray-300"></div>
+                                            </div>
+
+                                            <!-- Start/End Time Entry -->
+                                            <div class="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <input wire:model="newNoteStartTime" type="text" placeholder="Start time"
+                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                                    @error('newNoteStartTime') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                                </div>
+                                                <div>
+                                                    <input wire:model="newNoteEndTime" type="text" placeholder="End time"
+                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                                    @error('newNoteEndTime') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                                 </div>
                                             </div>
                                         </div>

@@ -15,14 +15,11 @@ class Index extends Component
     public $selectedTaskId = '';
     public $description = '';
     public $note = '';
-    public $hours = '';
-    public $minutes = '';
+    public $hours = 0;
+    public $minutes = 0;
     public $startTime = '';
     public $endTime = '';
     public $entryDate;
-
-    // Chart data
-    public $chartData = [];
 
     // Edit properties
     public $editingEntryId = null;
@@ -48,9 +45,6 @@ class Index extends Component
         // Set default entry date to today
         $this->entryDate = now()->format('Y-m-d');
 
-        // Generate chart data for today
-        $this->generateChartData();
-
         if (request()->has('task')) {
             $this->selectedTaskId = request('task');
         }
@@ -60,46 +54,6 @@ class Index extends Component
     {
         // Reset task selection when project changes
         $this->selectedTaskId = '';
-    }
-
-    public function updatedEntryDate()
-    {
-        // Regenerate chart data when date changes
-        $this->generateChartData();
-    }
-
-    // Method to clear time fields when manual entry is used
-    public function updatedHours()
-    {
-        if ($this->hours || $this->minutes) {
-            $this->startTime = '';
-            $this->endTime = '';
-        }
-    }
-
-    public function updatedMinutes()
-    {
-        if ($this->hours || $this->minutes) {
-            $this->startTime = '';
-            $this->endTime = '';
-        }
-    }
-
-    // Method to clear manual entry when start/end times are used
-    public function updatedStartTime()
-    {
-        if ($this->startTime) {
-            $this->hours = '';
-            $this->minutes = '';
-        }
-    }
-
-    public function updatedEndTime()
-    {
-        if ($this->endTime) {
-            $this->hours = '';
-            $this->minutes = '';
-        }
     }
 
     public function startTimer()
@@ -126,8 +80,6 @@ class Index extends Component
         $task = Task::find($this->selectedTaskId);
         session()->flash('message', 'Timer started for: ' . $task->title);
         $this->reset(['description']);
-        // Regenerate chart data after starting timer
-        $this->generateChartData();
     }
 
     public function stopTimer($entryId)
@@ -143,8 +95,6 @@ class Index extends Component
                 'end_time' => now(),
             ]);
             session()->flash('message', 'Timer stopped.');
-            // Regenerate chart data after stopping timer
-            $this->generateChartData();
         }
     }
 
@@ -207,18 +157,18 @@ class Index extends Component
             }
         } else {
             // Validate manual hours/minutes if provided
-            if ($this->hours !== '' && (!is_numeric($this->hours) || $this->hours < 0 || $this->hours > 23)) {
+            if ($this->hours && (!is_numeric($this->hours) || $this->hours < 0 || $this->hours > 23)) {
                 $this->addError('hours', 'Hours must be between 0 and 23.');
                 return;
             }
 
-            if ($this->minutes !== '' && (!is_numeric($this->minutes) || $this->minutes < 0 || $this->minutes > 59)) {
+            if ($this->minutes && (!is_numeric($this->minutes) || $this->minutes < 0 || $this->minutes > 59)) {
                 $this->addError('minutes', 'Minutes must be between 0 and 59.');
                 return;
             }
 
             // Require at least some time input (either hours or minutes)
-            if ($this->hours === '' && $this->minutes === '') {
+            if (!$this->hours && !$this->minutes) {
                 $this->addError('minutes', 'Please enter either hours/minutes or start/end times.');
                 return;
             }
@@ -255,8 +205,8 @@ class Index extends Component
             }
         } else {
             // Use manual hours/minutes entry
-            $hours = ($this->hours !== '') ? (int) $this->hours : 0;
-            $minutes = ($this->minutes !== '') ? (int) $this->minutes : 0;
+            $hours = (int) $this->hours ?: 0;
+            $minutes = (int) $this->minutes ?: 0;
             $totalMinutes = ($hours * 60) + $minutes;
         }
 
@@ -273,27 +223,17 @@ class Index extends Component
             ]);
 
             // Also create a TimeEntry for backwards compatibility
-            $timeEntryData = [
+            TimeEntry::create([
                 'task_id' => $this->selectedTaskId,
                 'user_id' => Auth::id(),
                 'entry_date' => $this->entryDate,
                 'description' => 'Note: ' . $this->note,
                 'duration_minutes' => $totalMinutes,
                 'is_running' => false,
-            ];
-
-            // Add start/end times if they were provided
-            if ($this->startTime && $this->endTime) {
-                $timeEntryData['start_time'] = $this->entryDate . ' ' . $this->startTime;
-                $timeEntryData['end_time'] = $this->entryDate . ' ' . $this->endTime;
-            }
-
-            TimeEntry::create($timeEntryData);
+            ]);
 
             session()->flash('message', 'Note and time logged successfully!');
             $this->reset(['note', 'hours', 'minutes', 'startTime', 'endTime']);
-            // Regenerate chart data after adding new entry
-            $this->generateChartData();
             // Keep the entry date as is, don't reset it
         }
     }
@@ -357,8 +297,6 @@ class Index extends Component
 
             session()->flash('message', 'Time entry updated successfully!');
             $this->cancelEdit();
-            // Regenerate chart data after updating entry
-            $this->generateChartData();
         }
     }
 
@@ -369,131 +307,6 @@ class Index extends Component
         $this->editStartTime = '';
         $this->editEndTime = '';
         $this->editDescription = '';
-    }
-
-    public function generateChartData()
-    {
-        // Get all time entries for the selected date
-        $entries = TimeEntry::where('user_id', Auth::id())
-            ->where(function($query) {
-                $query->whereDate('entry_date', $this->entryDate)
-                      ->orWhere(function($q) {
-                          $q->whereDate('start_time', $this->entryDate)
-                            ->whereNull('entry_date');
-                      });
-            })
-            ->with(['task.project'])
-            ->get();
-
-        // Also get TaskNotes with time tracking for the same date
-        $taskNotes = TaskNote::where('user_id', Auth::id())
-            ->whereDate('created_at', $this->entryDate)
-            ->whereNotNull('total_minutes')
-            ->with(['task.project'])
-            ->get();
-
-        // Create timeline entries with start and end times
-        $timelineEntries = collect();
-
-        // Add TimeEntries
-        foreach ($entries as $entry) {
-            if ($entry->start_time && $entry->end_time) {
-                $timelineEntries->push([
-                    'start_time' => $entry->start_time,
-                    'end_time' => $entry->end_time,
-                    'task' => $entry->task->title ?? 'Unknown Task',
-                    'project' => $entry->task->project->name ?? 'Unknown Project',
-                    'duration_minutes' => $entry->duration,
-                    'type' => 'timer',
-                    'color' => $this->getTaskColor($entry->task_id)
-                ]);
-            }
-        }
-
-        // Add TaskNotes (estimate time based on when they were created)
-        foreach ($taskNotes as $note) {
-            if ($note->total_minutes > 0) {
-                $startTime = $note->created_at;
-                $endTime = $note->created_at->copy()->addMinutes($note->total_minutes);
-
-                $timelineEntries->push([
-                    'start_time' => $startTime,
-                    'end_time' => $endTime,
-                    'task' => $note->task->title ?? 'Unknown Task',
-                    'project' => $note->task->project->name ?? 'Unknown Project',
-                    'duration_minutes' => $note->total_minutes,
-                    'type' => 'note',
-                    'color' => $this->getTaskColor($note->task_id)
-                ]);
-            }
-        }
-
-        // Sort by start time
-        $sortedEntries = $timelineEntries->sortBy('start_time')->values();
-
-        // Calculate vertical layers to handle overlapping entries
-        $layeredEntries = [];
-
-        foreach ($sortedEntries as $entry) {
-            $layer = 0;
-
-            // Find the lowest available layer for this entry
-            while (true) {
-                $hasOverlap = false;
-
-                // Check if this entry overlaps with any entry in the current layer
-                foreach ($layeredEntries as $existingEntry) {
-                    if ($existingEntry['layer'] === $layer) {
-                        // Check for time overlap
-                        if ($this->entriesOverlap($entry, $existingEntry)) {
-                            $hasOverlap = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!$hasOverlap) {
-                    break; // Found a free layer
-                }
-
-                $layer++;
-            }
-
-            $entry['layer'] = $layer;
-            $layeredEntries[] = $entry;
-        }
-
-        $this->chartData = $layeredEntries;
-    }
-
-    private function entriesOverlap($entry1, $entry2)
-    {
-        $start1 = $entry1['start_time'];
-        $end1 = $entry1['end_time'];
-        $start2 = $entry2['start_time'];
-        $end2 = $entry2['end_time'];
-
-        // Two entries overlap if one starts before the other ends
-        return ($start1 < $end2) && ($start2 < $end1);
-    }
-
-    private function getTaskColor($taskId)
-    {
-        // Generate consistent colors for tasks
-        $colors = [
-            '#3B82F6', // Blue
-            '#10B981', // Green
-            '#F59E0B', // Yellow
-            '#EF4444', // Red
-            '#8B5CF6', // Purple
-            '#06B6D4', // Cyan
-            '#F97316', // Orange
-            '#84CC16', // Lime
-            '#EC4899', // Pink
-            '#6B7280', // Gray
-        ];
-
-        return $colors[$taskId % count($colors)];
     }
 
     public function render()
@@ -529,7 +342,6 @@ class Index extends Component
             'recentEntries' => $recentEntries,
             'projects' => $projects,
             'tasks' => $tasks,
-            'chartData' => $this->chartData,
         ]);
     }
 }
