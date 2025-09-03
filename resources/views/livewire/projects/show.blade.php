@@ -438,15 +438,6 @@
                                     ▶ Start Timer
                                 </button>
                             @endif
-
-                            <button wire:click="toggleTimeForm"
-                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium">
-                                @if($showTimeForm)
-                                    ✕ Hide
-                                @else
-                                    + Log Time
-                                @endif
-                            </button>
                         @endif
 
                         <!-- Shareable Link Button -->
@@ -567,111 +558,76 @@
                                 @if(!auth()->user()->isCustomer())
                                     <div>
                                         <label class="text-sm font-medium text-gray-700">Total time tracked:</label>
-                                        <p class="text-sm text-gray-900 mt-1">{{ number_format($selectedTask->total_time / 60, 1) }}h</p>
+                                        <p class="text-sm text-gray-900 mt-1">{{ number_format(($selectedTask->getTotalTimeFromNotesAttribute() + $selectedTask->total_time) / 60, 1) }}h</p>
                                     </div>
                                 @endif
                             </div>
-
-                            @if(!auth()->user()->isCustomer())
-                                <!-- Time Entries -->
-                                @if($selectedTask->timeEntries && $selectedTask->timeEntries->count() > 0)
-                                    <h5 class="text-md font-medium text-gray-900 mb-2">Recent Time Entries</h5>
-                                    <div class="max-h-48 overflow-y-auto">
-                                        @foreach($selectedTask->timeEntries->take(5) as $entry)
-                                            <div class="text-xs bg-white border rounded p-2 mb-2">
-                                                <div class="flex justify-between">
-                                                    <span class="font-medium">{{ $entry->user->name }}</span>
-                                                    <span>{{ $entry->formatted_decimal_hours }}</span>
-                                                </div>
-                                                @if($entry->description)
-                                                    <p class="text-gray-600 mt-1">{{ $entry->description }}</p>
-                                                @endif
-                                                <p class="text-gray-500 mt-1">{{ $entry->created_at->format('M j, Y H:i') }}</p>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @endif
-                            @endif
                         </div>
+
 
                         <!-- Right Column: Notes and Attachments -->
                         <div>
-                            @if(!auth()->user()->isCustomer())
-                                <!-- Collapsible Time Tracking Section -->
-                                @if($showTimeForm)
-                                    <div wire:key="time-tracking-section-{{ $selectedTask->id }}" class="mb-6">
-                                        <h4 class="text-lg font-medium text-gray-900 mb-3">Log Time</h4>
-
-                                        <!-- Manual Time Entry Form -->
-                                        <form wire:submit.prevent="logTimeInline" class="bg-gray-50 rounded-lg p-4">
-                                            <div class="mb-4">
-                                                <label for="timeDescription" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                                                <textarea wire:model="timeDescription" id="timeDescription" rows="2"
-                                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                                                          placeholder="What did you work on?"></textarea>
-                                                @error('timeDescription') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                                            </div>
-
-                                            <div class="grid grid-cols-2 gap-4 mb-4">
-                                                <div>
-                                                    <label for="hours" class="block text-sm font-medium text-gray-700 mb-2">Hours <span class="text-gray-500 text-xs">(optional)</span></label>
-                                                    <input wire:model="hours" type="number" id="hours" min="0" max="23" placeholder="0"
-                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                                                    @error('hours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                                                </div>
-                                                <div>
-                                                    <label for="minutes" class="block text-sm font-medium text-gray-700 mb-2">Minutes <span class="text-red-500">*</span></label>
-                                                    <input wire:model="minutes" type="number" id="minutes" min="0" max="59" required
-                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                                                    @error('minutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                                                </div>
-                                            </div>
-
-                                            <div class="flex justify-end space-x-2">
-                                                <button type="button" wire:click="toggleTimeForm"
-                                                        class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                                                    Cancel
-                                                </button>
-                                                <button type="submit"
-                                                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                                                    Log Time
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                @endif
-                            @endif
                             <!-- Notes Section -->
                             <div wire:key="notes-section-{{ $selectedTask->id }}">
-                                <h4 class="text-lg font-medium text-gray-900 mb-3">Notes</h4>
+                                <h4 class="text-lg font-medium text-gray-900 mb-3">Notes & Time</h4>
 
                                 <!-- Add Note Form -->
                                 <form wire:submit.prevent="addNote" class="mb-4" wire:key="add-note-form-{{ $selectedTask->id }}">
                                     <div class="mb-3">
-                                        <textarea wire:model="newNote" rows="3"
+                                        <label for="newNote" class="block text-sm font-medium text-gray-700 mb-2">Add a note</label>
+                                        <textarea wire:model="newNote" id="newNote" rows="3"
                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                                                   placeholder="Add a note..."></textarea>
                                         @error('newNote') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                     </div>
+
+                                    @if(!auth()->user()->isCustomer())
+                                        <div class="mb-3">
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Time spent (optional)</label>
+                                            <div class="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <input wire:model="newNoteHours" type="number" min="0" max="23" placeholder="Hours"
+                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                                    @error('newNoteHours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                                </div>
+                                                <div>
+                                                    <input wire:model="newNoteMinutes" type="number" min="0" max="59" placeholder="Minutes"
+                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                                    @error('newNoteMinutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+
                                     <button type="submit"
                                             class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                                         Add Note
                                     </button>
                                 </form>
 
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2">
                                 <!-- Notes List -->
-                                <div class="mb-6" wire:key="notes-list-{{ $selectedTask->id }}">
+                                <div wire:key="notes-list-{{ $selectedTask->id }}">
                                     @if($selectedTask->notes && $selectedTask->notes->count() > 0)
                                         @foreach($selectedTask->notes->sortByDesc('created_at') as $note)
-                                            <div class="bg-white border rounded-lg p-3 mb-3" wire:key="note-{{ $note->id }}">
-                                                <div class="flex items-start justify-between mb-2">
-                                                    <div class="flex items-center">
+                                            <div class="bg-white border rounded-lg p-4 mb-3 w-full" wire:key="note-{{ $note->id }}">
+                                                <div class="flex items-start justify-between mb-3">
+                                                    <div class="flex items-center space-x-3">
                                                         <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-300 text-sm font-medium text-gray-700">
                                                             {{ substr($note->user->name, 0, 1) }}
                                                         </span>
-                                                        <div class="ml-3">
-                                                            <p class="text-sm font-medium text-gray-900">{{ $note->user->name }}</p>
-                                                            <p class="text-xs text-gray-500">{{ $note->created_at->format('M j, Y H:i') }}</p>
+                                                        <div>
+                                                            <div class="flex items-center space-x-2">
+                                                                <p class="text-sm font-medium text-gray-900">{{ $note->user->name }}</p>
+                                                                <p class="text-xs text-gray-500">{{ $note->created_at->format('M j, Y H:i') }}</p>
+                                                                @if(!auth()->user()->isCustomer() && $note->total_minutes)
+                                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                                        {{ $note->formatted_time }}
+                                                                    </span>
+                                                                @endif
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     @if($note->user_id === auth()->id())
@@ -685,7 +641,7 @@
                                                         </button>
                                                     @endif
                                                 </div>
-                                                <p class="text-sm text-gray-700">{{ $note->content }}</p>
+                                                <p class="text-sm text-gray-700 w-full">{{ $note->content }}</p>
                                             </div>
                                         @endforeach
                                     @else
@@ -695,7 +651,7 @@
                             </div>
 
                         </div>
-                    </div>
+
 
                     <!-- Attachments Section (Full Width) -->
                     <div class="mt-6">

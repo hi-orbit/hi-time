@@ -5,6 +5,7 @@ namespace App\Livewire\TimeTracking;
 use Livewire\Component;
 use App\Models\Task;
 use App\Models\TimeEntry;
+use App\Models\TaskNote;
 use App\Models\Project;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,6 +14,7 @@ class Index extends Component
     public $selectedProjectId = '';
     public $selectedTaskId = '';
     public $description = '';
+    public $note = '';
     public $hours = 0;
     public $minutes = 0;
     public $entryDate;
@@ -28,6 +30,7 @@ class Index extends Component
         'selectedTaskId' => 'required|exists:tasks,id',
         'hours' => 'nullable|integer|min:0|max:23',
         'minutes' => 'required|integer|min:0|max:59',
+        'note' => 'required|string|max:1000',
         'entryDate' => 'required|date',
         'editEntryDate' => 'required|date',
         'editStartTime' => 'nullable|date_format:H:i',
@@ -102,17 +105,29 @@ class Index extends Component
         $totalMinutes = ($hours * 60) + $this->minutes;
 
         if ($totalMinutes > 0) {
+            // Create TaskNote with time tracking
+            $taskNote = TaskNote::create([
+                'task_id' => $this->selectedTaskId,
+                'user_id' => Auth::id(),
+                'content' => $this->note,
+                'hours' => $hours,
+                'minutes' => $this->minutes,
+                'total_minutes' => $totalMinutes,
+                'created_at' => $this->entryDate . ' ' . now()->format('H:i:s'),
+            ]);
+
+            // Also create a TimeEntry for backwards compatibility
             TimeEntry::create([
                 'task_id' => $this->selectedTaskId,
                 'user_id' => Auth::id(),
                 'entry_date' => $this->entryDate,
-                'description' => $this->description,
+                'description' => 'Note: ' . $this->note,
                 'duration_minutes' => $totalMinutes,
                 'is_running' => false,
             ]);
 
-            session()->flash('message', 'Time logged successfully!');
-            $this->reset(['description', 'hours', 'minutes']);
+            session()->flash('message', 'Note and time logged successfully!');
+            $this->reset(['note', 'hours', 'minutes']);
             // Keep the entry date as is, don't reset it
         }
     }

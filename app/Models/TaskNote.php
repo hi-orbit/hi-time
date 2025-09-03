@@ -10,6 +10,15 @@ class TaskNote extends Model
         'task_id',
         'user_id',
         'content',
+        'hours',
+        'minutes',
+        'total_minutes'
+    ];
+
+    protected $casts = [
+        'hours' => 'integer',
+        'minutes' => 'integer',
+        'total_minutes' => 'integer',
     ];
 
     public function task()
@@ -20,5 +29,23 @@ class TaskNote extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getFormattedTimeAttribute(): string
+    {
+        if (!$this->total_minutes) {
+            return '';
+        }
+
+        $hours = intval($this->total_minutes / 60);
+        $minutes = $this->total_minutes % 60;
+
+        if ($hours > 0 && $minutes > 0) {
+            return "{$hours}h {$minutes}m";
+        } elseif ($hours > 0) {
+            return "{$hours}h";
+        } else {
+            return "{$minutes}m";
+        }
     }
 }

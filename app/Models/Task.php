@@ -54,6 +54,11 @@ class Task extends Model
             ->sum(DB::raw('TIMESTAMPDIFF(MINUTE, start_time, end_time)'));
     }
 
+    public function getTotalTimeFromNotesAttribute(): int
+    {
+        return $this->notes()->sum('total_minutes') ?? 0;
+    }
+
     public function getRunningTimeEntryAttribute()
     {
         return $this->timeEntries()->where('is_running', true)->first();

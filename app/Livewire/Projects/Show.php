@@ -51,6 +51,8 @@ class Show extends Component
 
     // Task notes fields
     public $newNote = '';
+    public $newNoteHours = '';
+    public $newNoteMinutes = '';
 
     // File upload fields
     public $attachmentFiles = [];
@@ -96,6 +98,8 @@ class Show extends Component
 
     protected $rules = [
         'newNote' => 'required|string|max:1000',
+        'newNoteHours' => 'nullable|integer|min:0|max:23',
+        'newNoteMinutes' => 'nullable|integer|min:0|max:59',
         // Note: dropzoneFiles validation is handled manually in processDropzoneFiles()
     ];
 
@@ -253,23 +257,49 @@ class Show extends Component
 
     public function closeTaskDetailsModal()
     {
-        $this->reset(['showTaskDetailsModal', 'selectedTask', 'newNote', 'taskAssignment', 'taskStatus', 'showTimeForm', 'timeDescription', 'hours', 'minutes', 'attachmentFiles', 'dropzoneFiles']);
+        $this->reset(['showTaskDetailsModal', 'selectedTask', 'newNote', 'newNoteHours', 'newNoteMinutes', 'taskAssignment', 'taskStatus', 'showTimeForm', 'timeDescription', 'hours', 'minutes', 'attachmentFiles', 'dropzoneFiles']);
     }
 
     public function addNote()
     {
-        $this->validate(['newNote' => 'required|string|max:1000']);
+        $this->validate([
+            'newNote' => 'required|string|max:1000',
+            'newNoteHours' => 'nullable|integer|min:0|max:23',
+            'newNoteMinutes' => 'nullable|integer|min:0|max:59',
+        ]);
 
         if ($this->selectedTask) {
+            $hours = (int) $this->newNoteHours ?: 0;
+            $minutes = (int) $this->newNoteMinutes ?: 0;
+            $totalMinutes = ($hours * 60) + $minutes;
+
+            // Create the note with time tracking data
             TaskNote::create([
                 'task_id' => $this->selectedTask->id,
                 'user_id' => Auth::id(),
                 'content' => $this->newNote,
+                'hours' => $hours > 0 ? $hours : null,
+                'minutes' => $minutes > 0 ? $minutes : null,
+                'total_minutes' => $totalMinutes > 0 ? $totalMinutes : null,
             ]);
+
+            // If time was logged, also create a time entry for backwards compatibility
+            if ($totalMinutes > 0) {
+                TimeEntry::create([
+                    'task_id' => $this->selectedTask->id,
+                    'user_id' => Auth::id(),
+                    'description' => $this->newNote,
+                    'duration_minutes' => $totalMinutes,
+                    'is_running' => false,
+                    'project_id' => $this->project->id,
+                ]);
+            }
 
             // Refresh the selected task to show the new note and maintain all relationships
             $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader'])->findOrFail($this->selectedTask->id);
-            $this->newNote = '';
+
+            // Reset form fields
+            $this->reset(['newNote', 'newNoteHours', 'newNoteMinutes']);
 
             // Use dispatch instead of session flash to avoid component refresh issues
             $this->dispatch('note-added', message: 'Note added successfully!');
