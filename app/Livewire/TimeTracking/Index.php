@@ -125,7 +125,7 @@ class Index extends Component
         if (str_starts_with($this->selectedTaskId, 'general_')) {
             $index = (int) str_replace('general_', '', $this->selectedTaskId);
             $activities = $this->getStandardActivityTypes();
-            
+
             if (isset($activities[$index])) {
                 return [
                     'type' => 'general',
@@ -598,7 +598,6 @@ class Index extends Component
     {
         $runningEntries = TaskNote::where('user_id', Auth::id())
             ->where('is_running', true)
-            ->whereNotNull('total_minutes')
             ->with(['task.project'])
             ->get();
 
