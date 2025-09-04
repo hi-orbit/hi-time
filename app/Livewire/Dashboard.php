@@ -69,7 +69,6 @@ class Dashboard extends Component
         if (!$user->isCustomer()) {
             $runningTimeEntries = TaskNote::where('user_id', $user->id)
                 ->where('is_running', true)
-                ->whereNotNull('total_minutes')
                 ->with(['task.project.customer'])
                 ->orderBy('start_time', 'desc')
                 ->get();

@@ -67,4 +67,21 @@ class TaskNote extends Model
             return "{$minutes}m";
         }
     }
+
+    public function getFormattedDecimalHoursAttribute(): string
+    {
+        if ($this->is_running && $this->start_time) {
+            // For running timers, calculate current elapsed time
+            $elapsedMinutes = $this->start_time->diffInMinutes(now());
+            $hours = $elapsedMinutes / 60;
+            return number_format($hours, 1) . 'h';
+        }
+
+        if (!$this->total_minutes) {
+            return '0.0h';
+        }
+
+        $hours = $this->total_minutes / 60;
+        return number_format($hours, 1) . 'h';
+    }
 }
