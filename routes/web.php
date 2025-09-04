@@ -11,7 +11,9 @@ Route::get('/', function () {
 });
 
 // Authentication routes
-Route::get('/login', Login::class)->name('login')->middleware('guest');
+Route::get('/login', function () {
+    return view('auth.login');
+})->name('login')->middleware('guest');
 Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
