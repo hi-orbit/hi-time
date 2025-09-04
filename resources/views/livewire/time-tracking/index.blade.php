@@ -19,8 +19,20 @@
                                 <div class="bg-green-50 border border-green-200 rounded-lg p-4">
                                     <div class="flex items-center justify-between">
                                         <div>
-                                            <h4 class="font-medium text-gray-900">{{ $entry->task->title }}</h4>
-                                            <p class="text-sm text-gray-600">{{ $entry->task->project->name }}</p>
+                                            <h4 class="font-medium text-gray-900">
+                                                @if($entry->task)
+                                                    {{ $entry->task->title }}
+                                                @else
+                                                    {{ $entry->activity_type ?? 'General Activity' }}
+                                                @endif
+                                            </h4>
+                                            <p class="text-sm text-gray-600">
+                                                @if($entry->task)
+                                                    {{ $entry->task->project->name }}
+                                                @else
+                                                    General Activity
+                                                @endif
+                                            </p>
                                             <p class="text-sm text-gray-500">Started: {{ $entry->start_time->format('H:i') }}</p>
                                             @if($entry->description)
                                                 <p class="text-sm text-gray-600 mt-1">{{ $entry->description }}</p>
@@ -67,6 +79,13 @@
                                     @foreach($tasks as $task)
                                         <option value="{{ $task->id }}">{{ $task->title }}</option>
                                     @endforeach
+                                    @if($generalActivities && count($generalActivities) > 0)
+                                        <optgroup label="─── General Activities ───">
+                                            @foreach($generalActivities as $activity)
+                                                <option value="general_{{ $loop->index }}">{{ $activity }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endif
                                 </select>
                                 @error('selectedTaskId') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                             </div>
@@ -108,6 +127,13 @@
                                     @foreach($tasks as $task)
                                         <option value="{{ $task->id }}">{{ $task->title }}</option>
                                     @endforeach
+                                    @if($generalActivities && count($generalActivities) > 0)
+                                        <optgroup label="─── General Activities ───">
+                                            @foreach($generalActivities as $activity)
+                                                <option value="general_{{ $loop->index }}">{{ $activity }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endif
                                 </select>
                                 @error('selectedTaskId') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                             </div>
@@ -312,10 +338,18 @@
                                             <!-- Edit Form Row -->
                                             <tr class="bg-yellow-50">
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                    {{ $entry->task->title }}
+                                                    @if($entry->task)
+                                                        {{ $entry->task->title }}
+                                                    @else
+                                                        {{ $entry->activity_type ?? 'General Activity' }}
+                                                    @endif
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {{ $entry->task->project->name }}
+                                                    @if($entry->task)
+                                                        {{ $entry->task->project->name }}
+                                                    @else
+                                                        General Activity
+                                                    @endif
                                                 </td>
                                                 <td class="px-6 py-4">
                                                     <input wire:model="editDescription" type="text"
@@ -354,10 +388,18 @@
                                             <!-- Display Row -->
                                             <tr>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                    {{ $entry->task->title }}
+                                                    @if($entry->task)
+                                                        {{ $entry->task->title }}
+                                                    @else
+                                                        {{ $entry->activity_type ?? 'General Activity' }}
+                                                    @endif
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {{ $entry->task->project->name }}
+                                                    @if($entry->task)
+                                                        {{ $entry->task->project->name }}
+                                                    @else
+                                                        General Activity
+                                                    @endif
                                                 </td>
                                                 <td class="px-6 py-4 text-sm text-gray-500">
                                                     {{ $entry->description ?: '-' }}

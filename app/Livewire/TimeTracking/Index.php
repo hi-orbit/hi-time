@@ -31,7 +31,7 @@ class Index extends Component
     public $editDescription;
 
     protected $rules = [
-        'selectedTaskId' => 'required|exists:tasks,id',
+        'selectedTaskId' => 'required',
         'hours' => 'nullable|integer|min:0|max:23',
         'minutes' => 'nullable|integer|min:0|max:59',
         'note' => 'required|string|max:1000',
@@ -101,9 +101,66 @@ class Index extends Component
         }
     }
 
+    protected function validateTaskSelection()
+    {
+        if (!$this->selectedTaskId) {
+            throw new \Exception('Please select a task or activity.');
+        }
+
+        // Check if it's a general activity
+        if (str_starts_with($this->selectedTaskId, 'general_')) {
+            return true; // Valid general activity
+        }
+
+        // Check if it's a valid task
+        if (!Task::find($this->selectedTaskId)) {
+            throw new \Exception('Invalid task selected.');
+        }
+
+        return true;
+    }
+
+    protected function getSelectedActivityInfo()
+    {
+        if (str_starts_with($this->selectedTaskId, 'general_')) {
+            $index = (int) str_replace('general_', '', $this->selectedTaskId);
+            $activities = $this->getStandardActivityTypes();
+            
+            if (isset($activities[$index])) {
+                return [
+                    'type' => 'general',
+                    'activity_name' => $activities[$index],
+                    'task_id' => null,
+                ];
+            }
+        }
+
+        $task = Task::find($this->selectedTaskId);
+        if ($task) {
+            return [
+                'type' => 'task',
+                'activity_name' => $task->title,
+                'task_id' => $task->id,
+            ];
+        }
+
+        return null;
+    }
+
     public function startTimer()
     {
-        $this->validate(['selectedTaskId' => 'required|exists:tasks,id']);
+        try {
+            $this->validateTaskSelection();
+        } catch (\Exception $e) {
+            $this->addError('selectedTaskId', $e->getMessage());
+            return;
+        }
+
+        $activityInfo = $this->getSelectedActivityInfo();
+        if (!$activityInfo) {
+            $this->addError('selectedTaskId', 'Invalid selection.');
+            return;
+        }
 
         // Stop any running timers for this user
         TaskNote::where('user_id', Auth::id())
@@ -113,21 +170,33 @@ class Index extends Component
                 'end_time' => now(),
             ]);
 
-        // Start new timer by creating a TaskNote with timer fields
-        TaskNote::create([
-            'task_id' => $this->selectedTaskId,
+        // Create TaskNote data
+        $taskNoteData = [
             'user_id' => Auth::id(),
             'content' => $this->description ?: 'Timer started',
             'description' => $this->description,
             'start_time' => now(),
             'is_running' => true,
             'entry_date' => now()->toDate(),
-        ]);
+        ];
 
-        $task = Task::find($this->selectedTaskId);
-        session()->flash('message', 'Timer started for: ' . $task->title);
+        if ($activityInfo['type'] === 'task') {
+            $taskNoteData['task_id'] = $activityInfo['task_id'];
+        } else {
+            // For general activities, we need a project but no specific task
+            if (!$this->selectedProjectId) {
+                $this->addError('selectedTaskId', 'Please select a project for general activities.');
+                return;
+            }
+            $taskNoteData['activity_type'] = $activityInfo['activity_name'];
+            // We'll need to create a general task or handle this differently
+            // For now, let's create it without a task_id but with activity_type
+        }
+
+        TaskNote::create($taskNoteData);
+
+        session()->flash('message', 'Timer started for: ' . $activityInfo['activity_name']);
         $this->reset(['description']);
-        // Regenerate chart data after starting timer
         $this->generateChartData();
     }
 
@@ -170,8 +239,10 @@ class Index extends Component
         }
 
         // Validate task selection
-        if (!$this->selectedTaskId) {
-            $this->addError('selectedTaskId', 'Please select a task.');
+        try {
+            $this->validateTaskSelection();
+        } catch (\Exception $e) {
+            $this->addError('selectedTaskId', $e->getMessage());
             return;
         }
 
@@ -269,9 +340,14 @@ class Index extends Component
         }
 
         if ($totalMinutes > 0) {
+            $activityInfo = $this->getSelectedActivityInfo();
+            if (!$activityInfo) {
+                $this->addError('selectedTaskId', 'Invalid selection.');
+                return;
+            }
+
             // Create TaskNote with time tracking
             $taskNoteData = [
-                'task_id' => $this->selectedTaskId,
                 'user_id' => Auth::id(),
                 'content' => $this->note,
                 'hours' => $hours > 0 ? $hours : null,
@@ -280,6 +356,17 @@ class Index extends Component
                 'entry_date' => \Carbon\Carbon::parse($this->entryDate),
                 'created_at' => \Carbon\Carbon::parse($this->entryDate . ' ' . now()->format('H:i:s')),
             ];
+
+            if ($activityInfo['type'] === 'task') {
+                $taskNoteData['task_id'] = $activityInfo['task_id'];
+            } else {
+                // For general activities
+                if (!$this->selectedProjectId) {
+                    $this->addError('selectedTaskId', 'Please select a project for general activities.');
+                    return;
+                }
+                $taskNoteData['activity_type'] = $activityInfo['activity_name'];
+            }
 
             // Add start/end times if they were provided
             if ($this->startTime && $this->endTime) {
@@ -409,13 +496,27 @@ class Index extends Component
         $currentStackPosition = 0; // For entries without specific times
 
         foreach ($entries as $entry) {
-            $entryData = [
-                'id' => $entry->id,
-                'task' => $entry->task->title,
-                'project' => $entry->task->project->name,
-                'duration_minutes' => $entry->total_minutes ?? $entry->duration_minutes ?? 0,
-                'description' => $entry->description ?? $entry->content ?? '',
-            ];
+            // Handle both task entries and general activities
+            if ($entry->task) {
+                $entryData = [
+                    'id' => $entry->id,
+                    'task' => $entry->task->title,
+                    'project' => $entry->task->project->name,
+                    'duration_minutes' => $entry->total_minutes ?? $entry->duration_minutes ?? 0,
+                    'description' => $entry->description ?? $entry->content ?? '',
+                ];
+                $taskKey = $entry->task->id;
+            } else {
+                // General activity
+                $entryData = [
+                    'id' => $entry->id,
+                    'task' => $entry->activity_type ?? 'General Activity',
+                    'project' => 'General',
+                    'duration_minutes' => $entry->total_minutes ?? $entry->duration_minutes ?? 0,
+                    'description' => $entry->description ?? $entry->content ?? '',
+                ];
+                $taskKey = 'general_' . ($entry->activity_type ?? 'default');
+            }
 
             // Handle entries with specific start/end times
             if ($entry->start_time && $entry->end_time) {
@@ -435,8 +536,7 @@ class Index extends Component
                 $currentStackPosition++;
             }
 
-            // Assign color based on task
-            $taskKey = $entry->task->id;
+            // Assign color based on task or activity type
             if (!isset($taskColors[$taskKey])) {
                 $taskColors[$taskKey] = $colors[$colorIndex % count($colors)];
                 $colorIndex++;
@@ -473,6 +573,27 @@ class Index extends Component
         }
     }
 
+    public function getStandardActivityTypes()
+    {
+        return [
+            'Client Meeting',
+            'Project Planning',
+            'Research',
+            'Documentation',
+            'Code Review',
+            'Testing',
+            'Deployment',
+            'Training',
+            'Administrative',
+            'Travel Time',
+            'Bug Investigation',
+            'System Maintenance',
+            'Client Communication',
+            'Team Meeting',
+            'Other'
+        ];
+    }
+
     public function render()
     {
         $runningEntries = TaskNote::where('user_id', Auth::id())
@@ -483,7 +604,7 @@ class Index extends Component
 
         $recentEntries = TaskNote::where('user_id', Auth::id())
             ->where('total_minutes', '>', 0)
-            ->with(['task.project'])
+            ->with(['task.project']) // Left join so general activities are included
             ->orderBy('created_at', 'desc')
             ->take(10)
             ->get();
@@ -493,10 +614,11 @@ class Index extends Component
             ->orderBy('name')
             ->get();
 
-        // Get tasks based on selected project
+        // Get tasks based on selected project (exclude completed tasks)
         $tasks = collect();
         if ($this->selectedProjectId) {
             $tasks = Task::where('project_id', $this->selectedProjectId)
+                ->where('status', '!=', 'done') // Exclude completed tasks
                 ->with('project')
                 ->orderBy('title')
                 ->get();
@@ -508,6 +630,7 @@ class Index extends Component
             'projects' => $projects,
             'tasks' => $tasks,
             'chartData' => $this->chartData,
+            'generalActivities' => $this->getStandardActivityTypes(),
         ]);
     }
 }
