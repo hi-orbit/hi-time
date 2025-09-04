@@ -160,7 +160,7 @@
                             <div class="text-sm text-gray-500">Total Users</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-2xl font-bold text-indigo-600">{{ \App\Models\TimeEntry::whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])->count() }}</div>
+                            <div class="text-2xl font-bold text-indigo-600">{{ \App\Models\TaskNote::whereNotNull('total_minutes')->where('total_minutes', '>', 0)->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])->count() }}</div>
                             <div class="text-sm text-gray-500">Time Entries This Month</div>
                         </div>
                     </div>

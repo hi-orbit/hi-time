@@ -4,7 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Task;
-use App\Models\TimeEntry;
+use App\Models\TaskNote;
 use Illuminate\Support\Facades\Auth;
 
 class Dashboard extends Component
@@ -21,13 +21,19 @@ class Dashboard extends Component
             return;
         }
 
-        $timeEntry = TimeEntry::find($timeEntryId);
+        $timeEntry = TaskNote::find($timeEntryId);
 
         if ($timeEntry && $timeEntry->user_id === $user->id && $timeEntry->is_running) {
+            $endTime = now();
+            $durationMinutes = $timeEntry->start_time->diffInMinutes($endTime);
+
             $timeEntry->update([
                 'is_running' => false,
-                'end_time' => now(),
-                'duration_minutes' => $timeEntry->start_time->diffInMinutes(now())
+                'end_time' => $endTime,
+                'duration_minutes' => $durationMinutes,
+                'total_minutes' => $durationMinutes,
+                'hours' => floor($durationMinutes / 60),
+                'minutes' => $durationMinutes % 60,
             ]);
 
             $this->dispatch('success', 'Timer stopped successfully.');
@@ -61,8 +67,9 @@ class Dashboard extends Component
         // Get running time entries for current user (not applicable for customers)
         $runningTimeEntries = collect();
         if (!$user->isCustomer()) {
-            $runningTimeEntries = TimeEntry::where('user_id', $user->id)
+            $runningTimeEntries = TaskNote::where('user_id', $user->id)
                 ->where('is_running', true)
+                ->whereNotNull('total_minutes')
                 ->with(['task.project.customer'])
                 ->orderBy('start_time', 'desc')
                 ->get();

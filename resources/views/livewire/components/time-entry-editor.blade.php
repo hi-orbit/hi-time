@@ -82,12 +82,21 @@
                 <div class="flex items-center space-x-3 mb-2">
                     <!-- Duration -->
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                        {{ $timeEntry->formatted_decimal_hours }}
+                        @php
+                            $minutes = $timeEntry->total_minutes ?? $timeEntry->duration_minutes ?? 0;
+                            $hours = floor($minutes / 60);
+                            $mins = $minutes % 60;
+                        @endphp
+                        {{ $hours }}h {{ $mins }}m
                     </span>
 
                     <!-- Date -->
                     <span class="text-sm text-gray-500">
-                        {{ $timeEntry->entry_date ? $timeEntry->entry_date->format('M j, Y') : $timeEntry->created_at->format('M j, Y') }}
+                        @if($timeEntry->entry_date)
+                            {{ $timeEntry->entry_date->format('M j, Y') }}
+                        @else
+                            {{ $timeEntry->created_at->format('M j, Y') }}
+                        @endif
                     </span>
 
                     <!-- Time -->

@@ -7,7 +7,6 @@ use Livewire\WithFileUploads;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
-use App\Models\TimeEntry;
 use App\Models\TaskNote;
 use App\Models\TaskAttachment;
 use App\Services\NotificationService;
@@ -399,31 +398,6 @@ class Show extends Component
                 'total_minutes' => $totalMinutes > 0 ? $totalMinutes : null,
             ]);
 
-            // If time was logged, also create a time entry for backwards compatibility
-            if ($totalMinutes > 0) {
-                $timeEntryData = [
-                    'task_id' => $this->selectedTask->id,
-                    'user_id' => Auth::id(),
-                    'description' => $this->newNote,
-                    'duration_minutes' => $totalMinutes,
-                    'is_running' => false,
-                    'project_id' => $this->project->id,
-                ];
-
-                // Add start/end times if they were provided
-                if ($this->newNoteStartTime && $this->newNoteEndTime) {
-                    $today = now()->format('Y-m-d');
-                    $timeEntryData['start_time'] = $today . ' ' . $this->newNoteStartTime;
-                    $timeEntryData['end_time'] = $today . ' ' . $this->newNoteEndTime;
-                    $timeEntryData['entry_date'] = $today;
-                } else {
-                    // For manual time entries without specific times, use current time as base
-                    $timeEntryData['entry_date'] = now()->format('Y-m-d');
-                }
-
-                TimeEntry::create($timeEntryData);
-            }
-
             // Refresh the selected task to show the new note and maintain all relationships
             $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader'])->findOrFail($this->selectedTask->id);
 
@@ -752,19 +726,22 @@ class Show extends Component
         $task = Task::findOrFail($taskId);
 
         // Stop any running timers for this user
-        TimeEntry::where('user_id', Auth::id())
+        TaskNote::where('user_id', Auth::id())
             ->where('is_running', true)
+            ->whereNotNull('total_minutes')
             ->update([
                 'is_running' => false,
                 'end_time' => now(),
             ]);
 
         // Start new timer
-        TimeEntry::create([
+        TaskNote::create([
             'task_id' => $taskId,
             'user_id' => Auth::id(),
             'start_time' => now(),
             'is_running' => true,
+            'content' => 'Timer started',
+            'source' => 'timer',
         ]);
 
         session()->flash('message', 'Timer started for: ' . $task->title);
@@ -772,9 +749,10 @@ class Show extends Component
 
     public function stopTimer($taskId)
     {
-        $runningEntries = TimeEntry::where('task_id', $taskId)
+        $runningEntries = TaskNote::where('task_id', $taskId)
             ->where('user_id', Auth::id())
             ->where('is_running', true)
+            ->whereNotNull('total_minutes')
             ->get();
 
         foreach ($runningEntries as $entry) {
@@ -785,6 +763,9 @@ class Show extends Component
                 'is_running' => false,
                 'end_time' => $endTime,
                 'duration_minutes' => $durationMinutes,
+                'total_minutes' => $durationMinutes,
+                'hours' => floor($durationMinutes / 60),
+                'minutes' => $durationMinutes % 60,
             ]);
         }
 
@@ -858,9 +839,29 @@ class Show extends Component
             }
 
             try {
-                $timeEntry = TimeEntry::create($timeEntryData);
+                $taskNoteData = [
+                    'user_id' => $timeEntryData['user_id'],
+                    'content' => $timeEntryData['description'],
+                    'total_minutes' => $totalMinutes,
+                    'duration_minutes' => $totalMinutes,
+                    'hours' => floor($totalMinutes / 60),
+                    'minutes' => $totalMinutes % 60,
+                    'is_running' => false,
+                    'source' => 'manual_log'
+                ];
 
-                if ($timeEntry) {
+                if ($this->isGeneralActivity) {
+                    // For general activities
+                    $taskNoteData['task_id'] = null;
+                    $taskNoteData['content'] = $this->activityType . ': ' . ($this->timeDescription ?: 'General activity');
+                } else {
+                    // For task-specific activities
+                    $taskNoteData['task_id'] = $this->selectedTask->id;
+                }
+
+                $taskNote = TaskNote::create($taskNoteData);
+
+                if ($taskNote) {
                     $activityLabel = $this->isGeneralActivity ? $this->activityType : $this->selectedTask->title;
                     session()->flash('message', "Time logged successfully for: {$activityLabel}!");
                 } else {
@@ -902,9 +903,19 @@ class Show extends Component
             ];
 
             try {
-                $timeEntry = TimeEntry::create($timeEntryData);
+                $taskNote = TaskNote::create([
+                    'user_id' => Auth::id(),
+                    'task_id' => $this->selectedTask->id,
+                    'content' => $this->timeDescription ?: 'Time logged inline',
+                    'total_minutes' => $totalMinutes,
+                    'duration_minutes' => $totalMinutes,
+                    'hours' => $hours,
+                    'minutes' => $totalMinutes % 60,
+                    'is_running' => false,
+                    'source' => 'inline_log'
+                ]);
 
-                if ($timeEntry) {
+                if ($taskNote) {
                     // Reset the time fields and hide the form
                     $this->timeDescription = '';
                     $this->hours = '';

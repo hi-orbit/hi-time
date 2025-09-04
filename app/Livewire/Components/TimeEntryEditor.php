@@ -3,7 +3,7 @@
 namespace App\Livewire\Components;
 
 use Livewire\Component;
-use App\Models\TimeEntry;
+use App\Models\TaskNote;
 use Illuminate\Support\Facades\Auth;
 
 class TimeEntryEditor extends Component
@@ -16,7 +16,7 @@ class TimeEntryEditor extends Component
     public $showViewTaskLink = true;
     public $showDeleteButton = true;
 
-    public function mount(TimeEntry $timeEntry, $showViewTaskLink = true, $showDeleteButton = true)
+    public function mount(TaskNote $timeEntry, $showViewTaskLink = true, $showDeleteButton = true)
     {
         $this->timeEntry = $timeEntry;
         $this->showViewTaskLink = $showViewTaskLink;
@@ -38,10 +38,12 @@ class TimeEntryEditor extends Component
             $elapsedMinutes = $this->timeEntry->start_time->diffInMinutes(now());
             $this->duration = round($elapsedMinutes, 2);
         } else {
-            $this->duration = round($this->timeEntry->duration_minutes, 2);
+            // Use total_minutes (primary) or duration_minutes (fallback)
+            $minutes = $this->timeEntry->total_minutes ?? $this->timeEntry->duration_minutes ?? 0;
+            $this->duration = round($minutes, 2);
         }
 
-        $this->description = $this->timeEntry->description ?? '';
+        $this->description = $this->timeEntry->description ?? $this->timeEntry->content ?? '';
         $this->entryDate = $this->timeEntry->entry_date ? $this->timeEntry->entry_date->format('Y-m-d') : $this->timeEntry->created_at->format('Y-m-d');
     }
 
@@ -66,8 +68,16 @@ class TimeEntryEditor extends Component
 
         $updateData = [
             'description' => $this->description,
-            'entry_date' => $this->entryDate,
+            'entry_date' => \Carbon\Carbon::parse($this->entryDate),
+            'total_minutes' => (float) $this->duration,
+            'hours' => floor((float) $this->duration / 60),
+            'minutes' => (float) $this->duration % 60,
         ];
+
+        // Update content if description is provided
+        if ($this->description) {
+            $updateData['content'] = $this->description;
+        }
 
         // Handle running vs stopped timers differently
         if ($this->timeEntry->is_running) {
@@ -75,7 +85,7 @@ class TimeEntryEditor extends Component
             $newStartTime = now()->subMinutes((float) $this->duration);
             $updateData['start_time'] = $newStartTime;
         } else {
-            // For stopped timers, just update the duration_minutes
+            // For stopped timers, update duration fields
             $updateData['duration_minutes'] = (float) $this->duration;
         }
 

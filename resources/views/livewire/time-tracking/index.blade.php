@@ -184,16 +184,15 @@
                         $totalMins = $totalMinutes % 60;
                     @endphp
 
-                    <div class="bg-gray-50 rounded-lg p-6">
-                        <!-- Timeline Header -->
-                        <div class="mb-4">
-                            <p class="text-lg font-semibold text-gray-700">
-                                Total: {{ $totalHours }}h {{ $totalMins }}m
-                            </p>
-                            <p class="text-sm text-gray-500">Hover over a task to see details</p>
-                        </div>
-
-                        <!-- Timeline Chart -->
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <!-- Timeline Header -->
+                    <div class="mb-4">
+                        <p class="text-lg font-semibold text-gray-700">
+                            Total: {{ $totalHours }}h {{ $totalMins }}m
+                        </p>
+                        <p class="text-sm text-gray-500">Hover over a task to see details</p>
+                        <p class="text-sm text-gray-400">Manual entries are shown with dashed borders and estimated times</p>
+                    </div>                        <!-- Timeline Chart -->
                         @php
                             $maxLayer = count($chartData) > 0 ? max(array_column($chartData, 'layer')) : 0;
                             $rowHeight = 50; // Height of each timeline row
@@ -236,7 +235,7 @@
                                         @endphp
                                         <div class="absolute group"
                                              style="left: {{ number_format($left, 2) }}%; width: {{ number_format($width, 2) }}%; top: {{ $topPosition }}px; height: 40px;">
-                                            <div class="w-full h-full rounded shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer border-2 border-white"
+                                            <div class="w-full h-full rounded shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer border-2 border-white {{ isset($entry['is_manual']) && $entry['is_manual'] ? 'border-dashed opacity-75' : '' }}"
                                                  style="background-color: {{ $entry['color'] }};">
 
                                                 <!-- Tooltip -->
@@ -246,8 +245,14 @@
                                                         <div class="text-gray-300">{{ $entry['project'] }}</div>
                                                         <div class="mt-1">
                                                             {{ $entry['start_time']->format('H:i') }} - {{ $entry['end_time']->format('H:i') }}
+                                                            @if(isset($entry['is_manual']) && $entry['is_manual'])
+                                                                <span class="text-yellow-300">(estimated)</span>
+                                                            @endif
                                                         </div>
                                                         <div>Duration: {{ $durationHours }}h {{ $durationMins }}m</div>
+                                                        @if(isset($entry['is_manual']) && $entry['is_manual'])
+                                                            <div class="text-yellow-300 text-xs">Manual entry</div>
+                                                        @endif
                                                         <!-- Arrow -->
                                                         <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
                                                     </div>

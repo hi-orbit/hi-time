@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\User;
-use App\Models\TimeEntry;
+use App\Models\TaskNote;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +18,14 @@ class ReportsController extends Controller
     public function index()
     {
         return view('reports.index');
+    }
+
+    /**
+     * My Time Today report
+     */
+    public function myTimeToday()
+    {
+        return view('reports.my-time-today-wrapper');
     }
 
     /**
@@ -80,27 +88,25 @@ class ReportsController extends Controller
      */
     private function getCustomerTimeData($startDate, $endDate)
     {
-        // Get time entries with related data - use LEFT JOINs to include general activities
-        $timeEntries = TimeEntry::select([
-                'time_entries.*',
+        // Get task notes with time logged and related data
+        $timeEntries = TaskNote::select([
+                'task_notes.*',
                 'tasks.title as task_title',
                 'projects.name as project_name',
                 'projects.customer_id',
                 'customers.name as customer_name',
                 'users.name as user_name'
             ])
-            ->leftJoin('tasks', 'time_entries.task_id', '=', 'tasks.id')
-            ->leftJoin('projects', function($join) {
-                $join->on('tasks.project_id', '=', 'projects.id')
-                     ->orOn('time_entries.project_id', '=', 'projects.id');
-            })
+            ->whereNotNull('task_notes.total_minutes') // Only get entries with time logged
+            ->leftJoin('tasks', 'task_notes.task_id', '=', 'tasks.id')
+            ->leftJoin('projects', 'tasks.project_id', '=', 'projects.id')
             ->leftJoin('customers', 'projects.customer_id', '=', 'customers.id')
-            ->join('users', 'time_entries.user_id', '=', 'users.id')
+            ->join('users', 'task_notes.user_id', '=', 'users.id')
             ->where(function($query) use ($startDate, $endDate) {
-                $query->whereBetween('time_entries.entry_date', [$startDate, $endDate])
+                $query->whereBetween('task_notes.entry_date', [$startDate, $endDate])
                       ->orWhere(function($subQuery) use ($startDate, $endDate) {
-                          $subQuery->whereNull('time_entries.entry_date')
-                                   ->whereBetween('time_entries.created_at', [$startDate, $endDate]);
+                          $subQuery->whereNull('task_notes.entry_date')
+                                   ->whereBetween('task_notes.created_at', [$startDate, $endDate]);
                       });
             })
             ->orderBy('customers.name')
@@ -115,16 +121,18 @@ class ReportsController extends Controller
             $customerName = $entry->customer_name ?? 'No Customer';
             $projectName = $entry->project_name ?? 'Unknown Project';
 
-            // Calculate hours using the model's corrected duration calculation
-            $hours = $entry->decimal_hours;
+            // Calculate hours from total_minutes (primary) or duration_minutes (fallback)
+            $minutes = $entry->total_minutes ?? $entry->duration_minutes ?? 0;
+            $hours = $minutes / 60;
 
             // Determine activity description for display
-            $activityDescription = $entry->activity_type ?? $entry->task_title ?? 'Unknown Activity';
+            $activityDescription = $entry->task_title ?? 'Unknown Activity';
 
             // Add computed fields for display
             $entry->activity_description = $activityDescription;
-            $entry->entry_type = $entry->activity_type ? 'General Activity' : 'Task Work';
+            $entry->entry_type = 'Task Work';
             $entry->calculated_hours = $hours;
+            $entry->decimal_hours = $hours; // For compatibility
 
             if (!isset($customerData[$customerName])) {
                 $customerData[$customerName] = [
@@ -151,13 +159,10 @@ class ReportsController extends Controller
             $customerData[$customerName]['projects'][$projectName]['total_hours'] += $hours;
             $customerData[$customerName]['projects'][$projectName]['entries'][] = $entry;
 
-            if ($entry->activity_type) {
-                $customerData[$customerName]['total_general_hours'] += $hours;
-                $customerData[$customerName]['projects'][$projectName]['total_general_hours'] += $hours;
-            } else {
-                $customerData[$customerName]['total_task_hours'] += $hours;
-                $customerData[$customerName]['projects'][$projectName]['total_task_hours'] += $hours;
-            }
+            // All TaskNote entries are task work
+            $customerData[$customerName]['total_task_hours'] += $hours;
+            $customerData[$customerName]['projects'][$projectName]['total_task_hours'] += $hours;
+
             $totalHours += $hours;
         }
 
@@ -172,26 +177,24 @@ class ReportsController extends Controller
      */
     private function getUserTimeData($startDate, $endDate)
     {
-        $timeEntries = TimeEntry::select([
-                'time_entries.*',
+        $timeEntries = TaskNote::select([
+                'task_notes.*',
                 'tasks.title as task_title',
                 'projects.name as project_name',
                 'projects.customer_id',
                 'customers.name as customer_name',
                 'users.name as user_name'
             ])
-            ->leftJoin('tasks', 'time_entries.task_id', '=', 'tasks.id')
-            ->leftJoin('projects', function($join) {
-                $join->on('tasks.project_id', '=', 'projects.id')
-                     ->orOn('time_entries.project_id', '=', 'projects.id');
-            })
+            ->whereNotNull('task_notes.total_minutes') // Only get entries with time logged
+            ->leftJoin('tasks', 'task_notes.task_id', '=', 'tasks.id')
+            ->leftJoin('projects', 'tasks.project_id', '=', 'projects.id')
             ->leftJoin('customers', 'projects.customer_id', '=', 'customers.id')
-            ->join('users', 'time_entries.user_id', '=', 'users.id')
+            ->join('users', 'task_notes.user_id', '=', 'users.id')
             ->where(function($query) use ($startDate, $endDate) {
-                $query->whereBetween('time_entries.entry_date', [$startDate, $endDate])
+                $query->whereBetween('task_notes.entry_date', [$startDate, $endDate])
                       ->orWhere(function($subQuery) use ($startDate, $endDate) {
-                          $subQuery->whereNull('time_entries.entry_date')
-                                   ->whereBetween('time_entries.created_at', [$startDate, $endDate]);
+                          $subQuery->whereNull('task_notes.entry_date')
+                                   ->whereBetween('task_notes.created_at', [$startDate, $endDate]);
                       });
             })
             ->orderBy('users.name')
@@ -207,16 +210,18 @@ class ReportsController extends Controller
             $customerName = $entry->customer_name ?? 'No Customer';
             $projectName = $entry->project_name ?? 'Unknown Project';
 
-            // Calculate hours using the model's corrected duration calculation
-            $hours = $entry->decimal_hours;
+            // Calculate hours from total_minutes (primary) or duration_minutes (fallback)
+            $minutes = $entry->total_minutes ?? $entry->duration_minutes ?? 0;
+            $hours = $minutes / 60;
 
             // Determine activity description for display
-            $activityDescription = $entry->activity_type ?? $entry->task_title ?? 'Unknown Activity';
+            $activityDescription = $entry->task_title ?? 'Unknown Activity';
 
             // Add computed fields for display
             $entry->activity_description = $activityDescription;
-            $entry->entry_type = $entry->activity_type ? 'General Activity' : 'Task Work';
+            $entry->entry_type = 'Task Work';
             $entry->calculated_hours = $hours;
+            $entry->decimal_hours = $hours; // For compatibility
 
             if (!isset($userData[$userName])) {
                 $userData[$userName] = [

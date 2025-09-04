@@ -44,7 +44,7 @@ class Project extends Model
 
     public function timeEntries()
     {
-        return $this->hasManyThrough(TimeEntry::class, Task::class);
+        return $this->hasManyThrough(TaskNote::class, Task::class);
     }
 
     public function getTotalTimeAttribute()

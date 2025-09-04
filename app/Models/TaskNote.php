@@ -10,15 +10,29 @@ class TaskNote extends Model
         'task_id',
         'user_id',
         'content',
+        'description',
         'hours',
         'minutes',
-        'total_minutes'
+        'total_minutes',
+        'start_time',
+        'end_time',
+        'duration_minutes',
+        'entry_date',
+        'is_running',
+        'activity_type',
+        'project_id',
+        'source'
     ];
 
     protected $casts = [
         'hours' => 'integer',
         'minutes' => 'integer',
         'total_minutes' => 'integer',
+        'duration_minutes' => 'integer',
+        'is_running' => 'boolean',
+        'start_time' => 'datetime',
+        'end_time' => 'datetime',
+        'entry_date' => 'date',
     ];
 
     public function task()
@@ -29,6 +43,11 @@ class TaskNote extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
     }
 
     public function getFormattedTimeAttribute(): string
