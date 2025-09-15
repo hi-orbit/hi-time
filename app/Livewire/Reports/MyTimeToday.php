@@ -91,8 +91,8 @@ class MyTimeToday extends Component
         foreach ($entries as $entry) {
             $entryData = [
                 'id' => $entry->id,
-                'task' => $entry->task->title,
-                'project' => $entry->task->project->name,
+                'task' => $entry->task ? $entry->task->title : ($entry->activity_type ?? 'General Activity'),
+                'project' => $entry->task ? $entry->task->project->name : 'General Activities',
                 'duration_minutes' => $entry->total_minutes ?? $entry->duration_minutes ?? 0,
                 'description' => $entry->description ?? $entry->content ?? '',
             ];
@@ -115,8 +115,8 @@ class MyTimeToday extends Component
                 $currentStackPosition++;
             }
 
-            // Assign color based on task
-            $taskKey = $entry->task->id;
+            // Assign color based on task or activity type
+            $taskKey = $entry->task ? $entry->task->id : 'general_' . ($entry->activity_type ?? 'activity');
             if (!isset($taskColors[$taskKey])) {
                 $taskColors[$taskKey] = $colors[$colorIndex % count($colors)];
                 $colorIndex++;
