@@ -122,7 +122,17 @@ class ReportsController extends Controller
             if (is_null($entry->task_id)) {
                 $customerName = 'General Activities';
                 $projectName = 'General Activities';
-                $activityDescription = $entry->activity_type ?? 'General Activity';
+
+                // Create a descriptive activity description using activity_type and content
+                $activityType = $entry->activity_type ?? 'General Activity';
+                $content = $entry->content ?? $entry->description ?? '';
+
+                if (!empty($content)) {
+                    $activityDescription = $activityType . ': ' . $content;
+                } else {
+                    $activityDescription = $activityType;
+                }
+
                 $entryType = 'General Activity';
             } else {
                 $customerName = $entry->customer_name ?? 'No Customer';
@@ -224,7 +234,17 @@ class ReportsController extends Controller
             if (is_null($entry->task_id)) {
                 $customerName = 'General Activities';
                 $projectName = 'General Activities';
-                $activityDescription = $entry->activity_type ?? 'General Activity';
+
+                // Create a descriptive activity description using activity_type and content
+                $activityType = $entry->activity_type ?? 'General Activity';
+                $content = $entry->content ?? $entry->description ?? '';
+
+                if (!empty($content)) {
+                    $activityDescription = $activityType . ': ' . $content;
+                } else {
+                    $activityDescription = $activityType;
+                }
+
                 $entryType = 'General Activity';
             } else {
                 $customerName = $entry->customer_name ?? 'No Customer';
