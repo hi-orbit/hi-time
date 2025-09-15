@@ -136,7 +136,7 @@
                                                     @foreach($projectData['entries'] as $entry)
                                                         <div class="flex items-center justify-between text-sm bg-gray-50 rounded px-3 py-2">
                                                             <div class="flex-1">
-                                                                <span class="font-medium text-gray-900">{{ $entry->task_title }}</span>
+                                                                <span class="font-medium text-gray-900">{{ $entry->activity_description }}</span>
                                                                 @if($entry->description)
                                                                     <span class="text-gray-600 ml-2">- {{ $entry->description }}</span>
                                                                 @endif
