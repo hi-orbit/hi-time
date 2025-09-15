@@ -590,6 +590,8 @@ class Index extends Component
             'System Maintenance',
             'Client Communication',
             'Team Meeting',
+            'Sales',
+            'Time Entry',
             'Other'
         ];
     }
