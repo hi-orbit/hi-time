@@ -68,19 +68,37 @@ class TimeByUserLivewire extends Component
 
         foreach ($timeEntries as $entry) {
             $userName = $entry->user_name;
-            $customerName = $entry->customer_name ?? 'No Customer';
-            $projectName = $entry->project_name ?? 'Unknown Project';
+
+            // Check if this is a general activity (no task_id)
+            if (is_null($entry->task_id)) {
+                $customerName = 'General Activities';
+                $projectName = 'General Activities';
+                
+                // Create a descriptive activity description using activity_type and content
+                $activityType = $entry->activity_type ?? 'General Activity';
+                $content = $entry->content ?? $entry->description ?? '';
+                
+                if (!empty($content)) {
+                    $activityDescription = $activityType . ': ' . $content;
+                } else {
+                    $activityDescription = $activityType;
+                }
+                
+                $entryType = 'General Activity';
+            } else {
+                $customerName = $entry->customer_name ?? 'No Customer';
+                $projectName = $entry->project_name ?? 'Unknown Project';
+                $activityDescription = $entry->task_title ?? 'Unknown Activity';
+                $entryType = 'Task Work';
+            }
 
             // Calculate hours from total_minutes (primary) or duration_minutes (fallback)
             $minutes = $entry->total_minutes ?? $entry->duration_minutes ?? 0;
             $hours = $minutes / 60;
 
-            // Determine activity description for display
-            $activityDescription = $entry->task_title ?? 'Unknown Activity';
-
             // Add computed fields for display
             $entry->activity_description = $activityDescription;
-            $entry->entry_type = 'Task Work';
+            $entry->entry_type = $entryType;
             $entry->calculated_hours = $hours;
 
             if (!isset($userData[$userName])) {

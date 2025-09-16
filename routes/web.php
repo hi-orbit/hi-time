@@ -73,7 +73,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports/time-by-customer-this-month', [\App\Http\Controllers\ReportsController::class, 'timeByCustomerThisMonth'])->name('reports.time-by-customer-this-month');
         Route::get('/reports/time-by-customer-last-month', [\App\Http\Controllers\ReportsController::class, 'timeByCustomerLastMonth'])->name('reports.time-by-customer-last-month');
         Route::get('/reports/time-by-user', [\App\Http\Controllers\ReportsController::class, 'timeByUser'])->name('reports.time-by-user');
-        Route::get('/reports/time-by-user-enhanced', \App\Livewire\Reports\TimeByUserLivewire::class)->name('reports.time-by-user-enhanced');
+        Route::get('/reports/time-by-user-enhanced', [\App\Http\Controllers\ReportsController::class, 'timeByUserEnhanced'])->name('reports.time-by-user-enhanced');
         Route::get('/reports/my-time-today', [\App\Http\Controllers\ReportsController::class, 'myTimeToday'])->name('reports.my-time-today');
 
         Route::get('/time-tracking', function () {

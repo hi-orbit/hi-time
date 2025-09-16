@@ -29,6 +29,14 @@ class ReportsController extends Controller
     }
 
     /**
+     * Time by user - enhanced version with editing capabilities
+     */
+    public function timeByUserEnhanced()
+    {
+        return view('reports.time-by-user-enhanced-wrapper');
+    }
+
+    /**
      * Time by customer - current month
      */
     public function timeByCustomerThisMonth()

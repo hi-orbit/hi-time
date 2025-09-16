@@ -79,7 +79,7 @@ class User extends Authenticatable
 
     public function timeEntries()
     {
-        return $this->hasMany(TimeEntry::class);
+        return $this->hasMany(TaskNote::class);
     }
 
     public function createdProjects()
