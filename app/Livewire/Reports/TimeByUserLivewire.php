@@ -14,6 +14,13 @@ class TimeByUserLivewire extends Component
     public $endDate;
     public $userTimeData = [];
 
+    // Inline editing properties
+    public $editingTimeEntry = null;
+    public $editDuration;
+    public $editStartTime;
+    public $editEndTime;
+    public $editDescription;
+
     protected $listeners = ['timeEntryUpdated' => 'loadTimeData', 'timeEntryDeleted' => 'loadTimeData'];
 
     public function mount($startDate = null, $endDate = null)
@@ -73,17 +80,17 @@ class TimeByUserLivewire extends Component
             if (is_null($entry->task_id)) {
                 $customerName = 'General Activities';
                 $projectName = 'General Activities';
-                
+
                 // Create a descriptive activity description using activity_type and content
                 $activityType = $entry->activity_type ?? 'General Activity';
                 $content = $entry->content ?? $entry->description ?? '';
-                
+
                 if (!empty($content)) {
                     $activityDescription = $activityType . ': ' . $content;
                 } else {
                     $activityDescription = $activityType;
                 }
-                
+
                 $entryType = 'General Activity';
             } else {
                 $customerName = $entry->customer_name ?? 'No Customer';
@@ -138,6 +145,101 @@ class TimeByUserLivewire extends Component
             'users' => $userData,
             'total_hours' => $totalHours
         ];
+    }
+
+    // Inline Time Entry Editing Methods
+    public function editTimeEntry($entryId)
+    {
+        $entry = TaskNote::findOrFail($entryId);
+
+        // Check if user can edit this entry
+        if ($entry->user_id !== Auth::id()) {
+            session()->flash('error', 'You can only edit your own time entries.');
+            return;
+        }
+
+        $this->editingTimeEntry = $entryId;
+        $this->editDuration = $entry->total_minutes ?? $entry->duration_minutes ?? 0;
+        $this->editStartTime = $entry->start_time ? \Carbon\Carbon::parse($entry->start_time)->format('H:i') : '';
+        $this->editEndTime = $entry->end_time ? \Carbon\Carbon::parse($entry->end_time)->format('H:i') : '';
+        $this->editDescription = $entry->description ?? $entry->content ?? '';
+    }
+
+    public function saveTimeEntry($entryId)
+    {
+        $entry = TaskNote::findOrFail($entryId);
+
+        // Check if user can edit this entry
+        if ($entry->user_id !== Auth::id()) {
+            session()->flash('error', 'You can only edit your own time entries.');
+            return;
+        }
+
+        $this->validate([
+            'editDuration' => 'required|numeric|min:0.01',
+            'editDescription' => 'nullable|string|max:1000',
+            'editStartTime' => 'nullable|date_format:H:i',
+            'editEndTime' => 'nullable|date_format:H:i',
+        ]);
+
+        // Update the entry
+        $updateData = [
+            'total_minutes' => (float) $this->editDuration,
+            'duration_minutes' => (float) $this->editDuration,
+            'hours' => floor((float) $this->editDuration / 60),
+            'minutes' => (float) $this->editDuration % 60,
+        ];
+
+        if ($this->editDescription) {
+            $updateData['description'] = $this->editDescription;
+            $updateData['content'] = $this->editDescription;
+        }
+
+        if ($this->editStartTime && $this->editEndTime) {
+            $date = $entry->entry_date ?? $entry->created_at->toDateString();
+
+            // Parse the date and time more safely
+            try {
+                $updateData['start_time'] = \Carbon\Carbon::parse($date . ' ' . $this->editStartTime);
+                $updateData['end_time'] = \Carbon\Carbon::parse($date . ' ' . $this->editEndTime);
+            } catch (\Exception $e) {
+                // Fallback: use current date if parsing fails
+                $updateData['start_time'] = \Carbon\Carbon::today()->setTimeFromTimeString($this->editStartTime);
+                $updateData['end_time'] = \Carbon\Carbon::today()->setTimeFromTimeString($this->editEndTime);
+            }
+        }
+
+        $entry->update($updateData);
+
+        $this->cancelEdit();
+        $this->loadTimeData();
+
+        session()->flash('message', 'Time entry updated successfully.');
+    }
+
+    public function deleteTimeEntry($entryId)
+    {
+        $entry = TaskNote::findOrFail($entryId);
+
+        // Check if user can delete this entry
+        if ($entry->user_id !== Auth::id()) {
+            session()->flash('error', 'You can only delete your own time entries.');
+            return;
+        }
+
+        $entry->delete();
+        $this->loadTimeData();
+
+        session()->flash('message', 'Time entry deleted successfully.');
+    }
+
+    public function cancelEdit()
+    {
+        $this->editingTimeEntry = null;
+        $this->editDuration = null;
+        $this->editStartTime = null;
+        $this->editEndTime = null;
+        $this->editDescription = null;
     }
 
     public function render()

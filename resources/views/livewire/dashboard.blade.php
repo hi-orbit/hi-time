@@ -84,10 +84,16 @@ x-on:error.window="showMessage = true; message = $event.detail; messageType = 'e
                                                         @endif
                                                     </div>
                                                     <div class="ml-3 flex flex-col space-y-2">
-                                                        @livewire('components.time-entry-editor', [
+                                                        @livewire('timeline-library.time-entry-editor', [
                                                             'timeEntry' => $entry,
-                                                            'showViewTaskLink' => false,
-                                                            'showDeleteButton' => false
+                                                            'showProjectName' => false,
+                                                            'showTaskTitle' => false,
+                                                            'showDescription' => false,
+                                                            'showDuration' => true,
+                                                            'showTimes' => false,
+                                                            'showDate' => false,
+                                                            'allowEdit' => true,
+                                                            'allowDelete' => false
                                                         ], key('running-' . $entry->id))
                                                         <button wire:click="stopTimer({{ $entry->id }})"
                                                                 class="text-xs px-2 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded border border-red-200 transition-colors">

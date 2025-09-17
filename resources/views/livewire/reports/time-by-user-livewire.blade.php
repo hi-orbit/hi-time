@@ -137,15 +137,125 @@ x-on:error.window="showMessage = true; message = $event.detail; messageType = 'e
                                                     <span class="text-sm font-semibold text-gray-600">{{ number_format($projectData['hours'], 2) }}h</span>
                                                 </div>
 
-                                                <!-- Time Entries with Edit Capability -->
-                                                <div class="space-y-2">
-                                                    @foreach($projectData['entries'] as $entry)
-                                                        @livewire('components.time-entry-editor', [
-                                                            'timeEntry' => $entry,
-                                                            'showViewTaskLink' => true,
-                                                            'showDeleteButton' => Auth::id() === $entry->user_id
-                                                        ], key($entry->id . '-user-report'))
-                                                    @endforeach
+                                                <!-- Time Entries Table -->
+                                                <div class="mt-3">
+                                                    <div class="bg-white overflow-hidden shadow-sm rounded border border-gray-200">
+                                                        <table class="min-w-full divide-y divide-gray-200">
+                                                            <thead class="bg-gray-50">
+                                                                <tr>
+                                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
+                                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start</th>
+                                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End</th>
+                                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody class="bg-white divide-y divide-gray-200">
+                                                                @foreach($projectData['entries'] as $entry)
+                                                                    <tr class="hover:bg-gray-50">
+                                                                        <!-- Task -->
+                                                                        <td class="px-4 py-3 text-xs font-medium text-gray-900">
+                                                                            {{ $entry->task ? $entry->task->title : ($entry->activity_type ?? 'General Activity') }}
+                                                                        </td>
+
+                                                                        <!-- Description -->
+                                                                        <td class="px-4 py-3 text-xs text-gray-500">
+                                                                            @if($editingTimeEntry === $entry->id)
+                                                                                <input type="text"
+                                                                                       wire:model="editDescription"
+                                                                                       class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                                                                       placeholder="Description">
+                                                                            @else
+                                                                                {{ $entry->description ?? '-' }}
+                                                                            @endif
+                                                                        </td>
+
+                                                                        <!-- Duration -->
+                                                                        <td class="px-4 py-3 text-xs text-gray-500">
+                                                                            @if($editingTimeEntry === $entry->id)
+                                                                                <div class="flex items-center space-x-1">
+                                                                                    <input type="number"
+                                                                                           wire:model="editDuration"
+                                                                                           step="0.25"
+                                                                                           min="0.01"
+                                                                                           class="w-12 px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                                                    <span class="text-xs text-gray-400">min</span>
+                                                                                </div>
+                                                                            @else
+                                                                                @php
+                                                                                    $totalMinutes = $entry->total_minutes ?? $entry->duration_minutes ?? 0;
+                                                                                    $hours = floor($totalMinutes / 60);
+                                                                                    $minutes = $totalMinutes % 60;
+                                                                                @endphp
+                                                                                {{ $hours > 0 ? $hours . 'h ' : '' }}{{ $minutes > 0 ? $minutes . 'm' : ($hours == 0 ? '0m' : '') }}
+                                                                            @endif
+                                                                        </td>
+
+                                                                        <!-- Date -->
+                                                                        <td class="px-4 py-3 text-xs text-gray-500">
+                                                                            {{ \Carbon\Carbon::parse($entry->entry_date ?? $entry->created_at)->format('M j') }}
+                                                                        </td>
+
+                                                                        <!-- Start Time -->
+                                                                        <td class="px-4 py-3 text-xs text-gray-500">
+                                                                            @if($editingTimeEntry === $entry->id)
+                                                                                <input type="time"
+                                                                                       wire:model="editStartTime"
+                                                                                       class="w-20 px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                                            @else
+                                                                                {{ $entry->start_time ? \Carbon\Carbon::parse($entry->start_time)->format('H:i') : '-' }}
+                                                                            @endif
+                                                                        </td>
+
+                                                                        <!-- End Time -->
+                                                                        <td class="px-4 py-3 text-xs text-gray-500">
+                                                                            @if($editingTimeEntry === $entry->id)
+                                                                                <input type="time"
+                                                                                       wire:model="editEndTime"
+                                                                                       class="w-20 px-1 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                                            @else
+                                                                                {{ $entry->end_time ? \Carbon\Carbon::parse($entry->end_time)->format('H:i') : '-' }}
+                                                                            @endif
+                                                                        </td>
+
+                                                                        <!-- Actions -->
+                                                                        <td class="px-4 py-3 text-xs font-medium">
+                                                                            @if(Auth::id() === $entry->user_id)
+                                                                                @if($editingTimeEntry === $entry->id)
+                                                                                    <div class="flex space-x-1">
+                                                                                        <button wire:click="saveTimeEntry({{ $entry->id }})"
+                                                                                                class="text-green-600 hover:text-green-800">
+                                                                                            Save
+                                                                                        </button>
+                                                                                        <button wire:click="cancelEdit"
+                                                                                                class="text-gray-600 hover:text-gray-800">
+                                                                                            Cancel
+                                                                                        </button>
+                                                                                    </div>
+                                                                                @else
+                                                                                    <div class="flex space-x-1">
+                                                                                        <button wire:click="editTimeEntry({{ $entry->id }})"
+                                                                                                class="text-blue-600 hover:text-blue-800">
+                                                                                            Edit
+                                                                                        </button>
+                                                                                        <button wire:click="deleteTimeEntry({{ $entry->id }})"
+                                                                                                class="text-red-600 hover:text-red-800"
+                                                                                                onclick="return confirm('Are you sure you want to delete this time entry?')">
+                                                                                            Delete
+                                                                                        </button>
+                                                                                    </div>
+                                                                                @endif
+                                                                            @else
+                                                                                <span class="text-gray-400 text-xs">View only</span>
+                                                                            @endif
+                                                                        </td>
+                                                                    </tr>
+                                                                @endforeach
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
                                             </div>
                                         @endforeach

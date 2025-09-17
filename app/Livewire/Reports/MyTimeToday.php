@@ -6,14 +6,25 @@ use Livewire\Component;
 use App\Models\TaskNote;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Libraries\TimelineLibrary\Services\TimelineChart;
+use App\Traits\GeneratesTimelineData;
 
 class MyTimeToday extends Component
 {
+    use GeneratesTimelineData;
     public $totalHours = 0;
     public $totalMinutes = 0;
     public $timeEntries = [];
     public $selectedDate;
     public $chartData = [];
+    public $timelineData = [];
+
+    // Inline editing properties
+    public $editingTimeEntry = null;
+    public $editDuration;
+    public $editStartTime;
+    public $editEndTime;
+    public $editDescription;
 
     protected $listeners = ['timeEntryUpdated' => 'loadTimeEntries', 'timeEntryDeleted' => 'loadTimeEntries'];
 
@@ -26,7 +37,7 @@ class MyTimeToday extends Component
     public function updatedSelectedDate()
     {
         $this->loadTimeEntries();
-        $this->generateChartData();
+        $this->generateChartData(); // This now also generates timeline data
     }
 
     public function loadTimeEntries()
@@ -55,102 +66,35 @@ class MyTimeToday extends Component
         $this->totalMinutes = $totalMinutes % 60;
 
         $this->generateChartData();
+        $this->generateTimelineData();
+    }
+
+    public function generateTimelineData()
+    {
+        $timelineChart = new TimelineChart([
+            'show_tooltips' => true,
+            'show_legend' => true,
+            'manual_entry_pattern' => 'striped',
+            'running_entry_animation' => true,
+        ]);
+
+        $this->timelineData = $timelineChart->generateTimelineData(
+            collect($this->timeEntries),
+            Carbon::parse($this->selectedDate)
+        );
     }
 
     public function generateChartData()
     {
         $date = Carbon::parse($this->selectedDate);
 
-        // Get all time entries for the selected date
-        $entries = TaskNote::where('user_id', Auth::id())
-            ->whereNotNull('total_minutes')
-            ->where(function($query) use ($date) {
-                $query->whereDate('entry_date', $date)
-                      ->orWhere(function($subQuery) use ($date) {
-                          $subQuery->whereNull('entry_date')
-                                   ->whereDate('created_at', $date);
-                      });
-            })
-            ->with(['task.project'])
-            ->orderBy('created_at')
-            ->get();
+        // Use the consolidated timeline generation
+        $result = $this->generateTimelineVisualization($date);
+        $entries = $result['entries'];
+        $this->timelineData = $result['timelineData'];
 
-        $this->chartData = [];
-        $colors = [
-            '#8B5CF6', '#06B6D4', '#10B981', '#F59E0B',
-            '#EF4444', '#8B5A2B', '#6366F1', '#EC4899',
-            '#14B8A6', '#F97316', '#84CC16', '#6B7280'
-        ];
-        $colorIndex = 0;
-        $taskColors = [];
-
-        // Group overlapping entries into layers
-        $layers = [];
-        $currentStackPosition = 0; // For entries without specific times
-
-        foreach ($entries as $entry) {
-            $entryData = [
-                'id' => $entry->id,
-                'task' => $entry->task ? $entry->task->title : ($entry->activity_type ?? 'General Activity'),
-                'project' => $entry->task ? $entry->task->project->name : 'General Activities',
-                'duration_minutes' => $entry->total_minutes ?? $entry->duration_minutes ?? 0,
-                'description' => $entry->description ?? $entry->content ?? '',
-            ];
-
-            // Handle entries with specific start/end times
-            if ($entry->start_time && $entry->end_time) {
-                $entryData['start_time'] = Carbon::parse($entry->start_time);
-                $entryData['end_time'] = Carbon::parse($entry->end_time);
-            } else {
-                // For manual entries without specific times, create approximate times
-                // Stack them in 1-hour blocks starting from 9 AM
-                $baseHour = 9 + $currentStackPosition;
-                $startTime = $date->copy()->setHour($baseHour)->setMinute(0);
-                $endTime = $startTime->copy()->addMinutes($entryData['duration_minutes']);
-
-                $entryData['start_time'] = $startTime;
-                $entryData['end_time'] = $endTime;
-                $entryData['is_manual'] = true; // Flag to indicate this is a manual entry
-
-                $currentStackPosition++;
-            }
-
-            // Assign color based on task or activity type
-            $taskKey = $entry->task ? $entry->task->id : 'general_' . ($entry->activity_type ?? 'activity');
-            if (!isset($taskColors[$taskKey])) {
-                $taskColors[$taskKey] = $colors[$colorIndex % count($colors)];
-                $colorIndex++;
-            }
-            $entryData['color'] = $taskColors[$taskKey];
-
-            // Find appropriate layer (avoid overlaps)
-            $placed = false;
-            for ($layerIndex = 0; $layerIndex < count($layers); $layerIndex++) {
-                $canPlace = true;
-                foreach ($layers[$layerIndex] as $existingEntry) {
-                    // Check for time overlap
-                    if ($entryData['start_time']->lt($existingEntry['end_time']) &&
-                        $entryData['end_time']->gt($existingEntry['start_time'])) {
-                        $canPlace = false;
-                        break;
-                    }
-                }
-                if ($canPlace) {
-                    $layers[$layerIndex][] = $entryData;
-                    $entryData['layer'] = $layerIndex;
-                    $placed = true;
-                    break;
-                }
-            }
-
-            // If no existing layer works, create new layer
-            if (!$placed) {
-                $layers[] = [$entryData];
-                $entryData['layer'] = count($layers) - 1;
-            }
-
-            $this->chartData[] = $entryData;
-        }
+        // Generate legacy chart data for backward compatibility
+        $this->chartData = $this->generateLegacyChartData($entries, $date);
     }
 
     public function deleteTimeEntry($entryId)
@@ -164,6 +108,85 @@ class MyTimeToday extends Component
         } else {
             session()->flash('error', 'You can only delete your own time entries.');
         }
+    }
+
+    // Inline Time Entry Editing Methods
+    public function editTimeEntry($entryId)
+    {
+        $entry = TaskNote::findOrFail($entryId);
+
+        // Check if user can edit this entry
+        if ($entry->user_id !== Auth::id()) {
+            session()->flash('error', 'You can only edit your own time entries.');
+            return;
+        }
+
+        $this->editingTimeEntry = $entryId;
+        $this->editDuration = $entry->total_minutes ?? $entry->duration_minutes ?? 0;
+        $this->editStartTime = $entry->start_time ? \Carbon\Carbon::parse($entry->start_time)->format('H:i') : '';
+        $this->editEndTime = $entry->end_time ? \Carbon\Carbon::parse($entry->end_time)->format('H:i') : '';
+        $this->editDescription = $entry->description ?? $entry->content ?? '';
+    }
+
+    public function saveTimeEntry($entryId)
+    {
+        $entry = TaskNote::findOrFail($entryId);
+
+        // Check if user can edit this entry
+        if ($entry->user_id !== Auth::id()) {
+            session()->flash('error', 'You can only edit your own time entries.');
+            return;
+        }
+
+        $this->validate([
+            'editDuration' => 'required|numeric|min:0.01',
+            'editDescription' => 'nullable|string|max:1000',
+            'editStartTime' => 'nullable|date_format:H:i',
+            'editEndTime' => 'nullable|date_format:H:i',
+        ]);
+
+        // Update the entry
+        $updateData = [
+            'total_minutes' => (float) $this->editDuration,
+            'duration_minutes' => (float) $this->editDuration,
+            'hours' => floor((float) $this->editDuration / 60),
+            'minutes' => (float) $this->editDuration % 60,
+        ];
+
+        if ($this->editDescription) {
+            $updateData['description'] = $this->editDescription;
+            $updateData['content'] = $this->editDescription;
+        }
+
+        if ($this->editStartTime && $this->editEndTime) {
+            $date = $entry->entry_date ?? $entry->created_at->toDateString();
+
+            // Parse the date and time more safely
+            try {
+                $updateData['start_time'] = \Carbon\Carbon::parse($date . ' ' . $this->editStartTime);
+                $updateData['end_time'] = \Carbon\Carbon::parse($date . ' ' . $this->editEndTime);
+            } catch (\Exception $e) {
+                // Fallback: use current date if parsing fails
+                $updateData['start_time'] = \Carbon\Carbon::today()->setTimeFromTimeString($this->editStartTime);
+                $updateData['end_time'] = \Carbon\Carbon::today()->setTimeFromTimeString($this->editEndTime);
+            }
+        }
+
+        $entry->update($updateData);
+
+        $this->cancelEdit();
+        $this->loadTimeEntries();
+
+        session()->flash('message', 'Time entry updated successfully.');
+    }
+
+    public function cancelEdit()
+    {
+        $this->editingTimeEntry = null;
+        $this->editDuration = null;
+        $this->editStartTime = null;
+        $this->editEndTime = null;
+        $this->editDescription = null;
     }
 
     public function render()

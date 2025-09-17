@@ -92,130 +92,145 @@ x-on:error.window="showMessage = true; message = $event.detail; messageType = 'e
                     </div>
                 </div>
 
-                <!-- Daily Hours Chart -->
+                <!-- Timeline Visualization using Timeline Library -->
                 <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">📊 Hours Logged on {{ \Carbon\Carbon::parse($selectedDate)->format('M j, Y') }}</h3>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Timeline for {{ \Carbon\Carbon::parse($selectedDate)->format('M j, Y') }}</h3>
 
-                    @php
-                        $totalMinutes = collect($chartData)->sum('duration_minutes');
-                        $totalHours = floor($totalMinutes / 60);
-                        $totalMins = $totalMinutes % 60;
-                    @endphp
-
-                    <div class="bg-gray-50 rounded-lg p-6">
-                        <!-- Timeline Header -->
-                        <div class="mb-4">
-                            <p class="text-lg font-semibold text-gray-700">
-                                Total: {{ $totalHours }}h {{ $totalMins }}m
-                            </p>
-                            <p class="text-sm text-gray-500">Hover over a task to see details</p>
-                            <p class="text-xs text-gray-400 mt-1">Manual entries are shown with dashed borders and estimated times</p>
+                    @if(count($timelineData['entries'] ?? []) > 0)
+                        @include('timeline-library::timeline-chart', [
+                            'timelineData' => $timelineData,
+                            'date' => \Carbon\Carbon::parse($selectedDate)
+                        ])
+                    @else
+                        <div class="text-center py-12 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div class="text-gray-500 text-lg font-medium mb-2">No time entries for {{ \Carbon\Carbon::parse($selectedDate)->format('M j, Y') }}</div>
+                            <div class="text-gray-400 text-sm">Start tracking time to see your timeline visualization here.</div>
                         </div>
-
-                        <!-- Timeline Chart -->
-                        @php
-                            $maxLayer = count($chartData) > 0 ? max(array_column($chartData, 'layer')) : 0;
-                            $rowHeight = 50; // Height of each timeline row
-                            $chartHeight = max(100, ($maxLayer + 1) * $rowHeight + 50); // Proper padding for bottom entries
-                        @endphp
-
-                        <div class="relative" style="height: {{ $chartHeight }}px;">
-                            <!-- Hour markers -->
-                            <div class="absolute inset-0 flex text-xs text-gray-400 mb-2">
-                                @for($hour = 0; $hour < 24; $hour++)
-                                    <div class="flex flex-col items-start" style="width: {{ 100/24 }}%; position: relative;">
-                                        <span class="text-xs font-medium">{{ sprintf('%02d', $hour) }}</span>
-                                        <div class="absolute left-0 top-4 w-px bg-gray-300" style="height: {{ $chartHeight - 20 }}px;"></div>
-                                        <!-- 30-minute marker -->
-                                        <div class="absolute left-1/2 top-4 w-px bg-gray-200" style="height: {{ $chartHeight - 30 }}px;"></div>
-                                        <!-- Time labels for clarity -->
-                                        <div class="absolute left-1/2 top-0 text-xs text-gray-300 transform -translate-x-1/2">30</div>
-                                    </div>
-                                @endfor
-                            </div>
-
-                            <!-- Timeline bars -->
-                            <div class="absolute inset-0 mt-8">
-                                @if(count($chartData) > 0)
-                                    @foreach($chartData as $entry)
-                                        @php
-                                            // Calculate exact decimal hours for positioning
-                                            $startHour = $entry['start_time']->hour + ($entry['start_time']->minute / 60);
-                                            $endHour = $entry['end_time']->hour + ($entry['end_time']->minute / 60);
-
-                                            // Calculate position and width as percentage of 24-hour day
-                                            $left = ($startHour / 24) * 100;
-                                            $width = (($endHour - $startHour) / 24) * 100;
-
-                                            // Calculate vertical position based on layer
-                                            $topPosition = 15 + ($entry['layer'] * $rowHeight);
-
-                                            $durationHours = floor($entry['duration_minutes'] / 60);
-                                            $durationMins = $entry['duration_minutes'] % 60;
-                                        @endphp
-                                        <div class="absolute group"
-                                             style="left: {{ number_format($left, 2) }}%; width: {{ number_format($width, 2) }}%; top: {{ $topPosition }}px; height: 40px;">
-                                            <div class="w-full h-full rounded shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer border-2 border-white {{ isset($entry['is_manual']) && $entry['is_manual'] ? 'border-dashed' : '' }}"
-                                                 style="background-color: {{ $entry['color'] }}; {{ isset($entry['is_manual']) && $entry['is_manual'] ? 'opacity: 0.8;' : '' }}">
-
-                                                <!-- Tooltip -->
-                                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
-                                                    <div class="bg-gray-800 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
-                                                        <div class="font-semibold">{{ $entry['task'] }}</div>
-                                                        <div class="text-gray-300">{{ $entry['project'] }}</div>
-                                                        <div class="mt-1">
-                                                            {{ $entry['start_time']->format('H:i') }} - {{ $entry['end_time']->format('H:i') }}
-                                                            @if(isset($entry['is_manual']) && $entry['is_manual'])
-                                                                <span class="text-yellow-300 ml-1">(Manual Entry)</span>
-                                                            @endif
-                                                        </div>
-                                                        <div>Duration: {{ $durationHours }}h {{ $durationMins }}m</div>
-                                                        @if(!empty($entry['description']))
-                                                            <div class="text-gray-300 mt-1">{{ $entry['description'] }}</div>
-                                                        @endif
-                                                        <!-- Arrow -->
-                                                        <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                @else
-                                    <div class="flex items-center justify-center h-full">
-                                        <p class="text-gray-500 text-sm">No time logged for this date</p>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Legend -->
-                        @if(count($chartData) > 0)
-                            <div class="mt-1 pt-2 border-t border-gray-200">
-                                <h4 class="text-sm font-medium text-gray-700 mb-1">Tasks:</h4>
-                                <div class="flex flex-wrap gap-3">
-                                    @php
-                                        $uniqueTasks = collect($chartData)->unique('task');
-                                    @endphp
-                                    @foreach($uniqueTasks as $entry)
-                                        <div class="flex items-center">
-                                            <div class="w-3 h-3 rounded-sm mr-2" style="background-color: {{ $entry['color'] }};"></div>
-                                            <span class="text-sm text-gray-600">{{ $entry['task'] }}</span>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
-                    </div>
+                    @endif
                 </div>
 
-                <!-- Time Entries -->
+                <!-- Time Entries Table -->
                 @if(count($timeEntries) > 0)
-                    <div class="space-y-4">
-                        <h3 class="text-lg font-medium text-gray-900">Time Entries</h3>
+                    <div class="mt-8">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Time Entries</h3>
 
-                        @foreach($timeEntries as $entry)
-                            @livewire('components.time-entry-editor', ['timeEntry' => $entry], key($entry->id))
-                        @endforeach
+                        <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Time</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Time</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    @foreach($timeEntries as $entry)
+                                        <tr class="hover:bg-gray-50">
+                                            <!-- Task -->
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                {{ $entry->task ? $entry->task->title : ($entry->activity_type ?? 'General Activity') }}
+                                            </td>
+
+                                            <!-- Project -->
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                @if($entry->task && $entry->task->project)
+                                                    {{ $entry->task->project->name }}
+                                                @else
+                                                    General Activity
+                                                @endif
+                                            </td>
+
+                                            <!-- Description -->
+                                            <td class="px-6 py-4 text-sm text-gray-500">
+                                                @if($editingTimeEntry === $entry->id)
+                                                    <input type="text"
+                                                           wire:model="editDescription"
+                                                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                                           placeholder="Description">
+                                                @else
+                                                    {{ $entry->description ?? '-' }}
+                                                @endif
+                                            </td>
+
+                                            <!-- Duration -->
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                @if($editingTimeEntry === $entry->id)
+                                                    <div class="flex items-center space-x-1">
+                                                        <input type="number"
+                                                               wire:model="editDuration"
+                                                               step="0.25"
+                                                               min="0.01"
+                                                               class="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                        <span class="text-xs text-gray-400">min</span>
+                                                    </div>
+                                                @else
+                                                    @php
+                                                        $totalMinutes = $entry->total_minutes ?? $entry->duration_minutes ?? 0;
+                                                        $hours = floor($totalMinutes / 60);
+                                                        $minutes = $totalMinutes % 60;
+                                                    @endphp
+                                                    {{ $hours > 0 ? $hours . 'h ' : '' }}{{ $minutes > 0 ? $minutes . 'm' : ($hours == 0 ? '0m' : '') }}
+                                                @endif
+                                            </td>
+
+                                            <!-- Start Time -->
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                @if($editingTimeEntry === $entry->id)
+                                                    <input type="time"
+                                                           wire:model="editStartTime"
+                                                           class="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                @else
+                                                    {{ $entry->start_time ? \Carbon\Carbon::parse($entry->start_time)->format('H:i') : '-' }}
+                                                @endif
+                                            </td>
+
+                                            <!-- End Time -->
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                @if($editingTimeEntry === $entry->id)
+                                                    <input type="time"
+                                                           wire:model="editEndTime"
+                                                           class="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                @else
+                                                    {{ $entry->end_time ? \Carbon\Carbon::parse($entry->end_time)->format('H:i') : '-' }}
+                                                @endif
+                                            </td>
+
+                                            <!-- Actions -->
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                @if($editingTimeEntry === $entry->id)
+                                                    <div class="flex space-x-2">
+                                                        <button wire:click="saveTimeEntry({{ $entry->id }})"
+                                                                class="text-green-600 hover:text-green-800">
+                                                            Save
+                                                        </button>
+                                                        <button wire:click="cancelEdit"
+                                                                class="text-gray-600 hover:text-gray-800">
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                @else
+                                                    <div class="flex space-x-2">
+                                                        <button wire:click="editTimeEntry({{ $entry->id }})"
+                                                                class="text-blue-600 hover:text-blue-800">
+                                                            Edit
+                                                        </button>
+                                                        <button wire:click="deleteTimeEntry({{ $entry->id }})"
+                                                                class="text-red-600 hover:text-red-800"
+                                                                onclick="return confirm('Are you sure you want to delete this time entry?')">
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 @else
                     <div class="text-center py-12">
