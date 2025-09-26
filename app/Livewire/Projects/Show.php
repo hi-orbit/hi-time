@@ -21,7 +21,10 @@ class Show extends Component
 {
     use WithFileUploads, GeneratesTimelineData;
 
-    protected $listeners = ['tagsUpdated', 'updateTaskTags'];
+    protected $listeners = [
+        'tagsUpdated' => 'tagsUpdatedHandler', 
+        'updateTaskTags' => 'updateTaskTagsHandler'
+    ];
 
     public Project $project;
     public $showTaskModal = false;
@@ -176,12 +179,12 @@ class Show extends Component
     // Quick assignment field
     public $taskAssignment = '';
 
-    public function tagsUpdated($tags)
+    public function tagsUpdatedHandler($tags)
     {
         $this->selectedTags = $tags;
     }
 
-    public function updateTaskTags($tags)
+    public function updateTaskTagsHandler($tags)
     {
         if ($this->selectedTask) {
             $this->selectedTask->tags()->sync($tags);
@@ -509,7 +512,9 @@ class Show extends Component
         } else {
             $this->dispatch('note-error', message: 'Note not found.');
         }
-    }    public function createTask()
+    }
+
+    public function createTask()
     {
         $this->validate([
             'title' => 'required|string|max:255',
@@ -1040,17 +1045,6 @@ class Show extends Component
 
     public function logTime()
     {
-        // Debug: Log the incoming form data
-        Log::info('logTime called', [
-            'hours' => $this->hours,
-            'minutes' => $this->minutes,
-            'startTime' => $this->startTime,
-            'endTime' => $this->endTime,
-            'timeDescription' => $this->timeDescription,
-            'isGeneralActivity' => $this->isGeneralActivity ?? false,
-            'selectedTask' => $this->selectedTask ? $this->selectedTask->id : null
-        ]);
-
         // Enhanced validation that includes activity type for general activities
         $rules = [
             'hours' => 'nullable|integer|min:0|max:23',
@@ -1179,7 +1173,7 @@ class Show extends Component
                 if ($this->startTime && $this->endTime) {
                     $taskNoteData['start_time'] = now()->setTimeFromTimeString($this->startTime);
                     $taskNoteData['end_time'] = now()->setTimeFromTimeString($this->endTime);
-                    
+
                     // Handle overnight work (end time next day)
                     if ($taskNoteData['end_time']->lessThan($taskNoteData['start_time'])) {
                         $taskNoteData['end_time']->addDay();
@@ -1197,20 +1191,17 @@ class Show extends Component
 
                 $taskNote = TaskNote::create($taskNoteData);
 
-                // Debug logging
-                Log::info('Time entry attempt', [
-                    'taskNoteData' => $taskNoteData,
-                    'created' => $taskNote ? true : false,
-                    'taskNote_id' => $taskNote->id ?? null
-                ]);
-
                 if ($taskNote) {
                     $activityLabel = $this->isGeneralActivity ? $this->activityType : $this->selectedTask->title;
                     $this->dispatch('time-logged', message: "Time logged successfully for: {$activityLabel}!");
 
-                    // Refresh timeline if it's showing today's date
-                    if ($this->selectedDate === now()->toDateString()) {
-                        $this->generateTimelineData();
+                    // Always refresh timeline data when time is logged, regardless of selected date
+                    $this->generateTimelineData();
+                    
+                    // If timeline is expanded, make sure it stays expanded
+                    if (!$this->showTimeline) {
+                        $this->showTimeline = true;
+                        $this->updateUserSetting('show_timeline', true);
                     }
                 } else {
                     $this->dispatch('time-log-error', message: 'Failed to save time entry. Please try again.');

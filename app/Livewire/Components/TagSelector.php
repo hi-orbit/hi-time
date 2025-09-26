@@ -94,8 +94,9 @@ class TagSelector extends Component
         $this->searchQuery = '';
 
         $this->dispatch('tagsSelected', $this->selectedTags);
-        $this->dispatch('updateTaskTags', $this->selectedTags); // Dispatch to parent component
-        $this->dispatch('tagsUpdated');
+        // Temporarily disable these dispatches to isolate the issue
+        // $this->dispatch('updateTaskTags', $this->selectedTags);
+        // $this->dispatch('tagsUpdated');
     }
 
     public function resetCreateForm()
