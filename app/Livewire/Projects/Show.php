@@ -22,7 +22,7 @@ class Show extends Component
     use WithFileUploads, GeneratesTimelineData;
 
     protected $listeners = [
-        'tagsUpdated' => 'tagsUpdatedHandler', 
+        'tagsUpdated' => 'tagsUpdatedHandler',
         'updateTaskTags' => 'updateTaskTagsHandler'
     ];
 
@@ -1197,7 +1197,7 @@ class Show extends Component
 
                     // Always refresh timeline data when time is logged, regardless of selected date
                     $this->generateTimelineData();
-                    
+
                     // If timeline is expanded, make sure it stays expanded
                     if (!$this->showTimeline) {
                         $this->showTimeline = true;
