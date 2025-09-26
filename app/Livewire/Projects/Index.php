@@ -22,9 +22,10 @@ class Index extends Component
 
     public function mount()
     {
-        // Load view mode preference from session
-        $this->viewMode = session('projects_view_mode', 'cards');
-        $this->showArchived = session('projects_show_archived', false);
+        // Load view mode preference from user settings, fallback to session, then default
+        $user = Auth::user();
+        $this->viewMode = $user->getSetting('projects_view', session('projects_view_mode', 'cards'));
+        $this->showArchived = $user->getSetting('projects_show_archived', session('projects_show_archived', false));
     }
 
     public function createProject()
@@ -78,13 +79,18 @@ class Index extends Component
     public function setViewMode($mode)
     {
         $this->viewMode = $mode;
-        // Store preference in session
+        // Store preference in user settings and session
+        $user = Auth::user();
+        $user->setSetting('projects_view', $mode);
         session(['projects_view_mode' => $mode]);
     }
 
     public function toggleArchivedView()
     {
         $this->showArchived = !$this->showArchived;
+        // Store preference in user settings and session
+        $user = Auth::user();
+        $user->setSetting('projects_show_archived', $this->showArchived);
         session(['projects_show_archived' => $this->showArchived]);
     }
 

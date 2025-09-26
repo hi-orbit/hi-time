@@ -125,6 +125,11 @@ Route::middleware(['auth'])->group(function () {
             ]
         ]);
 
+        // Tag management route
+        Route::get('/settings/tags', function () {
+            return view('settings.tags');
+        })->name('settings.tags');
+
         // Additional password reset routes
         Route::get('/settings/users/{user}/reset-password', [\App\Http\Controllers\UserManagementController::class, 'showResetPassword'])
             ->name('settings.users.reset-password');
@@ -136,4 +141,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/csrf-token', function () {
         return response()->json(['csrf_token' => csrf_token()]);
     })->name('csrf-token');
+
+    // User settings routes
+    Route::post('/user/settings/view', [\App\Http\Controllers\UserSettingsController::class, 'updateViewPreference'])->name('user.settings.view');
 });

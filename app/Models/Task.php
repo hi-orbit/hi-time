@@ -47,6 +47,11 @@ class Task extends Model
         return $this->hasMany(TaskAttachment::class);
     }
 
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class)->withTimestamps();
+    }
+
     public function getTotalTimeAttribute()
     {
         return $this->timeEntries()

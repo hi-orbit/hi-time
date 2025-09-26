@@ -48,8 +48,8 @@
                     @endif
                 @endfor
 
-                {{-- Current time indicator --}}
-                @php
+                {{-- Current time indicator - REMOVED (was causing red line bug) --}}
+                {{-- @php
                     $now = now();
                 @endphp
                 @if(isset($date) && $date->isToday())
@@ -59,7 +59,7 @@
                     <div class="absolute top-0 bottom-0 w-1 bg-red-500 z-30"
                          style="left: {{ $currentPercent }}%"
                          title="Current time: {{ $now->format('H:i') }}"></div>
-                @endif
+                @endif --}}
 
                 @foreach($timelineData['entries'] as $entry)
                     @php

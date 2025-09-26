@@ -44,7 +44,22 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'settings' => 'array',
         ];
+    }
+
+    public function getSetting($key, $default = null)
+    {
+        $settings = $this->settings ?? [];
+        return $settings[$key] ?? $default;
+    }
+
+    public function setSetting($key, $value)
+    {
+        $settings = $this->settings ?? [];
+        $settings[$key] = $value;
+        $this->settings = $settings;
+        $this->save();
     }
 
     public function isAdmin(): bool

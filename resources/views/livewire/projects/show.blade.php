@@ -74,6 +74,16 @@
                                             @if($task->description)
                                                 <div class="text-xs text-gray-500 mt-1 line-clamp-2">{{ Str::limit($task->description, 100) }}</div>
                                             @endif
+
+                                            <!-- Tags in search results -->
+                                            @if($task->tags && $task->tags->count() > 0)
+                                                <div class="flex flex-wrap gap-1 mt-2">
+                                                    @foreach($task->tags as $tag)
+                                                        @include('components.tag-display', ['tag' => $tag, 'size' => 'xs'])
+                                                    @endforeach
+                                                </div>
+                                            @endif
+
                                             <div class="flex items-center mt-2 space-x-2">
                                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
                                                     {{ $task->status === 'todo' ? 'bg-gray-100 text-gray-800' : '' }}
@@ -95,6 +105,67 @@
                                 </div>
                             @endif
                         </div>
+
+                        <!-- Tag Filter Section -->
+                        <div class="relative" x-data="{ open: @entangle('showTagFilter') }" @click.away="open = false">
+                            <button wire:click="toggleTagFilterDropdown"
+                                    class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                </svg>
+                                Filter by Tags
+                                @if(count($selectedTagFilters) > 0)
+                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                        {{ count($selectedTagFilters) }}
+                                    </span>
+                                @endif
+                                <svg class="ml-2 -mr-1 h-5 w-5" :class="{ 'transform rotate-180': open }" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                </svg>
+                            </button>
+
+                            <div x-show="open"
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 scale-95"
+                                 x-transition:enter-end="opacity-100 scale-100"
+                                 x-transition:leave="transition ease-in duration-75"
+                                 x-transition:leave-start="opacity-100 scale-100"
+                                 x-transition:leave-end="opacity-0 scale-95"
+                                 class="absolute z-50 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-300 max-h-60 overflow-auto">
+                                <div class="p-3">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <h4 class="text-sm font-medium text-gray-900">Filter by Tags</h4>
+                                        @if(count($selectedTagFilters) > 0)
+                                            <button wire:click="clearTagFilters"
+                                                    class="text-xs text-indigo-600 hover:text-indigo-800">
+                                                Clear all
+                                            </button>
+                                        @endif
+                                    </div>
+
+                                    @if(count($availableTags) > 0)
+                                        <div class="space-y-1">
+                                            @foreach($availableTags as $tag)
+                                                <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                                    <input type="checkbox"
+                                                           wire:click="toggleTagFilter({{ $tag->id }})"
+                                                           {{ in_array($tag->id, $selectedTagFilters) ? 'checked' : '' }}
+                                                           class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                                                    <div class="ml-2 flex items-center space-x-2">
+                                                        <div class="w-3 h-3 rounded-full" style="background-color: {{ $tag->color }}"></div>
+                                                        <span class="text-sm text-gray-700">{{ $tag->name }}</span>
+                                                        <span class="text-xs text-gray-500">({{ $tag->tasks_count }})</span>
+                                                    </div>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <p class="text-sm text-gray-500">No tags available for this project.</p>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
                         @if(auth()->user()->isAdmin())
                             <a href="{{ route('projects.edit', $project) }}"
                                class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium">
@@ -121,6 +192,106 @@
                         {{ session('message') }}
                     </div>
                 @endif
+
+                <!-- Active Filters Display -->
+                @if(count($selectedTagFilters) > 0)
+                    <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <h4 class="text-sm font-medium text-blue-900">Active Tag Filters:</h4>
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach($availableTags->whereIn('id', $selectedTagFilters) as $tag)
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white"
+                                              style="background-color: {{ $tag->color }}">
+                                            {{ $tag->name }}
+                                            <button wire:click="toggleTagFilter({{ $tag->id }})"
+                                                    class="ml-1 hover:bg-black hover:bg-opacity-20 rounded-full p-0.5">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                                </svg>
+                                            </button>
+                                        </span>
+                                    @endforeach
+                                </div>
+                            </div>
+                            <button wire:click="clearTagFilters"
+                                    class="text-sm text-blue-600 hover:text-blue-800 underline">
+                                Clear all filters
+                            </button>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Timeline Section -->
+                <div class="mb-4">
+                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                        <button wire:click="toggleTimeline"
+                                class="flex items-center justify-between w-full text-left hover:bg-gray-50 px-4 py-2 transition-colors">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                                <span class="text-sm font-medium text-gray-700">Timeline</span>
+                                @if(count($timelineData['entries'] ?? []) > 0)
+                                    <span class="text-xs text-gray-500">({{ count($timelineData['entries']) }} {{ Str::plural('entry', count($timelineData['entries'])) }})</span>
+                                @endif
+                            </div>
+                            <svg class="w-4 h-4 text-gray-500 transition-transform transform {{ $showTimeline ? 'rotate-180' : '' }}"
+                                 fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+
+                        @if($showTimeline)
+                            <div class="border-t border-gray-200 px-4 py-3"
+                                 x-show="true"
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0"
+                                 x-transition:enter-end="opacity-100"
+                                 x-transition:leave="transition ease-in duration-150"
+                                 x-transition:leave-start="opacity-100"
+                                 x-transition:leave-end="opacity-0">
+
+                                <!-- Compact Timeline Chart -->
+                                @if(count($timelineData['entries'] ?? []) > 0)
+                                    <div class="compact-timeline-wrapper">
+                                        <style>
+                                            .compact-timeline-wrapper .timeline-chart-container {
+                                                /* Hide the header/title */
+                                            }
+                                            .compact-timeline-wrapper .timeline-chart {
+                                                margin-bottom: 0 !important;
+                                                padding: 8px !important;
+                                            }
+                                            .compact-timeline-wrapper .timeline-entries {
+                                                /* Allow natural height expansion but keep compact */
+                                                min-height: 40px !important;
+                                                padding: 8px 0 !important;
+                                            }
+                                            /* Keep hour markers visible - removed the display: none rule */
+                                            .compact-timeline-wrapper .relative.mb-2 {
+                                                margin-bottom: 0 !important;
+                                            }
+                                            /* Ensure timeline bars are fully visible */
+                                            .compact-timeline-wrapper .timeline-entry {
+                                                height: auto !important;
+                                                min-height: 20px !important;
+                                            }
+                                        </style>
+                                        @include('timeline-library::timeline-chart', [
+                                            'timelineData' => $timelineData,
+                                            'date' => \Carbon\Carbon::parse($selectedDate)
+                                        ])
+                                    </div>
+                                @else
+                                    <div class="text-center py-4 text-gray-500">
+                                        <div class="text-sm">No time entries for today</div>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                </div>
 
                 <!-- Kanban Board -->
                 <div id="kanban-board" class="grid gap-4 xl:gap-6 transition-all duration-300" style="grid-template-columns: repeat(5, 1fr) 80px;" data-collapsed="true">
@@ -152,9 +323,20 @@
                             Backlog ({{ $columns['backlog']->count() }})
                         </h3>
                         <div class="space-y-3">
-                            @foreach($columns['backlog'] as $task)
+                            @forelse($columns['backlog'] as $task)
                                 @include('livewire.projects.partials.task-card', ['task' => $task])
-                            @endforeach
+                            @empty
+                                @if(count($selectedTagFilters) > 0)
+                                    <div class="text-center py-8">
+                                        <div class="text-gray-400 mb-2">
+                                            <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-sm text-gray-500">No backlog tasks match the selected tag filters</p>
+                                    </div>
+                                @endif
+                            @endforelse
                         </div>
                     </div>
 
@@ -168,9 +350,20 @@
                             In Progress ({{ $columns['in_progress']->count() }})
                         </h3>
                         <div class="space-y-3">
-                            @foreach($columns['in_progress'] as $task)
+                            @forelse($columns['in_progress'] as $task)
                                 @include('livewire.projects.partials.task-card', ['task' => $task])
-                            @endforeach
+                            @empty
+                                @if(count($selectedTagFilters) > 0)
+                                    <div class="text-center py-8">
+                                        <div class="text-gray-400 mb-2">
+                                            <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-sm text-gray-500">No in-progress tasks match the selected tag filters</p>
+                                    </div>
+                                @endif
+                            @endforelse
                         </div>
                     </div>
 
@@ -184,9 +377,20 @@
                             In Test ({{ $columns['in_test']->count() }})
                         </h3>
                         <div class="space-y-3">
-                            @foreach($columns['in_test'] as $task)
+                            @forelse($columns['in_test'] as $task)
                                 @include('livewire.projects.partials.task-card', ['task' => $task])
-                            @endforeach
+                            @empty
+                                @if(count($selectedTagFilters) > 0)
+                                    <div class="text-center py-8">
+                                        <div class="text-gray-400 mb-2">
+                                            <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-sm text-gray-500">No in-test tasks match the selected tag filters</p>
+                                    </div>
+                                @endif
+                            @endforelse
                         </div>
                     </div>
 
@@ -200,9 +404,20 @@
                             Failed Testing ({{ $columns['failed_testing']->count() }})
                         </h3>
                         <div class="space-y-3">
-                            @foreach($columns['failed_testing'] as $task)
+                            @forelse($columns['failed_testing'] as $task)
                                 @include('livewire.projects.partials.task-card', ['task' => $task])
-                            @endforeach
+                            @empty
+                                @if(count($selectedTagFilters) > 0)
+                                    <div class="text-center py-8">
+                                        <div class="text-gray-400 mb-2">
+                                            <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-sm text-gray-500">No failed testing tasks match the selected tag filters</p>
+                                    </div>
+                                @endif
+                            @endforelse
                         </div>
                     </div>
 
@@ -216,9 +431,20 @@
                             Ready to Release ({{ $columns['ready_to_release']->count() }})
                         </h3>
                         <div class="space-y-3">
-                            @foreach($columns['ready_to_release'] as $task)
+                            @forelse($columns['ready_to_release'] as $task)
                                 @include('livewire.projects.partials.task-card', ['task' => $task])
-                            @endforeach
+                            @empty
+                                @if(count($selectedTagFilters) > 0)
+                                    <div class="text-center py-8">
+                                        <div class="text-gray-400 mb-2">
+                                            <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-sm text-gray-500">No ready-to-release tasks match the selected tag filters</p>
+                                    </div>
+                                @endif
+                            @endforelse
                         </div>
                     </div>
 
@@ -238,9 +464,20 @@
                             </svg>
                         </h3>
                         <div id="done-tasks" class="space-y-3" style="display: none;">
-                            @foreach($columns['done'] as $task)
+                            @forelse($columns['done'] as $task)
                                 @include('livewire.projects.partials.task-card', ['task' => $task])
-                            @endforeach
+                            @empty
+                                @if(count($selectedTagFilters) > 0)
+                                    <div class="text-center py-8">
+                                        <div class="text-gray-400 mb-2">
+                                            <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-sm text-gray-500">No done tasks match the selected tag filters</p>
+                                    </div>
+                                @endif
+                            @endforelse
                         </div>
                         <!-- Collapsed state indicator -->
                         <div id="done-collapsed-indicator" class="text-center text-gray-500 text-xs">
@@ -302,6 +539,12 @@
                             </select>
                             @error('status') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
+
+                        <!-- Tags Section -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                            @livewire('components.tag-selector', ['selectedTags' => $editingTask && $selectedTask ? $selectedTask->tags->pluck('id')->toArray() : []], key($editingTask && $selectedTask ? 'edit-'.$selectedTask->id : 'create'))
+                        </div>
                         @if($editingTask)
                         <div class="mb-4">
                             <label for="moveToProjectId" class="block text-sm font-medium text-gray-700 mb-2">Move to Project</label>
@@ -362,19 +605,56 @@
                             <textarea wire:model="timeDescription" id="timeDescription" rows="2"
                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                                       placeholder="{{ $isGeneralActivity ? 'Describe the activity...' : 'What did you work on?' }}"></textarea>
+                            @error('timeDescription') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
-                        <div class="grid grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label for="hours" class="block text-sm font-medium text-gray-700 mb-2">Hours <span class="text-gray-500 text-xs">(optional)</span></label>
-                                <input wire:model="hours" type="number" id="hours" min="0" max="23" placeholder="0"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                                @error('hours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+
+                        <!-- Time Entry Options -->
+                        <div class="mb-4">
+                            <h4 class="text-sm font-medium text-gray-700 mb-3">Time Entry</h4>
+
+                            <!-- Manual Hours/Minutes Entry -->
+                            <div class="mb-4">
+                                <label class="block text-sm text-gray-600 mb-2">Manual Entry</label>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="hours" class="block text-sm text-gray-600 mb-1">Hours <span class="text-gray-500 text-xs">(optional)</span></label>
+                                        <input wire:model="hours" type="number" id="hours" min="0" max="23" placeholder="0"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                        @error('hours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div>
+                                        <label for="minutes" class="block text-sm text-gray-600 mb-1">Minutes</label>
+                                        <input wire:model="minutes" type="number" id="minutes" min="0" max="59" placeholder="0"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                        @error('minutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label for="minutes" class="block text-sm font-medium text-gray-700 mb-2">Minutes <span class="text-red-500">*</span></label>
-                                <input wire:model="minutes" type="number" id="minutes" min="0" max="59" required
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                                @error('minutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+
+                            <!-- OR Divider -->
+                            <div class="flex items-center my-4">
+                                <div class="flex-1 border-t border-gray-300"></div>
+                                <div class="px-3 text-sm text-gray-500 bg-white">OR</div>
+                                <div class="flex-1 border-t border-gray-300"></div>
+                            </div>
+
+                            <!-- Start/End Time Entry -->
+                            <div class="mb-4">
+                                <label class="block text-sm text-gray-600 mb-2">Start/End Time Entry</label>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="startTime" class="block text-sm text-gray-600 mb-1">Start Time</label>
+                                        <input wire:model="startTime" type="text" id="startTime" placeholder="HH:MM"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                        @error('startTime') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div>
+                                        <label for="endTime" class="block text-sm text-gray-600 mb-1">End Time</label>
+                                        <input wire:model="endTime" type="text" id="endTime" placeholder="HH:MM"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                        @error('endTime') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="flex justify-end space-x-3">
@@ -472,6 +752,15 @@
                     <div class="mb-6">
                         <h3 class="text-xl font-medium text-gray-900">{{ $selectedTask->title }}</h3>
                         <p class="text-sm text-gray-600 mt-1">{{ $selectedTask->project->name }}</p>
+
+                        <!-- Tags -->
+                        @if($selectedTask->tags && $selectedTask->tags->count() > 0)
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                @foreach($selectedTask->tags as $tag)
+                                    @include('components.tag-display', ['tag' => $tag])
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Success message using Alpine.js instead of session flash -->
@@ -561,6 +850,16 @@
                                         <p class="text-sm text-gray-900 mt-1">{{ number_format(($selectedTask->getTotalTimeFromNotesAttribute() + $selectedTask->total_time) / 60, 1) }}h</p>
                                     </div>
                                 @endif
+
+                                <!-- Tags Management Section -->
+                                <div class="mt-4 pt-4 border-t border-gray-200">
+                                    <h5 class="text-sm font-medium text-gray-900 mb-2">Manage Tags</h5>
+                                    <div wire:key="task-tags-{{ $selectedTask->id }}">
+                                        @livewire('components.tag-selector', [
+                                            'selectedTags' => $selectedTask->tags->pluck('id')->toArray()
+                                        ], key('task-tags-' . $selectedTask->id))
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1224,6 +1523,56 @@ document.addEventListener('show-success', function(event) {
             }
         }, 3000);
     }
+});
+
+// Livewire event listeners for timer actions
+document.addEventListener('livewire:init', () => {
+    Livewire.on('timer-started', (event) => {
+        const modal = document.querySelector('[x-data*="showSuccessMessage"]');
+        if (modal && modal.__x) {
+            modal.__x.$data.showSuccessMessage = true;
+            modal.__x.$data.successMessage = event.message;
+            setTimeout(() => {
+                if (modal.__x) {
+                    modal.__x.$data.showSuccessMessage = false;
+                }
+            }, 3000);
+        }
+    });
+
+    Livewire.on('timer-stopped', (event) => {
+        const modal = document.querySelector('[x-data*="showSuccessMessage"]');
+        if (modal && modal.__x) {
+            modal.__x.$data.showSuccessMessage = true;
+            modal.__x.$data.successMessage = event.message;
+            setTimeout(() => {
+                if (modal.__x) {
+                    modal.__x.$data.showSuccessMessage = false;
+                }
+            }, 3000);
+        }
+    });
+
+    Livewire.on('timer-error', (event) => {
+        alert(event.message); // Simple error display
+    });
+
+    Livewire.on('time-logged', (event) => {
+        const modal = document.querySelector('[x-data*="showSuccessMessage"]');
+        if (modal && modal.__x) {
+            modal.__x.$data.showSuccessMessage = true;
+            modal.__x.$data.successMessage = event.message;
+            setTimeout(() => {
+                if (modal.__x) {
+                    modal.__x.$data.showSuccessMessage = false;
+                }
+            }, 3000);
+        }
+    });
+
+    Livewire.on('time-log-error', (event) => {
+        alert(event.message); // Simple error display
+    });
 });
 </script>
 

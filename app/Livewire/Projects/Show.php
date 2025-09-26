@@ -7,6 +7,7 @@ use Livewire\WithFileUploads;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\Tag;
 use App\Models\TaskNote;
 use App\Models\TaskAttachment;
 use App\Services\NotificationService;
@@ -14,10 +15,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Traits\GeneratesTimelineData;
 
 class Show extends Component
 {
-    use WithFileUploads;
+    use WithFileUploads, GeneratesTimelineData;
+
+    protected $listeners = ['tagsUpdated', 'updateTaskTags'];
 
     public Project $project;
     public $showTaskModal = false;
@@ -32,11 +36,23 @@ class Show extends Component
     public $showSearchResults = false;
     public $searchResults = [];
 
+    // Tag filtering functionality
+    public $selectedTagFilters = [];
+    public $availableTags = [];
+    public $showTagFilter = false;
+
+    // Timeline functionality
+    public $showTimeline = false;
+    public $selectedDate;
+    public $timelineData = [];
+    public $timeEntries = [];
+
     // Task creation/editing fields
     public $title = '';
     public $description = '';
     public $assigned_to = '';
     public $status = 'backlog';
+    public $selectedTags = [];
 
     // Move task fields
     public $moveToProjectId = '';
@@ -45,6 +61,8 @@ class Show extends Component
     public $timeDescription = '';
     public $hours = '';
     public $minutes = '';
+    public $startTime = '';
+    public $endTime = '';
     public $activityType = '';
     public $isGeneralActivity = false;
 
@@ -89,6 +107,39 @@ class Show extends Component
         }
     }
 
+    // Time modal mutual exclusion methods
+    public function updatedHours()
+    {
+        if ($this->hours || $this->minutes) {
+            $this->startTime = '';
+            $this->endTime = '';
+        }
+    }
+
+    public function updatedMinutes()
+    {
+        if ($this->hours || $this->minutes) {
+            $this->startTime = '';
+            $this->endTime = '';
+        }
+    }
+
+    public function updatedStartTime()
+    {
+        if ($this->startTime) {
+            $this->hours = '';
+            $this->minutes = '';
+        }
+    }
+
+    public function updatedEndTime()
+    {
+        if ($this->endTime) {
+            $this->hours = '';
+            $this->minutes = '';
+        }
+    }
+
     // File upload fields
     public $attachmentFiles = [];
     public $singleAttachment = null;
@@ -125,6 +176,26 @@ class Show extends Component
     // Quick assignment field
     public $taskAssignment = '';
 
+    public function tagsUpdated($tags)
+    {
+        $this->selectedTags = $tags;
+    }
+
+    public function updateTaskTags($tags)
+    {
+        if ($this->selectedTask) {
+            $this->selectedTask->tags()->sync($tags);
+
+            // Refresh the selected task to show updated tags
+            $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader', 'tags'])->findOrFail($this->selectedTask->id);
+
+            // Refresh available tags in case new ones were added
+            $this->loadAvailableTags();
+
+            $this->dispatch('tags-updated', message: 'Tags updated successfully!');
+        }
+    }
+
     // Task status editing (for details modal)
     public $taskStatus = '';
 
@@ -147,6 +218,16 @@ class Show extends Component
         }
 
         $this->project = $project->load('customer');
+
+        // Load available tags for this project
+        $this->loadAvailableTags();
+
+        // Initialize timeline settings
+        $this->selectedDate = now()->toDateString();
+        $this->showTimeline = Auth::user()->getSetting('project_timeline_expanded', false);
+
+        // Generate initial timeline data
+        $this->generateTimelineData();
 
         // Check for task parameter in URL to auto-open task details
         if (request()->has('task')) {
@@ -278,7 +359,7 @@ class Show extends Component
     // Task details and notes
     public function openTaskDetails($taskId)
     {
-        $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader'])->findOrFail($taskId);
+        $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader', 'tags'])->findOrFail($taskId);
         $this->taskAssignment = $this->selectedTask->assigned_to;
         $this->taskStatus = $this->selectedTask->status;
 
@@ -446,6 +527,13 @@ class Show extends Component
             'created_by' => Auth::id(),
         ]);
 
+        // Sync tags if any are selected
+        if (!empty($this->selectedTags)) {
+            $task->tags()->sync($this->selectedTags);
+            // Refresh available tags since new tags might have been added to the project
+            $this->loadAvailableTags();
+        }
+
         // Send push notification if task is assigned to someone
         if ($this->assigned_to) {
             $this->getNotificationService()->sendTaskAssignmentNotification(
@@ -456,7 +544,7 @@ class Show extends Component
             );
         }
 
-        $this->reset(['title', 'description', 'assigned_to', 'status', 'showTaskModal']);
+        $this->reset(['title', 'description', 'assigned_to', 'status', 'selectedTags', 'showTaskModal']);
         session()->flash('message', 'Task created successfully!');
     }
 
@@ -469,6 +557,7 @@ class Show extends Component
         $this->description = $task->description;
         $this->assigned_to = $task->assigned_to;
         $this->status = $task->status;
+        $this->selectedTags = $task->tags->pluck('id')->toArray();
         $this->moveToProjectId = ''; // Initialize as empty (keep in current project)
         $this->selectedTask = $task;
         $this->editingTask = true;
@@ -500,6 +589,12 @@ class Show extends Component
                 'assigned_to' => $this->assigned_to ?: null,
                 'status' => $this->status,
             ]);
+
+            // Sync tags
+            $this->selectedTask->tags()->sync($this->selectedTags);
+
+            // Refresh available tags in case new ones were added
+            $this->loadAvailableTags();
 
             // Handle project move if specified
             if ($this->moveToProjectId && $this->moveToProjectId != $oldProjectId) {
@@ -549,10 +644,10 @@ class Show extends Component
             $taskId = $this->selectedTask->id;
 
             // Close the edit modal and reset form
-            $this->reset(['title', 'description', 'assigned_to', 'status', 'showTaskModal', 'editingTask']);
+            $this->reset(['title', 'description', 'assigned_to', 'status', 'selectedTags', 'showTaskModal', 'editingTask']);
 
             // Reopen task details modal with updated data
-            $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader'])->findOrFail($taskId);
+            $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader', 'tags'])->findOrFail($taskId);
             $this->taskAssignment = $this->selectedTask->assigned_to;
             $this->showTaskDetailsModal = true;
 
@@ -699,7 +794,7 @@ class Show extends Component
                 $query->where('title', 'LIKE', '%' . $this->searchQuery . '%')
                       ->orWhere('description', 'LIKE', '%' . $this->searchQuery . '%');
             })
-            ->with(['assignedUser'])
+            ->with(['assignedUser', 'tags'])
             ->orderBy('title')
             ->get();
     }
@@ -721,18 +816,133 @@ class Show extends Component
         $this->searchResults = [];
     }
 
+    // Tag filtering methods
+    public function loadAvailableTags()
+    {
+        $this->availableTags = \App\Models\Tag::whereHas('tasks', function($query) {
+            $query->where('project_id', $this->project->id);
+        })
+        ->withCount(['tasks' => function($query) {
+            $query->where('project_id', $this->project->id);
+        }])
+        ->orderBy('name')
+        ->get();
+    }
+
+    public function toggleTagFilter($tagId)
+    {
+        if (in_array($tagId, $this->selectedTagFilters)) {
+            $this->selectedTagFilters = array_values(array_filter($this->selectedTagFilters, function($id) use ($tagId) {
+                return $id != $tagId;
+            }));
+        } else {
+            $this->selectedTagFilters[] = $tagId;
+        }
+    }
+
+    public function clearTagFilters()
+    {
+        $this->selectedTagFilters = [];
+    }
+
+    public function toggleTagFilterDropdown()
+    {
+        $this->showTagFilter = !$this->showTagFilter;
+    }
+
+    // Timeline methods
+    public function toggleTimeline()
+    {
+        $this->showTimeline = !$this->showTimeline;
+
+        // Save the preference to user settings
+        Auth::user()->setSetting('project_timeline_expanded', $this->showTimeline);
+    }
+
+    public function updatedSelectedDate()
+    {
+        $this->generateTimelineData();
+    }
+
+    public function generateTimelineData()
+    {
+        if ($this->selectedDate) {
+            $date = \Carbon\Carbon::parse($this->selectedDate);
+
+            // Use the consolidated timeline generation from trait, but filter for this project
+            $result = $this->generateProjectTimelineVisualization($date);
+            $this->timeEntries = $result['entries'];
+            $this->timelineData = $result['timelineData'];
+        }
+    }
+
+    /**
+     * Generate timeline visualization data for this specific project
+     */
+    public function generateProjectTimelineVisualization(\Carbon\Carbon $date): array
+    {
+        // Get all time entries for the selected date with total_minutes > 0
+        // Filter by entries related to tasks in this project
+        $entries = TaskNote::where('user_id', Auth::id())
+            ->where('total_minutes', '>', 0)
+            ->where(function($query) use ($date) {
+                $query->whereDate('entry_date', $date)
+                      ->orWhere(function($subQuery) use ($date) {
+                          $subQuery->whereNull('entry_date')
+                                   ->whereDate('created_at', $date);
+                      });
+            })
+            ->where(function($query) {
+                // Include entries for tasks in this project OR general activities for this project
+                $query->whereHas('task', function($taskQuery) {
+                    $taskQuery->where('project_id', $this->project->id);
+                })->orWhere(function($generalQuery) {
+                    $generalQuery->whereNull('task_id')
+                                 ->where(function($projectQuery) {
+                                     // This might be set if we track project-specific general activities
+                                     // For now, include all general activities
+                                 });
+                });
+            })
+            ->with(['task.project'])
+            ->orderBy('created_at')
+            ->get();
+
+        // Generate timeline data using the unified Timeline Library
+        $timelineChart = new \App\Libraries\TimelineLibrary\Services\TimelineChart([
+            'show_tooltips' => true,
+            'show_legend' => false,  // Hide legend for compact view
+            'layer_offset' => 30,    // Smaller layer offset for compact view
+        ]);
+
+        return [
+            'entries' => $entries,
+            'timelineData' => $timelineChart->generateTimelineData($entries, $date)
+        ];
+    }
+
     public function startTimer($taskId)
     {
         $task = Task::findOrFail($taskId);
 
-        // Stop any running timers for this user
+        // Stop any running timers for this user across all tasks
         TaskNote::where('user_id', Auth::id())
             ->where('is_running', true)
-            ->whereNotNull('total_minutes')
-            ->update([
-                'is_running' => false,
-                'end_time' => now(),
-            ]);
+            ->whereNull('end_time')
+            ->get()
+            ->each(function ($runningTimer) {
+                $endTime = now();
+                $durationMinutes = $runningTimer->start_time->diffInMinutes($endTime);
+
+                $runningTimer->update([
+                    'is_running' => false,
+                    'end_time' => $endTime,
+                    'total_minutes' => $durationMinutes,
+                    'hours' => floor($durationMinutes / 60),
+                    'minutes' => $durationMinutes % 60,
+                    'content' => 'Timer auto-stopped when starting new timer',
+                ]);
+            });
 
         // Start new timer
         TaskNote::create([
@@ -744,7 +954,13 @@ class Show extends Component
             'source' => 'timer',
         ]);
 
-        session()->flash('message', 'Timer started for: ' . $task->title);
+        // Dispatch a success message and refresh
+        $this->dispatch('timer-started', message: 'Timer started for: ' . $task->title);
+
+        // Refresh timeline if it's showing today's date
+        if ($this->selectedDate === now()->toDateString()) {
+            $this->generateTimelineData();
+        }
     }
 
     public function stopTimer($taskId)
@@ -752,9 +968,10 @@ class Show extends Component
         $runningEntries = TaskNote::where('task_id', $taskId)
             ->where('user_id', Auth::id())
             ->where('is_running', true)
-            ->whereNotNull('total_minutes')
+            ->whereNull('end_time')
             ->get();
 
+        $totalStopped = 0;
         foreach ($runningEntries as $entry) {
             $endTime = now();
             $durationMinutes = $entry->start_time->diffInMinutes($endTime);
@@ -762,14 +979,36 @@ class Show extends Component
             $entry->update([
                 'is_running' => false,
                 'end_time' => $endTime,
-                'duration_minutes' => $durationMinutes,
                 'total_minutes' => $durationMinutes,
                 'hours' => floor($durationMinutes / 60),
                 'minutes' => $durationMinutes % 60,
+                'content' => 'Timer stopped - ' . $this->formatDuration($durationMinutes),
             ]);
+            $totalStopped++;
         }
 
-        session()->flash('message', 'Timer stopped.');
+        if ($totalStopped > 0) {
+            $this->dispatch('timer-stopped', message: 'Timer stopped.');
+
+            // Refresh timeline if it's showing today's date
+            if ($this->selectedDate === now()->toDateString()) {
+                $this->generateTimelineData();
+            }
+        } else {
+            $this->dispatch('timer-error', message: 'No running timer found for this task.');
+        }
+    }
+
+    private function formatDuration($minutes)
+    {
+        $hours = floor($minutes / 60);
+        $mins = $minutes % 60;
+
+        if ($hours > 0) {
+            return "{$hours}h {$mins}m";
+        } else {
+            return "{$mins}m";
+        }
     }
 
     public function openTaskModal()
@@ -796,16 +1035,29 @@ class Show extends Component
 
     public function closeTimeModal()
     {
-        $this->reset(['timeDescription', 'hours', 'minutes', 'showTimeModal', 'selectedTask', 'activityType', 'isGeneralActivity']);
+        $this->reset(['timeDescription', 'hours', 'minutes', 'startTime', 'endTime', 'showTimeModal', 'selectedTask', 'activityType', 'isGeneralActivity']);
     }
 
     public function logTime()
     {
+        // Debug: Log the incoming form data
+        Log::info('logTime called', [
+            'hours' => $this->hours,
+            'minutes' => $this->minutes,
+            'startTime' => $this->startTime,
+            'endTime' => $this->endTime,
+            'timeDescription' => $this->timeDescription,
+            'isGeneralActivity' => $this->isGeneralActivity ?? false,
+            'selectedTask' => $this->selectedTask ? $this->selectedTask->id : null
+        ]);
+
         // Enhanced validation that includes activity type for general activities
         $rules = [
             'hours' => 'nullable|integer|min:0|max:23',
-            'minutes' => 'required|integer|min:0|max:59',
+            'minutes' => 'nullable|integer|min:0|max:59',
             'timeDescription' => 'nullable|string|max:255',
+            'startTime' => 'nullable|date_format:H:i',
+            'endTime' => 'nullable|date_format:H:i',
         ];
 
         if ($this->isGeneralActivity) {
@@ -814,9 +1066,81 @@ class Show extends Component
 
         $this->validate($rules);
 
-        // Treat empty or null hours as 0
-        $hours = $this->hours ?: 0;
-        $totalMinutes = ($hours * 60) + $this->minutes;
+        // Normalize time formats BEFORE validation
+        if ($this->startTime && strlen($this->startTime) > 5) {
+            $this->startTime = substr($this->startTime, 0, 5);
+        }
+        if ($this->endTime && strlen($this->endTime) > 5) {
+            $this->endTime = substr($this->endTime, 0, 5);
+        }
+
+        // Custom validation for time fields
+        $validTimePattern = '/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/';
+
+        // Validate start/end times if provided
+        if ($this->startTime && !preg_match($validTimePattern, $this->startTime)) {
+            $this->addError('startTime', 'Please enter a valid time in HH:MM format.');
+            return;
+        }
+
+        if ($this->endTime && !preg_match($validTimePattern, $this->endTime)) {
+            $this->addError('endTime', 'Please enter a valid time in HH:MM format.');
+            return;
+        }
+
+        // If using start/end times, validate they're both provided
+        if ($this->startTime || $this->endTime) {
+            if (!$this->startTime) {
+                $this->addError('startTime', 'Start time is required when end time is provided.');
+                return;
+            }
+            if (!$this->endTime) {
+                $this->addError('endTime', 'End time is required when start time is provided.');
+                return;
+            }
+        } else {
+            // Require at least some time input (either hours or minutes)
+            if ($this->hours === '' && $this->minutes === '') {
+                $this->addError('minutes', 'Please enter either hours/minutes or start/end times.');
+                return;
+            }
+        }
+
+        $hours = 0;
+        $minutes = 0;
+        $totalMinutes = 0;
+
+        // Calculate time based on start/end times if provided
+        if ($this->startTime && $this->endTime) {
+            try {
+                $start = \Carbon\Carbon::createFromFormat('H:i', $this->startTime);
+                $end = \Carbon\Carbon::createFromFormat('H:i', $this->endTime);
+
+                // Handle overnight work (end time next day)
+                if ($end->lessThan($start)) {
+                    $end->addDay();
+                }
+
+                $totalMinutes = $start->diffInMinutes($end);
+
+                // Validate that the time difference is reasonable (max 24 hours)
+                if ($totalMinutes > 1440) {
+                    $this->addError('endTime', 'End time cannot be more than 24 hours after start time.');
+                    return;
+                }
+
+                $hours = intval($totalMinutes / 60);
+                $minutes = $totalMinutes % 60;
+            } catch (\Exception $e) {
+                $this->addError('startTime', 'Invalid time format. Please use HH:MM format.');
+                return;
+            }
+        } else {
+            // Use manual hours/minutes entry
+            $hours = $this->hours ?: 0;
+            $minutes = $this->minutes ?: 0;
+            $totalMinutes = ($hours * 60) + $minutes;
+        }
 
         if ($totalMinutes > 0) {
             $timeEntryData = [
@@ -844,11 +1168,23 @@ class Show extends Component
                     'content' => $timeEntryData['description'],
                     'total_minutes' => $totalMinutes,
                     'duration_minutes' => $totalMinutes,
-                    'hours' => floor($totalMinutes / 60),
-                    'minutes' => $totalMinutes % 60,
+                    'hours' => $hours,
+                    'minutes' => $minutes,
                     'is_running' => false,
-                    'source' => 'manual_log'
+                    'source' => 'manual_log',
+                    'entry_date' => now()->toDateString()
                 ];
+
+                // Add start/end times if provided
+                if ($this->startTime && $this->endTime) {
+                    $taskNoteData['start_time'] = now()->setTimeFromTimeString($this->startTime);
+                    $taskNoteData['end_time'] = now()->setTimeFromTimeString($this->endTime);
+                    
+                    // Handle overnight work (end time next day)
+                    if ($taskNoteData['end_time']->lessThan($taskNoteData['start_time'])) {
+                        $taskNoteData['end_time']->addDay();
+                    }
+                }
 
                 if ($this->isGeneralActivity) {
                     // For general activities
@@ -861,20 +1197,32 @@ class Show extends Component
 
                 $taskNote = TaskNote::create($taskNoteData);
 
+                // Debug logging
+                Log::info('Time entry attempt', [
+                    'taskNoteData' => $taskNoteData,
+                    'created' => $taskNote ? true : false,
+                    'taskNote_id' => $taskNote->id ?? null
+                ]);
+
                 if ($taskNote) {
                     $activityLabel = $this->isGeneralActivity ? $this->activityType : $this->selectedTask->title;
-                    session()->flash('message', "Time logged successfully for: {$activityLabel}!");
+                    $this->dispatch('time-logged', message: "Time logged successfully for: {$activityLabel}!");
+
+                    // Refresh timeline if it's showing today's date
+                    if ($this->selectedDate === now()->toDateString()) {
+                        $this->generateTimelineData();
+                    }
                 } else {
-                    session()->flash('error', 'Failed to save time entry. Please try again.');
+                    $this->dispatch('time-log-error', message: 'Failed to save time entry. Please try again.');
                 }
             } catch (\Exception $e) {
                 Log::error('Time entry creation failed: ' . $e->getMessage());
-                session()->flash('error', 'Error saving time entry: ' . $e->getMessage());
+                $this->dispatch('time-log-error', message: 'Error saving time entry: ' . $e->getMessage());
             }
 
             $this->closeTimeModal();
         } else {
-            session()->flash('error', 'Please enter a valid time duration.');
+            $this->dispatch('time-log-error', message: 'Please enter a valid time duration.');
         }
     }
 
@@ -927,6 +1275,11 @@ class Show extends Component
 
                     // Dispatch success event for Alpine.js
                     $this->dispatch('time-logged', message: 'Time logged successfully!');
+
+                    // Refresh timeline if it's showing today's date
+                    if ($this->selectedDate === now()->toDateString()) {
+                        $this->generateTimelineData();
+                    }
                 } else {
                     $this->dispatch('time-log-error', message: 'Failed to save time entry. Please try again.');
                 }
@@ -1304,13 +1657,23 @@ class Show extends Component
 
     public function render()
     {
+        // Build base query for tasks
+        $tasksQuery = $this->project->tasks()->with(['tags', 'assignedUser', 'timeEntries', 'notes']);
+
+        // Apply tag filters if any are selected
+        if (!empty($this->selectedTagFilters)) {
+            $tasksQuery->whereHas('tags', function($query) {
+                $query->whereIn('tags.id', $this->selectedTagFilters);
+            });
+        }
+
         $columns = [
-            'backlog' => $this->project->tasks()->where('status', 'backlog')->orderBy('order')->get(),
-            'in_progress' => $this->project->tasks()->where('status', 'in_progress')->orderBy('order')->get(),
-            'in_test' => $this->project->tasks()->where('status', 'in_test')->orderBy('order')->get(),
-            'failed_testing' => $this->project->tasks()->where('status', 'failed_testing')->orderBy('order')->get(),
-            'ready_to_release' => $this->project->tasks()->where('status', 'ready_to_release')->orderBy('order')->get(),
-            'done' => $this->project->tasks()->where('status', 'done')->orderBy('order')->get(),
+            'backlog' => (clone $tasksQuery)->where('status', 'backlog')->orderBy('order')->get(),
+            'in_progress' => (clone $tasksQuery)->where('status', 'in_progress')->orderBy('order')->get(),
+            'in_test' => (clone $tasksQuery)->where('status', 'in_test')->orderBy('order')->get(),
+            'failed_testing' => (clone $tasksQuery)->where('status', 'failed_testing')->orderBy('order')->get(),
+            'ready_to_release' => (clone $tasksQuery)->where('status', 'ready_to_release')->orderBy('order')->get(),
+            'done' => (clone $tasksQuery)->where('status', 'done')->orderBy('order')->get(),
         ];
 
         $users = User::all();
