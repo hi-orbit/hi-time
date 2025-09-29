@@ -473,14 +473,38 @@ class Show extends Component
             }
 
             // Create the note with time tracking data
-            TaskNote::create([
+            $noteData = [
                 'task_id' => $this->selectedTask->id,
                 'user_id' => Auth::id(),
                 'content' => $this->newNote,
                 'hours' => $hours > 0 ? $hours : null,
                 'minutes' => $minutes > 0 ? $minutes : null,
                 'total_minutes' => $totalMinutes > 0 ? $totalMinutes : null,
-            ]);
+            ];
+
+            // Add start/end times if they were provided
+            if ($this->newNoteStartTime && $this->newNoteEndTime) {
+                try {
+                    $entryDate = now()->toDateString(); // Use today's date
+                    $noteData['start_time'] = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $entryDate . ' ' . $this->newNoteStartTime);
+                    $noteData['end_time'] = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $entryDate . ' ' . $this->newNoteEndTime);
+
+                    // Handle overnight work (end time next day)
+                    if ($noteData['end_time']->lessThan($noteData['start_time'])) {
+                        $noteData['end_time']->addDay();
+                    }
+
+                    $noteData['source'] = 'manual_log';
+                    $noteData['entry_date'] = $entryDate;
+                } catch (\Exception $e) {
+                    // If there's an error creating the datetime, fall back to no start/end times
+                    $noteData['source'] = 'manual';
+                }
+            } else {
+                $noteData['source'] = 'manual';
+            }
+
+            TaskNote::create($noteData);
 
             // Refresh the selected task to show the new note and maintain all relationships
             $this->selectedTask = Task::with(['notes.user', 'assignedUser', 'timeEntries', 'attachments.uploader'])->findOrFail($this->selectedTask->id);
@@ -1181,7 +1205,9 @@ class Show extends Component
                     if ($taskNoteData['end_time']->lessThan($taskNoteData['start_time'])) {
                         $taskNoteData['end_time']->addDay();
                     }
-                }                if ($this->isGeneralActivity) {
+                }
+
+                if ($this->isGeneralActivity) {
                     // For general activities
                     $taskNoteData['task_id'] = null;
                     $taskNoteData['content'] = $this->activityType . ': ' . ($this->timeDescription ?: 'General activity');
@@ -1202,7 +1228,7 @@ class Show extends Component
                     // If timeline is expanded, make sure it stays expanded
                     if (!$this->showTimeline) {
                         $this->showTimeline = true;
-                        $this->updateUserSetting('show_timeline', true);
+                        Auth::user()->setSetting('show_timeline', true);
                     }
                 } else {
                     $this->dispatch('time-log-error', message: 'Failed to save time entry. Please try again.');
