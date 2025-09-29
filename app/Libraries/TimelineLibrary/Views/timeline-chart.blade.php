@@ -109,8 +109,8 @@
                                  x-transition:leave="transition ease-in duration-150"
                                  x-transition:leave-start="opacity-100 transform scale-100"
                                  x-transition:leave-end="opacity-0 transform scale-95"
-                                 class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg z-50 whitespace-nowrap"
-                                 style="min-width: 200px;">
+                                 class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg whitespace-nowrap timeline-tooltip"
+                                 style="min-width: 200px; z-index: 9999 !important;">
                                 <div class="text-center">
                                     <div class="font-medium">{{ $entry['title'] }}</div>
                                     <div class="text-gray-300">{{ $entry['description'] }}</div>
@@ -239,5 +239,24 @@
 
 .timeline-entry-running {
     animation: pulse-glow 2s infinite;
+}
+
+/* Ensure timeline tooltips are always visible */
+.timeline-tooltip {
+    z-index: 9999 !important;
+    position: absolute !important;
+}
+
+/* Override any overflow hidden that might clip tooltips */
+.timeline-chart-container {
+    overflow: visible !important;
+}
+
+.timeline-chart {
+    overflow: visible !important;
+}
+
+.timeline-entries {
+    overflow: visible !important;
 }
 </style>

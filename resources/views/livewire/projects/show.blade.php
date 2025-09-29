@@ -224,7 +224,7 @@
 
                 <!-- Timeline Section -->
                 <div class="mb-4">
-                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm" style="overflow: visible;">
                         <button wire:click="toggleTimeline"
                                 class="flex items-center justify-between w-full text-left hover:bg-gray-50 px-4 py-2 transition-colors">
                             <div class="flex items-center space-x-2">
@@ -276,6 +276,16 @@
                                             .compact-timeline-wrapper .timeline-entry {
                                                 height: auto !important;
                                                 min-height: 20px !important;
+                                            }
+                                            /* Ensure tooltips are visible and not clipped */
+                                            .compact-timeline-wrapper .timeline-tooltip {
+                                                z-index: 9999 !important;
+                                            }
+                                            .compact-timeline-wrapper .timeline-entries {
+                                                overflow: visible !important;
+                                            }
+                                            .compact-timeline-wrapper .timeline-chart {
+                                                overflow: visible !important;
                                             }
                                         </style>
                                         @include('timeline-library::timeline-chart', [
