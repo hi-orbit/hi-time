@@ -1171,16 +1171,17 @@ class Show extends Component
 
                 // Add start/end times if provided
                 if ($this->startTime && $this->endTime) {
-                    $taskNoteData['start_time'] = now()->setTimeFromTimeString($this->startTime);
-                    $taskNoteData['end_time'] = now()->setTimeFromTimeString($this->endTime);
+                    $entryDate = $this->selectedDate ?? now()->toDateString();
+
+                    // Create proper datetime objects by combining date with time
+                    $taskNoteData['start_time'] = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $entryDate . ' ' . $this->startTime);
+                    $taskNoteData['end_time'] = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $entryDate . ' ' . $this->endTime);
 
                     // Handle overnight work (end time next day)
                     if ($taskNoteData['end_time']->lessThan($taskNoteData['start_time'])) {
                         $taskNoteData['end_time']->addDay();
                     }
-                }
-
-                if ($this->isGeneralActivity) {
+                }                if ($this->isGeneralActivity) {
                     // For general activities
                     $taskNoteData['task_id'] = null;
                     $taskNoteData['content'] = $this->activityType . ': ' . ($this->timeDescription ?: 'General activity');
