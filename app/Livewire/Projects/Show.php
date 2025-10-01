@@ -848,7 +848,8 @@ class Show extends Component
     // Tag filtering methods
     public function loadAvailableTags()
     {
-        $this->availableTags = \App\Models\Tag::whereHas('tasks', function($query) {
+        $this->availableTags = \App\Models\Tag::where('customer_id', $this->project->customer_id)
+        ->whereHas('tasks', function($query) {
             $query->where('project_id', $this->project->id);
         })
         ->withCount(['tasks' => function($query) {

@@ -13,11 +13,13 @@ class TagSelector extends Component
     public $newTagName = '';
     public $newTagColor = '#3B82F6';
     public $searchQuery = '';
+    public $customerId = null;
 
     protected $listeners = ['tagsUpdated' => 'loadTags'];
 
-    public function mount($selectedTags = [])
+    public function mount($selectedTags = [], $customerId = null)
     {
+        $this->customerId = $customerId;
         $this->selectedTags = is_array($selectedTags) ? $selectedTags : $selectedTags->pluck('id')->toArray();
         $this->loadTags();
     }
@@ -40,7 +42,14 @@ class TagSelector extends Component
 
     public function loadTags()
     {
-        $this->availableTags = Tag::orderBy('name')->get()->map(function ($tag) {
+        $query = Tag::orderBy('name');
+
+        // Filter tags by customer if customerId is provided
+        if ($this->customerId) {
+            $query->forCustomer($this->customerId);
+        }
+
+        $this->availableTags = $query->get()->map(function ($tag) {
             return [
                 'id' => $tag->id,
                 'name' => $tag->name,
@@ -76,16 +85,38 @@ class TagSelector extends Component
     public function createTag()
     {
         $this->validate([
-            'newTagName' => 'required|string|max:255|unique:tags,name',
+            'newTagName' => 'required|string|max:255',
             'newTagColor' => 'required|string|max:7',
         ], [
             'newTagName.required' => 'Tag name is required.',
-            'newTagName.unique' => 'A tag with this name already exists.',
         ]);
+
+        // Check for unique name within the customer scope
+        if ($this->customerId) {
+            $existingTag = Tag::where('name', $this->newTagName)
+                             ->where('customer_id', $this->customerId)
+                             ->first();
+
+            if ($existingTag) {
+                $this->addError('newTagName', 'A tag with this name already exists for this customer.');
+                return;
+            }
+        } else {
+            // For global tags (if any), check uniqueness where customer_id is null
+            $existingTag = Tag::where('name', $this->newTagName)
+                             ->whereNull('customer_id')
+                             ->first();
+
+            if ($existingTag) {
+                $this->addError('newTagName', 'A tag with this name already exists.');
+                return;
+            }
+        }
 
         $tag = Tag::create([
             'name' => $this->newTagName,
             'color' => $this->newTagColor,
+            'customer_id' => $this->customerId,
         ]);
 
         $this->selectedTags[] = $tag->id;

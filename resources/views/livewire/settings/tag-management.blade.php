@@ -24,7 +24,7 @@
         <div class="relative">
             <input wire:model.live="search"
                    type="text"
-                   placeholder="Search tags..."
+                   placeholder="Search tags or companies..."
                    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
             <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
                 <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,10 +99,63 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button wire:click="sortBy('name')" class="flex items-center space-x-1 hover:text-gray-700">
+                            <span>Tag</span>
+                            @if($sortBy === 'name')
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    @if($sortDirection === 'asc')
+                                        <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                                    @else
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    @endif
+                                </svg>
+                            @endif
+                        </button>
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button wire:click="sortBy('customer')" class="flex items-center space-x-1 hover:text-gray-700">
+                            <span>Company</span>
+                            @if($sortBy === 'customer')
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    @if($sortDirection === 'asc')
+                                        <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                                    @else
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    @endif
+                                </svg>
+                            @endif
+                        </button>
+                    </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usage Count</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button wire:click="sortBy('tasks_count')" class="flex items-center space-x-1 hover:text-gray-700">
+                            <span>Usage Count</span>
+                            @if($sortBy === 'tasks_count')
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    @if($sortDirection === 'asc')
+                                        <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                                    @else
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    @endif
+                                </svg>
+                            @endif
+                        </button>
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button wire:click="sortBy('created_at')" class="flex items-center space-x-1 hover:text-gray-700">
+                            <span>Created</span>
+                            @if($sortBy === 'created_at')
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    @if($sortDirection === 'asc')
+                                        <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                                    @else
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    @endif
+                                </svg>
+                            @endif
+                        </button>
+                    </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
@@ -119,6 +172,17 @@
                                     <div class="w-4 h-4 rounded-full" style="background-color: {{ $tag->color }}"></div>
                                     <span class="text-sm font-medium text-gray-900">{{ $tag->name }}</span>
                                 </div>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4">
+                            @if($tag->customer)
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ $tag->customer->name }}
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                    Global
+                                </span>
                             @endif
                         </td>
                         <td class="px-6 py-4">
@@ -172,7 +236,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
                             @if($search)
                                 No tags found matching "{{ $search }}".
                             @else

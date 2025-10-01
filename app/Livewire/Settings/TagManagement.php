@@ -17,6 +17,8 @@ class TagManagement extends Component
     public $color = '#3B82F6';
     public $description = '';
     public $search = '';
+    public $sortBy = 'name';
+    public $sortDirection = 'asc';
 
     protected $rules = [
         'name' => 'required|string|max:255|unique:tags,name',
@@ -38,15 +40,34 @@ class TagManagement extends Component
     public function render()
     {
         $tags = Tag::query()
+            ->with('customer')
             ->when($this->search, fn($query) => $query->search($this->search))
             ->withCount('tasks')
-            ->orderBy('name')
+            ->when($this->sortBy === 'customer', function($query) {
+                $query->leftJoin('customers', 'tags.customer_id', '=', 'customers.id')
+                      ->orderBy('customers.name', $this->sortDirection)
+                      ->select('tags.*');
+            }, function($query) {
+                $query->orderBy($this->sortBy, $this->sortDirection);
+            })
             ->paginate(15);
 
         return view('livewire.settings.tag-management', [
             'tags' => $tags,
             'defaultColors' => Tag::getDefaultColors(),
         ]);
+    }
+
+    public function sortBy($field)
+    {
+        if ($this->sortBy === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortBy = $field;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->resetPage();
     }
 
     public function updatingSearch()

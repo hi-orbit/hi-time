@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Tag extends Model
@@ -14,12 +15,21 @@ class Tag extends Model
         'name',
         'color',
         'description',
+        'customer_id',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * The customer that owns the tag.
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
 
     /**
      * The tasks that belong to the tag.
@@ -38,6 +48,14 @@ class Tag extends Model
     }
 
     /**
+     * Scope a query to filter tags by customer.
+     */
+    public function scopeForCustomer($query, $customerId)
+    {
+        return $query->where('customer_id', $customerId);
+    }
+
+    /**
      * Scope a query to order tags by most used.
      */
     public function scopeOrderByUsage($query)
@@ -46,11 +64,17 @@ class Tag extends Model
     }
 
     /**
-     * Scope a query to search for tags by name.
+     * Scope a query to search for tags by name or customer name.
      */
     public function scopeSearch($query, $search)
     {
-        return $query->where('name', 'like', '%' . $search . '%');
+        return $query->where(function($q) use ($search) {
+            $q->where('name', 'like', '%' . $search . '%')
+              ->orWhere('description', 'like', '%' . $search . '%')
+              ->orWhereHas('customer', function($customerQuery) use ($search) {
+                  $customerQuery->where('name', 'like', '%' . $search . '%');
+              });
+        });
     }
 
     /**

@@ -553,7 +553,10 @@
                         <!-- Tags Section -->
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Tags</label>
-                            @livewire('components.tag-selector', ['selectedTags' => $editingTask && $selectedTask ? $selectedTask->tags->pluck('id')->toArray() : []], key($editingTask && $selectedTask ? 'edit-'.$selectedTask->id : 'create'))
+                            @livewire('components.tag-selector', [
+                                'selectedTags' => $editingTask && $selectedTask ? $selectedTask->tags->pluck('id')->toArray() : [],
+                                'customerId' => $project->customer_id
+                            ], key($editingTask && $selectedTask ? 'edit-'.$selectedTask->id : 'create'))
                         </div>
                         @if($editingTask)
                         <div class="mb-4">
@@ -866,7 +869,8 @@
                                     <h5 class="text-sm font-medium text-gray-900 mb-2">Manage Tags</h5>
                                     <div wire:key="task-tags-{{ $selectedTask->id }}">
                                         @livewire('components.tag-selector', [
-                                            'selectedTags' => $selectedTask->tags->pluck('id')->toArray()
+                                            'selectedTags' => $selectedTask->tags->pluck('id')->toArray(),
+                                            'customerId' => $project->customer_id
                                         ], key('task-tags-' . $selectedTask->id))
                                     </div>
                                 </div>

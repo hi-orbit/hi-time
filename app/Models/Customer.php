@@ -27,6 +27,12 @@ class Customer extends Model
         return $this->hasMany(Project::class);
     }
 
+    // Relationship to Tags
+    public function tags()
+    {
+        return $this->hasMany(Tag::class);
+    }
+
     // Scope for active customers
     public function scopeActive($query)
     {
