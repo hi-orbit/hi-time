@@ -854,7 +854,7 @@ class Show extends Component
         }])
         ->orderBy('name')
         ->get();
-        
+
         // Convert to collection format that maintains compatibility with both array and Collection methods
         $this->availableTags = $tags->map(function($tag) {
             return (object) [
