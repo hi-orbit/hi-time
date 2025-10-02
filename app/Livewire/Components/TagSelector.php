@@ -15,7 +15,7 @@ class TagSelector extends Component
     public $searchQuery = '';
     public $customerId = null;
 
-    protected $listeners = ['tagsUpdated' => 'loadTags'];
+    protected $listeners = ['updateTaskTags' => 'loadTags'];
 
     public function mount($selectedTags = [], $customerId = null)
     {
@@ -125,9 +125,7 @@ class TagSelector extends Component
         $this->searchQuery = '';
 
         $this->dispatch('tagsSelected', $this->selectedTags);
-        // Temporarily disable these dispatches to isolate the issue
-        // $this->dispatch('updateTaskTags', $this->selectedTags);
-        // $this->dispatch('tagsUpdated');
+        $this->dispatch('updateTaskTags', $this->selectedTags);
     }
 
     public function resetCreateForm()

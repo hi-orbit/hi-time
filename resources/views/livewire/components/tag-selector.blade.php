@@ -48,8 +48,8 @@
                                 class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-colors
                                        {{ in_array($tag['id'], $selectedTags)
                                           ? 'text-white border-transparent'
-                                          : 'text-gray-700 border-gray-300 bg-white hover:bg-gray-50' }}"
-                                style="{{ in_array($tag['id'], $selectedTags) ? 'background-color: ' . $tag['color'] : '' }}">
+                                          : 'text-white border-gray-300 hover:opacity-80' }}"
+                                style="background-color: {{ $tag['color'] }}{{ in_array($tag['id'], $selectedTags) ? '' : '; opacity: 0.8;' }}">
                             {{ $tag['name'] }}
                             @if(in_array($tag['id'], $selectedTags))
                                 <svg class="ml-1 w-3 h-3" fill="currentColor" viewBox="0 0 20 20">

@@ -22,7 +22,7 @@ class Show extends Component
     use WithFileUploads, GeneratesTimelineData;
 
     protected $listeners = [
-        'tagsUpdated' => 'tagsUpdatedHandler',
+        'tagsSelected' => 'tagsSelectedHandler',
         'updateTaskTags' => 'updateTaskTagsHandler'
     ];
 
@@ -179,7 +179,7 @@ class Show extends Component
     // Quick assignment field
     public $taskAssignment = '';
 
-    public function tagsUpdatedHandler($tags)
+    public function tagsSelectedHandler($tags)
     {
         $this->selectedTags = $tags;
     }
@@ -848,15 +848,22 @@ class Show extends Component
     // Tag filtering methods
     public function loadAvailableTags()
     {
-        $this->availableTags = \App\Models\Tag::where('customer_id', $this->project->customer_id)
-        ->whereHas('tasks', function($query) {
-            $query->where('project_id', $this->project->id);
-        })
+        $tags = \App\Models\Tag::where('customer_id', $this->project->customer_id)
         ->withCount(['tasks' => function($query) {
             $query->where('project_id', $this->project->id);
         }])
         ->orderBy('name')
         ->get();
+        
+        // Convert to collection format that maintains compatibility with both array and Collection methods
+        $this->availableTags = $tags->map(function($tag) {
+            return (object) [
+                'id' => $tag->id,
+                'name' => $tag->name,
+                'color' => $tag->color,
+                'tasks_count' => $tag->tasks_count ?? 0
+            ];
+        });
     }
 
     public function toggleTagFilter($tagId)

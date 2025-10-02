@@ -222,6 +222,7 @@
                     </div>
                 @endif
 
+                @if(!Auth::user()->isCustomer())
                 <!-- Timeline Section -->
                 <div class="mb-4">
                     <div class="bg-white border border-gray-200 rounded-lg shadow-sm" style="overflow: visible;">
@@ -302,6 +303,7 @@
                         @endif
                     </div>
                 </div>
+                @endif
 
                 <!-- Kanban Board -->
                 <div id="kanban-board" class="grid gap-4 xl:gap-6 transition-all duration-300" style="grid-template-columns: repeat(5, 1fr) 80px;" data-collapsed="true">
