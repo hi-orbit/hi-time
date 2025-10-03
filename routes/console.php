@@ -9,4 +9,13 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Schedule the cleanup of completed tasks to run daily at 2 AM
-Schedule::command('tasks:cleanup-completed')->dailyAt('02:00');
+Schedule::command('tasks:cleanup-completed')
+    ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onSuccess(function () {
+        \Illuminate\Support\Facades\Log::info('Completed tasks cleanup ran successfully');
+    })
+    ->onFailure(function () {
+        \Illuminate\Support\Facades\Log::error('Completed tasks cleanup failed to run');
+    });
