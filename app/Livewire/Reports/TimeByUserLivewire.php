@@ -165,6 +165,36 @@ class TimeByUserLivewire extends Component
         $this->editDescription = $entry->description ?? $entry->content ?? '';
     }
 
+    public function updatedEditStartTime()
+    {
+        $this->calculateDurationFromTimes();
+    }
+
+    public function updatedEditEndTime()
+    {
+        $this->calculateDurationFromTimes();
+    }
+
+    private function calculateDurationFromTimes()
+    {
+        if ($this->editStartTime && $this->editEndTime) {
+            try {
+                $startTime = \Carbon\Carbon::createFromFormat('H:i', $this->editStartTime);
+                $endTime = \Carbon\Carbon::createFromFormat('H:i', $this->editEndTime);
+
+                // Handle case where end time is next day (crosses midnight)
+                if ($endTime->lessThan($startTime)) {
+                    $endTime->addDay();
+                }
+
+                $diffInMinutes = $startTime->diffInMinutes($endTime);
+                $this->editDuration = $diffInMinutes;
+            } catch (\Exception $e) {
+                // If parsing fails, don't update duration
+            }
+        }
+    }
+
     public function saveTimeEntry($entryId)
     {
         $entry = TaskNote::findOrFail($entryId);
@@ -181,6 +211,11 @@ class TimeByUserLivewire extends Component
             'editStartTime' => 'nullable|date_format:H:i',
             'editEndTime' => 'nullable|date_format:H:i',
         ]);
+
+        // Recalculate duration from start/end times if both are provided
+        if ($this->editStartTime && $this->editEndTime) {
+            $this->calculateDurationFromTimes();
+        }
 
         // Update the entry
         $updateData = [
