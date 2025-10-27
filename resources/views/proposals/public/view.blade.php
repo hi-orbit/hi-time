@@ -342,10 +342,12 @@
                     // Merge all data
                     $allData = array_merge($clientData, $proposalData);
 
-                    // Replace variables in content
+                    // Replace variables in content using robust pattern matching
                     foreach ($allData as $key => $value) {
-                        $placeholder = '{{' . $key . '}}';
-                        $processedContent = str_replace($placeholder, $value, $processedContent);
+                        // Replace with double curly braces (with optional whitespace)
+                        $processedContent = preg_replace('/\{\{\s*' . preg_quote($key, '/') . '\s*\}\}/i', $value, $processedContent);
+                        // Also try single curly braces (in case editor uses different format)
+                        $processedContent = preg_replace('/\{\s*' . preg_quote($key, '/') . '\s*\}/i', $value, $processedContent);
                     }
                 @endphp
                 {!! $processedContent !!}

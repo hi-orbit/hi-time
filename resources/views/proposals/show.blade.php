@@ -320,7 +320,71 @@
                 <div class="bg-white shadow rounded-lg p-6">
                     <h2 class="text-lg font-medium text-gray-900 mb-4">Proposal Content</h2>
                     <div class="proposal-content bg-white p-6 border border-gray-200 rounded-lg">
-                        {!! $proposal->content !!}
+                        @php
+                            // Process template variables in the content
+                            $processedContent = $proposal->content;
+
+                            // Get client data for replacements
+                            $clientData = [];
+                            if ($proposal->lead) {
+                                $clientData = [
+                                    'client_name' => $proposal->lead->name ?? '',
+                                    'client_email' => $proposal->lead->email ?? '',
+                                    'client_address' => $proposal->lead->address ?? '',
+                                    'client_company_number' => $proposal->lead->company_number ?? '',
+                                    'company_name' => $proposal->lead->company ?? '',
+                                    'company_number' => $proposal->lead->company_number ?? '',
+                                    'company_address' => $proposal->lead->address ?? '',
+                                ];
+                            } elseif ($proposal->customer) {
+                                $clientData = [
+                                    'client_name' => $proposal->customer->name ?? '',
+                                    'client_email' => $proposal->customer->email ?? '',
+                                    'client_address' => $proposal->customer->address ?? '',
+                                    'client_company_number' => $proposal->customer->company_number ?? '',
+                                    'company_name' => $proposal->customer->company ?? $proposal->customer->name ?? '',
+                                    'company_number' => $proposal->customer->company_number ?? '',
+                                    'company_address' => $proposal->customer->address ?? '',
+                                ];
+                            } elseif ($proposal->client_name) {
+                                $clientData = [
+                                    'client_name' => $proposal->client_name ?? '',
+                                    'client_email' => $proposal->client_email ?? '',
+                                    'client_address' => '',
+                                    'client_company_number' => '',
+                                    'company_name' => $proposal->client_name ?? '',
+                                    'company_number' => '',
+                                    'company_address' => '',
+                                ];
+                            }
+
+                            // Add proposal data
+                            $proposalData = [
+                                'proposal_title' => $proposal->title ?? '',
+                                'amount' => $proposal->amount ? '$' . number_format($proposal->amount, 2) : '',
+                                'date' => now()->format('F j, Y'),
+                                'valid_until' => $proposal->valid_until ? $proposal->valid_until->format('F j, Y') : '',
+                            ];
+
+                            // Split names for first/last name variables
+                            if (isset($clientData['client_name'])) {
+                                $nameParts = explode(' ', $clientData['client_name'], 2);
+                                $clientData['first_name'] = $nameParts[0] ?? '';
+                                $clientData['last_name'] = $nameParts[1] ?? '';
+                            }
+
+                            // Merge all data
+                            $allData = array_merge($clientData, $proposalData);
+
+                            // Replace variables in content using robust pattern matching
+                            foreach ($allData as $key => $value) {
+                                // Replace with double curly braces (with optional whitespace)
+                                $processedContent = preg_replace('/\{\{\s*' . preg_quote($key, '/') . '\s*\}\}/i', $value, $processedContent);
+                                // Also try single curly braces (in case editor uses different format)
+                                $processedContent = preg_replace('/\{\s*' . preg_quote($key, '/') . '\s*\}/i', $value, $processedContent);
+                            }
+                        @endphp
+                        {!! $processedContent !!}
                     </div>
                 </div>
             </div>
