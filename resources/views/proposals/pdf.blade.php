@@ -249,7 +249,7 @@
             @if($proposal->amount)
             <div class="info-item">
                 <div class="info-label">Proposal Amount</div>
-                <div class="info-value amount">${{ number_format($proposal->amount, 2) }}</div>
+                <div class="info-value amount">£{{ number_format($proposal->amount, 2) }}</div>
             </div>
             @endif
             @if($proposal->template)
@@ -388,7 +388,7 @@
                     'company_number' => $clientData['company_number'] ?: '[Company Number]',
                     'company_address' => $clientData['company_address'] ?: '[Company Address]',
                     'proposal_title' => $proposal->title ?: '[Proposal Title]',
-                    'amount' => $proposal->amount ? '$' . number_format($proposal->amount, 2) : '[Amount]',
+                    'amount' => $proposal->amount ? '£' . number_format($proposal->amount, 2) : '[Amount]',
                     'date' => now()->format('jS F Y'),
                     'valid_until' => $proposal->valid_until ? \Carbon\Carbon::parse($proposal->valid_until)->format('jS F Y') : '[Valid Until Date]',
                     'first_name' => $clientData['client_name'] ? explode(' ', $clientData['client_name'])[0] : '[First Name]',

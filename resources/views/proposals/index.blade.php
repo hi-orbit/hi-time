@@ -92,7 +92,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     @if($proposal->amount)
-                                        ${{ number_format($proposal->amount, 2) }}
+                                        £{{ number_format($proposal->amount, 2) }}
                                     @else
                                         <span class="text-gray-400">Not set</span>
                                     @endif

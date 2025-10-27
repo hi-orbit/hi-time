@@ -257,7 +257,7 @@
                 @if($proposal->amount)
                 <div>
                     <dt class="text-sm font-medium text-gray-500">Amount</dt>
-                    <dd class="mt-1 text-lg font-semibold text-gray-900">${{ number_format($proposal->amount, 2) }}</dd>
+                    <dd class="mt-1 text-lg font-semibold text-gray-900">£{{ number_format($proposal->amount, 2) }}</dd>
                 </div>
                 @endif
 

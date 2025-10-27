@@ -259,7 +259,7 @@
                             @if($proposal->amount)
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">Amount</dt>
-                                <dd class="text-lg font-semibold text-green-600">${{ number_format($proposal->amount, 2) }}</dd>
+                                <dd class="text-lg font-semibold text-green-600">£{{ number_format($proposal->amount, 2) }}</dd>
                             </div>
                             @endif
                         </dl>
@@ -387,7 +387,7 @@
                                 'company_number' => $clientData['company_number'] ?: '[Company Number]',
                                 'company_address' => $clientData['company_address'] ?: '[Company Address]',
                                 'proposal_title' => $proposal->title ?: '[Proposal Title]',
-                                'amount' => $proposal->amount ? '$' . number_format($proposal->amount, 2) : '[Amount]',
+                                'amount' => $proposal->amount ? '£' . number_format($proposal->amount, 2) : '[Amount]',
                                 'date' => now()->format('jS F Y'),
                                 'valid_until' => $proposal->valid_until ? \Carbon\Carbon::parse($proposal->valid_until)->format('jS F Y') : '[Valid Until Date]',
                                 'first_name' => $clientData['client_name'] ? explode(' ', $clientData['client_name'])[0] : '[First Name]',

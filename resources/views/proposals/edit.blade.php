@@ -163,7 +163,7 @@
                                 <label for="amount" class="block text-sm font-medium text-gray-700">Proposal Amount</label>
                                 <div class="mt-1 relative rounded-md shadow-sm">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-500 sm:text-sm">$</span>
+                                        <span class="text-gray-500 sm:text-sm">£</span>
                                     </div>
                                     <input type="number" name="amount" id="amount" step="0.01" min="0"
                                            class="pl-7 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('amount') border-red-300 @enderror"

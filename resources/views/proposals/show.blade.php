@@ -264,7 +264,7 @@
                             <dt class="text-sm font-medium text-gray-500">Amount</dt>
                             <dd class="text-sm text-gray-900">
                                 @if($proposal->amount)
-                                    ${{ number_format($proposal->amount, 2) }}
+                                    £{{ number_format($proposal->amount, 2) }}
                                 @else
                                     <span class="text-gray-400">Not specified</span>
                                 @endif
@@ -361,7 +361,7 @@
                             // Add proposal data
                             $proposalData = [
                                 'proposal_title' => $proposal->title ?? '',
-                                'amount' => $proposal->amount ? '$' . number_format($proposal->amount, 2) : '',
+                                'amount' => $proposal->amount ? '£' . number_format($proposal->amount, 2) : '',
                                 'date' => now()->format('F j, Y'),
                                 'valid_until' => $proposal->valid_until ? $proposal->valid_until->format('F j, Y') : '',
                             ];
