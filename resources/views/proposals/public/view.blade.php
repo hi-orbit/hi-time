@@ -11,6 +11,202 @@
             border-radius: 0.375rem;
             cursor: crosshair;
         }
+
+        /* Custom styles for proposal content display */
+        .proposal-content {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #374151;
+        }
+
+        .proposal-content h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #111827;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+        }
+
+        .proposal-content h2 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #111827;
+        }
+
+        .proposal-content h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #111827;
+        }
+
+        .proposal-content h4 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            color: #111827;
+        }
+
+        .proposal-content h5,
+        .proposal-content h6 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 0.75rem;
+            margin-bottom: 0.5rem;
+            color: #111827;
+        }
+
+        .proposal-content p {
+            margin-bottom: 1rem;
+            text-align: justify;
+        }
+
+        .proposal-content ul,
+        .proposal-content ol {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        .proposal-content ul {
+            list-style-type: disc;
+        }
+
+        .proposal-content ol {
+            list-style-type: decimal;
+        }
+
+        .proposal-content li {
+            margin-bottom: 0.25rem;
+        }
+
+        .proposal-content blockquote {
+            border-left: 4px solid #3b82f6;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            font-style: italic;
+            background-color: #f8fafc;
+            padding: 1rem;
+            border-radius: 0.375rem;
+        }
+
+        .proposal-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            border: 1px solid #d1d5db;
+        }
+
+        .proposal-content th,
+        .proposal-content td {
+            border: 1px solid #d1d5db;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .proposal-content th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
+
+        .proposal-content img {
+            max-width: 100%;
+            height: auto;
+            margin: 1rem 0;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .proposal-content strong {
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .proposal-content em {
+            font-style: italic;
+        }
+
+        .proposal-content u {
+            text-decoration: underline;
+        }
+
+        .proposal-content code {
+            background-color: #f3f4f6;
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.25rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        .proposal-content pre {
+            background-color: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .proposal-content pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .proposal-content a {
+            color: #3b82f6;
+            text-decoration: underline;
+        }
+
+        .proposal-content a:hover {
+            color: #1d4ed8;
+        }
+
+        .proposal-content hr {
+            border: none;
+            border-top: 1px solid #d1d5db;
+            margin: 2rem 0;
+        }
+
+        /* Ensure proper spacing for nested elements */
+        .proposal-content div {
+            margin-bottom: 0.5rem;
+        }
+
+        .proposal-content div:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Fix for any inline styles that might override */
+        .proposal-content * {
+            max-width: 100% !important;
+        }
+
+        /* Print styles */
+        @media print {
+            .proposal-content {
+                font-size: 12pt;
+                line-height: 1.4;
+            }
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 640px) {
+            .proposal-content h1 {
+                font-size: 1.5rem;
+            }
+
+            .proposal-content h2 {
+                font-size: 1.25rem;
+            }
+
+            .proposal-content h3 {
+                font-size: 1.125rem;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -89,8 +285,70 @@
         <!-- Proposal Content -->
         <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
             <h2 class="text-xl font-semibold text-gray-900 mb-4">Proposal Content</h2>
-            <div class="prose max-w-none">
-                {!! $proposal->content !!}
+            <div class="proposal-content bg-white p-6 border border-gray-200 rounded-lg">
+                @php
+                    // Process template variables in the content for public view
+                    $processedContent = $proposal->content;
+
+                    // Get client data for replacements
+                    $clientData = [];
+                    if ($proposal->lead) {
+                        $clientData = [
+                            'client_name' => $proposal->lead->name ?? '',
+                            'client_email' => $proposal->lead->email ?? '',
+                            'client_address' => $proposal->lead->address ?? '',
+                            'client_company_number' => $proposal->lead->company_number ?? '',
+                            'company_name' => $proposal->lead->company ?? '',
+                            'company_number' => $proposal->lead->company_number ?? '',
+                            'company_address' => $proposal->lead->address ?? '',
+                        ];
+                    } elseif ($proposal->customer) {
+                        $clientData = [
+                            'client_name' => $proposal->customer->name ?? '',
+                            'client_email' => $proposal->customer->email ?? '',
+                            'client_address' => $proposal->customer->address ?? '',
+                            'client_company_number' => $proposal->customer->company_number ?? '',
+                            'company_name' => $proposal->customer->company ?? $proposal->customer->name ?? '',
+                            'company_number' => $proposal->customer->company_number ?? '',
+                            'company_address' => $proposal->customer->address ?? '',
+                        ];
+                    } elseif ($proposal->client_name) {
+                        $clientData = [
+                            'client_name' => $proposal->client_name ?? '',
+                            'client_email' => $proposal->client_email ?? '',
+                            'client_address' => '',
+                            'client_company_number' => '',
+                            'company_name' => $proposal->client_name ?? '',
+                            'company_number' => '',
+                            'company_address' => '',
+                        ];
+                    }
+
+                    // Add proposal data
+                    $proposalData = [
+                        'proposal_title' => $proposal->title ?? '',
+                        'amount' => $proposal->amount ? '$' . number_format($proposal->amount, 2) : '',
+                        'date' => now()->format('F j, Y'),
+                        'valid_until' => $proposal->valid_until ? $proposal->valid_until->format('F j, Y') : '',
+                    ];
+
+                    // Split names for first/last name variables
+                    if (isset($clientData['client_name'])) {
+                        $nameParts = explode(' ', $clientData['client_name'], 2);
+                        $clientData['first_name'] = $nameParts[0] ?? '';
+                        $clientData['last_name'] = $nameParts[1] ?? '';
+                    }
+
+                    // Merge all data
+                    $allData = array_merge($clientData, $proposalData);
+
+                    // Replace variables in content
+                    foreach ($allData as $key => $value) {
+                        $placeholder = '{{' . $key . '}}';
+                        $processedContent = str_replace($placeholder, $value, $processedContent);
+                    }
+                @endphp
+                {!! $processedContent !!}
             </div>
         </div>
 

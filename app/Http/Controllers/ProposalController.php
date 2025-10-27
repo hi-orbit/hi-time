@@ -70,11 +70,14 @@ class ProposalController extends Controller
             'post_data' => $_POST,
         ]);
 
-        Log::info('ProposalController store method called:', [
-            'request_method' => $request->method(),
+        Log::info('ProposalController@store called', [
+            'method' => $request->method(),
             'request_uri' => $request->getRequestUri(),
             'request_data_keys' => array_keys($request->all()),
             'content_length' => strlen($request->get('content', '')),
+            'content_preview' => substr($request->get('content', ''), 0, 200),
+            'status' => $request->get('status'),
+            'title' => $request->get('title'),
             'user_id' => Auth::id(),
             'user_authenticated' => Auth::check(),
             'csrf_token' => $request->get('_token'),
@@ -133,6 +136,14 @@ class ProposalController extends Controller
         $validated['created_by'] = Auth::id();
 
         $proposal = Proposal::create($validated);
+
+        Log::info('Proposal created successfully', [
+            'proposal_id' => $proposal->id,
+            'status' => $proposal->status,
+            'content_length' => strlen($proposal->content),
+            'content_preview' => substr($proposal->content, 0, 200),
+            'title' => $proposal->title
+        ]);
 
         // If status is 'sent', automatically send the proposal email
         if ($status === 'sent') {
@@ -202,30 +213,99 @@ class ProposalController extends Controller
      */
     public function update(Request $request, Proposal $proposal)
     {
+        Log::info('ProposalController@update called', [
+            'proposal_id' => $proposal->id,
+            'method' => $request->method(),
+            'request_data_keys' => array_keys($request->all()),
+            'content_length' => strlen($request->get('content', '')),
+            'status' => $request->get('status'),
+            'title' => $request->get('title'),
+            'lead_id' => $request->get('lead_id'),
+            'customer_id' => $request->get('customer_id'),
+            'client_name' => $request->get('client_name'),
+            'client_email' => $request->get('client_email'),
+        ]);
+
         if (!$proposal->canBeEdited()) {
             return redirect()->route('proposals.show', $proposal)
                 ->with('error', 'This proposal cannot be edited in its current status.');
         }
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'lead_id' => 'nullable|exists:leads,id',
-            'customer_id' => 'nullable|exists:customers,id',
-            'template_id' => 'nullable|exists:proposal_templates,id',
-            'content' => 'required|string',
-            'amount' => 'nullable|numeric|min:0',
-            'terms' => 'nullable|string',
-            'recipient_email' => 'required|email',
-        ]);
+        try {
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'lead_id' => 'nullable|exists:leads,id',
+                'customer_id' => 'nullable|exists:customers,id',
+                'template_id' => 'nullable|exists:proposal_templates,id',
+                'content' => 'required|string',
+                'amount' => 'nullable|numeric|min:0',
+                'valid_until' => 'nullable|date',
+                'status' => 'nullable|in:draft,sent',
+                'terms' => 'nullable|string',
+                'client_name' => 'nullable|string|max:255',
+                'client_email' => 'nullable|email',
+            ]);
 
-        // Ensure either lead_id or customer_id is provided, but not both
-        if ((!$validated['lead_id'] && !$validated['customer_id']) ||
-            ($validated['lead_id'] && $validated['customer_id'])) {
-            return back()->withErrors(['recipient' => 'Please select either a lead or a customer, but not both.']);
+            Log::info('Proposal update validation passed:', ['validated_keys' => array_keys($validated)]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Proposal update validation failed:', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            return back()->withErrors($e->errors())->withInput();
         }
 
+        // Set status based on which button was clicked
+        $status = $request->input('status', $proposal->status); // Keep existing status if not specified
+        $validated['status'] = $status;
+
+        // Ensure either lead_id, customer_id, or manual client info is provided
+        if (!$validated['lead_id'] && !$validated['customer_id'] && !$validated['client_name']) {
+            return back()->withErrors(['recipient' => 'Please select a lead, customer, or enter client information manually.'])->withInput();
+        }
+
+        // If both lead and customer are selected, prefer lead
+        if ($validated['lead_id'] && $validated['customer_id']) {
+            $validated['customer_id'] = null;
+        }
+
+        // Get recipient email from lead/customer or manual entry
+        if ($validated['lead_id']) {
+            $lead = \App\Models\Lead::find($validated['lead_id']);
+            if (!$lead || !$lead->email) {
+                return back()->withErrors(['lead_id' => 'Selected lead does not have a valid email address.'])->withInput();
+            }
+            $validated['recipient_email'] = $lead->email;
+        } elseif ($validated['customer_id']) {
+            $customer = \App\Models\Customer::find($validated['customer_id']);
+            if (!$customer || !$customer->email) {
+                return back()->withErrors(['customer_id' => 'Selected customer does not have a valid email address.'])->withInput();
+            }
+            $validated['recipient_email'] = $customer->email;
+        } else {
+            // Manual client info - validate client_email is provided
+            if (!$validated['client_email']) {
+                return back()->withErrors(['client_email' => 'Client email is required when entering manual client information.'])->withInput();
+            }
+            $validated['recipient_email'] = $validated['client_email'];
+        }
+
+        Log::info('About to update proposal', [
+            'proposal_id' => $proposal->id,
+            'recipient_email' => $validated['recipient_email'],
+            'content_length' => strlen($validated['content']),
+            'status' => $validated['status']
+        ]);
+
         $proposal->update($validated);
+
+        Log::info('Proposal updated successfully', [
+            'proposal_id' => $proposal->id,
+            'status' => $proposal->status,
+            'recipient_email' => $proposal->recipient_email
+        ]);
 
         return redirect()->route('proposals.show', $proposal)
             ->with('success', 'Proposal updated successfully.');

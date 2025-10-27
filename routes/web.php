@@ -47,8 +47,16 @@ Route::middleware(['auth'])->group(function () {
         // Customer entity routes (different from customer role users)
         Route::resource('customers', \App\Http\Controllers\CustomerController::class);
 
-        // Proposal system routes
-        Route::resource('proposals', \App\Http\Controllers\ProposalController::class);
+        // Proposal system routes - explicit routes instead of resource
+        Route::get('/proposals', [\App\Http\Controllers\ProposalController::class, 'index'])->name('proposals.index');
+        Route::get('/proposals/create', [\App\Http\Controllers\ProposalController::class, 'create'])->name('proposals.create');
+        Route::post('/proposals', [\App\Http\Controllers\ProposalController::class, 'store'])->name('proposals.store');
+        Route::get('/proposals/{proposal}', [\App\Http\Controllers\ProposalController::class, 'show'])->name('proposals.show');
+        Route::get('/proposals/{proposal}/edit', [\App\Http\Controllers\ProposalController::class, 'edit'])->name('proposals.edit');
+        Route::put('/proposals/{proposal}', [\App\Http\Controllers\ProposalController::class, 'update'])->name('proposals.update');
+        Route::patch('/proposals/{proposal}', [\App\Http\Controllers\ProposalController::class, 'update'])->name('proposals.patch');
+        Route::delete('/proposals/{proposal}', [\App\Http\Controllers\ProposalController::class, 'destroy'])->name('proposals.destroy');
+
         Route::resource('leads', \App\Http\Controllers\LeadController::class);
         Route::resource('proposal-templates', \App\Http\Controllers\ProposalTemplateController::class);
 

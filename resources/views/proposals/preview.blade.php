@@ -403,25 +403,6 @@
                             }
                         @endphp
 
-                        <!-- Debug Information (remove after testing) -->
-                        @if(config('app.debug'))
-                        <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                            <h4 class="text-sm font-medium text-yellow-800 mb-2">Debug Info (will be removed):</h4>
-                            <div class="text-xs text-yellow-700">
-                                <p><strong>Original content length:</strong> {{ strlen($proposal->content) }} characters</p>
-                                <p><strong>Processed content length:</strong> {{ strlen($processedContent) }} characters</p>
-                                <p><strong>Available replacements:</strong></p>
-                                <ul class="ml-4">
-                                    @foreach($replacements as $key => $value)
-                                        <li>{{ $key }} → {{ $value }}</li>
-                                    @endforeach
-                                </ul>
-                                <p><strong>First 200 chars of original:</strong> {{ substr($proposal->content, 0, 200) }}...</p>
-                                <p><strong>First 200 chars of processed:</strong> {{ substr($processedContent, 0, 200) }}...</p>
-                            </div>
-                        </div>
-                        @endif
-
                         <div class="prose prose-lg max-w-none
                                     prose-headings:text-gray-900
                                     prose-h1:text-3xl prose-h1:font-bold prose-h1:mb-6 prose-h1:mt-8

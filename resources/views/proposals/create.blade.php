@@ -403,11 +403,40 @@ Your Company Name`,
         document.getElementById('valid_until').value = '2025-08-31';
     }
 
-    // Update hidden textarea when editor content changes
+    // Update hidden textarea when editor content changes - IMPROVED VERSION
     sunEditor.onChange = function(contents) {
-        contentTextarea.value = contents;
+        // More aggressive syncing
+        setTimeout(() => {
+            contentTextarea.value = contents;
+            console.log('onChange - Editor length:', contents.length, 'Textarea length:', contentTextarea.value.length);
+        }, 0);
         updatePreview(contents);
     };
+
+    // Also update on blur and focus events for extra safety
+    sunEditor.onBlur = function(event, contents) {
+        setTimeout(() => {
+            contentTextarea.value = contents;
+            console.log('onBlur - Editor length:', contents.length, 'Textarea length:', contentTextarea.value.length);
+        }, 0);
+    };
+
+    // Add additional sync on input event
+    sunEditor.onInput = function(contents) {
+        setTimeout(() => {
+            contentTextarea.value = contents;
+            console.log('onInput - Editor length:', contents.length, 'Textarea length:', contentTextarea.value.length);
+        }, 0);
+    };
+
+    // Periodic sync every 2 seconds as backup
+    setInterval(() => {
+        const currentContent = sunEditor.getContents();
+        if (currentContent !== contentTextarea.value) {
+            contentTextarea.value = currentContent;
+            console.log('Periodic sync - Content synced, length:', currentContent.length);
+        }
+    }, 2000);
 
     // Handle lead/customer selection
     function updateClientSelection() {
@@ -536,25 +565,28 @@ Your Company Name`,
         });
     }
 
-    // Handle submit button clicks - sync editor content to hidden field
+    // Handle submit button clicks - SIMPLIFIED and more reliable
     const form = document.querySelector('form');
     const submitButtons = form.querySelectorAll('button[type="submit"]');
 
     submitButtons.forEach(button => {
         button.addEventListener('click', function(e) {
-            // Sync editor content to hidden textarea before form submission
             const editorContent = sunEditor.getContents();
             contentTextarea.value = editorContent;
 
             // Simple validation - only prevent if content is truly empty
-            if (!editorContent || editorContent.trim() === '') {
+            if (!editorContent || editorContent.trim() === '' || editorContent.trim() === '<p><br></p>') {
                 e.preventDefault();
                 alert('Please enter proposal content before submitting.');
                 return false;
             }
-
-            // Let the form submit naturally - no interference with form submission
         });
+    });
+
+    // Backup form submission handler for final content sync
+    form.addEventListener('submit', function(e) {
+        const editorContent = sunEditor.getContents();
+        contentTextarea.value = editorContent;
     });
 
     // Initialize

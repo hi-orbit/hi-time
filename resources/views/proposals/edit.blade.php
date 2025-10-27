@@ -486,12 +486,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const editorContent = sunEditor.getContents();
             contentTextarea.value = editorContent;
 
-            if (!editorContent || editorContent.trim() === '') {
+            if (!editorContent || editorContent.trim() === '' || editorContent.trim() === '<p><br></p>') {
                 e.preventDefault();
                 alert('Please enter proposal content before submitting.');
                 return false;
             }
         });
+    });
+
+    // Add form submit event listener for final content sync
+    form.addEventListener('submit', function(e) {
+        const editorContent = sunEditor.getContents();
+        contentTextarea.value = editorContent;
     });
 
     // Initialize
