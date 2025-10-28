@@ -1,4 +1,4 @@
-<div class="py-12" x-data="timeTrackingData()">
+<div class="py-12 time-tracking-section" x-data="timeTrackingData()" data-time-tracking>
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6 bg-white border-b border-gray-200">
@@ -53,9 +53,9 @@
                 @endif
 
                 <!-- Time Entry Forms -->
-                <div class="grid gap-6 md:grid-cols-2">
+                <div class="grid gap-6 md:grid-cols-2 time-entry-form" data-time-tracking>
                     <!-- Start Timer -->
-                    <div class="bg-gray-50 rounded-lg p-6">
+                    <div class="bg-gray-50 rounded-lg p-6 time-controls">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Start Timer</h3>
                         <form wire:submit.prevent="startTimer">
                             <div class="mb-4">
@@ -103,7 +103,7 @@
                     </div>
 
                     <!-- Manual Time Entry -->
-                    <div class="bg-gray-50 rounded-lg p-6">
+                    <div class="bg-gray-50 rounded-lg p-6 time-controls">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Add Note & Log Time</h3>
                         <form wire:submit.prevent="logManualTime">
                             <div class="mb-4">
@@ -147,17 +147,17 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Time Duration</label>
 
                                 <!-- Manual Hours/Minutes Entry -->
-                                <div class="grid grid-cols-2 gap-4 mb-3">
+                                <div class="grid grid-cols-2 gap-4 mb-3 time-input">
                                     <div>
                                         <label for="hours" class="block text-sm text-gray-600 mb-1">Hours</label>
                                         <input wire:model="hours" type="number" id="hours" min="0" max="23" placeholder="0"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                               class="time-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                         @error('hours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                     </div>
                                     <div>
                                         <label for="minutes" class="block text-sm text-gray-600 mb-1">Minutes</label>
                                         <input wire:model="minutes" type="number" id="minutes" min="0" max="59" placeholder="0"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                               class="time-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                         @error('minutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                     </div>
                                 </div>
@@ -170,17 +170,17 @@
                                 </div>
 
                                 <!-- Start/End Time Entry -->
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-2 gap-4 time-input">
                                     <div>
                                         <label for="start-time" class="block text-sm text-gray-600 mb-1">Start Time</label>
                                         <input wire:model="startTime" type="text" id="start-time"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                               class="time-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                         @error('startTime') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                     </div>
                                     <div>
                                         <label for="end-time" class="block text-sm text-gray-600 mb-1">End Time</label>
                                         <input wire:model="endTime" type="text" id="end-time"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                               class="time-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                         @error('endTime') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                     </div>
                                 </div>
@@ -201,7 +201,7 @@
                 </div>
 
                 <!-- Enhanced Timeline Visualization -->
-                <div class="mt-8">
+                <div class="mt-8 time-tracking-section" data-time-tracking>
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">📊 Timeline for {{ \Carbon\Carbon::parse($selectedDate)->format('M j, Y') }}</h3>
 
                     <!-- Date Picker -->
@@ -210,7 +210,7 @@
                         <input wire:model.live="selectedDate"
                                type="date"
                                id="timeline-date"
-                               class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                               class="time-input px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                     </div>
 
                     <!-- Timeline Chart using Timeline Library -->
@@ -231,7 +231,7 @@
 
                 <!-- Recent Time Entries Table -->
                 @if($recentEntries->count() > 0)
-                    <div class="mt-8">
+                    <div class="mt-8 time-tracking-section" data-time-tracking>
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Time Entries</h3>
 
                         <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200">
@@ -242,7 +242,7 @@
                                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
                                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
                                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider duration-display">Duration</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End</th>
@@ -283,14 +283,14 @@
                                             </td>
 
                                             <!-- Duration -->
-                                            <td class="px-3 py-3 text-sm text-gray-500">
+                                            <td class="px-3 py-3 text-sm text-gray-500 duration-display">
                                                 @if($editingTimeEntry === $entry->id)
                                                     <div class="flex items-center">
                                                         <input type="number"
                                                                wire:model="editDuration"
                                                                step="0.25"
                                                                min="0.01"
-                                                               class="w-14 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                               class="time-input w-14 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                                         <span class="text-xs text-gray-400 ml-1">min</span>
                                                     </div>
                                                 @else
@@ -313,9 +313,9 @@
                                                 @if($editingTimeEntry === $entry->id)
                                                     <input type="time"
                                                            wire:model="editStartTime"
-                                                           class="w-16 px-1 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                           class="time-input w-16 px-1 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                                 @else
-                                                    {{ $entry->start_time ? \Carbon\Carbon::parse($entry->start_time)->format('H:i') : '-' }}
+                                                    <span class="duration-display">{{ $entry->start_time ? \Carbon\Carbon::parse($entry->start_time)->format('H:i') : '-' }}</span>
                                                 @endif
                                             </td>
 
@@ -324,9 +324,9 @@
                                                 @if($editingTimeEntry === $entry->id)
                                                     <input type="time"
                                                            wire:model="editEndTime"
-                                                           class="w-16 px-1 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                           class="time-input w-16 px-1 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                                 @else
-                                                    {{ $entry->end_time ? \Carbon\Carbon::parse($entry->end_time)->format('H:i') : '-' }}
+                                                    <span class="duration-display">{{ $entry->end_time ? \Carbon\Carbon::parse($entry->end_time)->format('H:i') : '-' }}</span>
                                                 @endif
                                             </td>
 

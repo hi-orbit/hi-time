@@ -52,6 +52,28 @@
                     </div>
                 </div>
 
+                @if(!auth()->user()->isCustomer())
+                <!-- Screen Sharing Settings Card -->
+                <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <div class="p-6">
+                        <div class="flex items-center mb-4">
+                            <div class="bg-purple-100 p-3 rounded-lg mr-4">
+                                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">Screen Sharing</h3>
+                                <p class="text-gray-600 text-sm">Privacy settings for client calls</p>
+                            </div>
+                        </div>
+                        <a href="{{ route('settings.screen-sharing') }}" class="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700 focus:bg-purple-700 active:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            Configure Privacy
+                        </a>
+                    </div>
+                </div>
+                @endif
+
                 <!-- Placeholder for future settings -->
                 <div class="bg-gray-50 border border-gray-200 rounded-lg shadow-sm">
                     <div class="p-6">

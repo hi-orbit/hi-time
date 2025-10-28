@@ -6,13 +6,13 @@
 
     @if(!auth()->user()->isCustomer())
         <!-- Total time tracked section -->
-        <div class="time-tracked-section">
+        <div class="time-tracked-section duration-display time-tracking-section" data-time-tracking="true">
             <h2>Total Time Tracked</h2>
             <p>{{ $project->total_time_tracked }}</p>
         </div>
 
         <!-- Recent time entries section -->
-        <div class="recent-entries-section">
+        <div class="recent-entries-section time-tracking-section" data-time-tracking="true">
             <h2>Recent Time Entries</h2>
             <ul>
                 @foreach($project->recentTimeEntries as $entry)

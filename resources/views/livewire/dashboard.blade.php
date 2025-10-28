@@ -27,7 +27,7 @@ x-on:error.window="showMessage = true; message = $event.detail; messageType = 'e
                             <div class="space-y-3">
                                 @if(!auth()->user()->isCustomer())
                                     <a href="{{ route('time-tracking.index') }}"
-                                       class="block w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center py-3 px-4 rounded-md font-medium">
+                                       class="time-tracking-nav block w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center py-3 px-4 rounded-md font-medium" data-time-tracking>
                                         ⏱️ Start Time Tracking
                                     </a>
                                 @endif
@@ -37,7 +37,7 @@ x-on:error.window="showMessage = true; message = $event.detail; messageType = 'e
                                 </a>
                                 @if(!auth()->user()->isCustomer())
                                     <a href="{{ route('reports.index') }}"
-                                       class="block w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-center py-3 px-4 rounded-md font-medium">
+                                       class="reports-nav block w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-center py-3 px-4 rounded-md font-medium" data-time-tracking>
                                         📊 View Reports
                                     </a>
                                 @endif
@@ -46,7 +46,7 @@ x-on:error.window="showMessage = true; message = $event.detail; messageType = 'e
 
                         @if(!auth()->user()->isCustomer())
                             <!-- Running Timers -->
-                            <div>
+                            <div class="time-tracking-section" data-time-tracking>
                                 <h3 class="text-lg font-semibold text-gray-900 mb-4">⏱️ Running Timers</h3>
                                 @if($runningTimeEntries->count() > 0)
                                     <div class="border border-gray-200 rounded-lg divide-y divide-gray-100">
@@ -77,7 +77,7 @@ x-on:error.window="showMessage = true; message = $event.detail; messageType = 'e
                                                                 @endif
                                                             @endif
                                                             <p>Started: {{ $entry->start_time->format('H:i') }}</p>
-                                                            <p class="font-medium text-green-600">{{ $entry->formatted_decimal_hours }}</p>
+                                                            <p class="font-medium text-green-600 duration-display">{{ $entry->formatted_decimal_hours }}</p>
                                                         </div>
                                                         @if($entry->description)
                                                             <p class="text-xs text-gray-600 mt-1 truncate">{{ $entry->description }}</p>
@@ -158,13 +158,13 @@ x-on:error.window="showMessage = true; message = $event.detail; messageType = 'e
                                                             <div class="flex items-center space-x-2">
                                                                 @if(!auth()->user()->isCustomer())
                                                                     @if($task->isRunning())
-                                                                        <span class="flex items-center text-green-600 text-xs font-medium">
+                                                                        <span class="flex items-center text-green-600 text-xs font-medium duration-display" data-time-tracking>
                                                                             <div class="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
                                                                             Running
                                                                         </span>
                                                                     @else
                                                                         <button onclick="event.preventDefault(); event.stopPropagation(); window.location.href='{{ route('time-tracking.index') }}?task={{ $task->id }}'"
-                                                                                class="text-indigo-600 hover:text-indigo-900 text-xs font-medium px-2 py-1 rounded border border-indigo-200 hover:border-indigo-300 transition-colors">
+                                                                                class="time-controls text-indigo-600 hover:text-indigo-900 text-xs font-medium px-2 py-1 rounded border border-indigo-200 hover:border-indigo-300 transition-colors" data-time-tracking>
                                                                             Start Timer
                                                                         </button>
                                                                     @endif

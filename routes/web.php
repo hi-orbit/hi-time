@@ -76,6 +76,11 @@ Route::middleware(['auth'])->group(function () {
         // Lead conversion
         Route::post('/leads/{lead}/convert', [\App\Http\Controllers\LeadController::class, 'convert'])->name('leads.convert');
 
+        // Screen sharing settings route
+        Route::get('/settings/screen-sharing', function () {
+            return view('settings.screen-sharing');
+        })->name('settings.screen-sharing');
+
         // Reports routes
         Route::get('/reports', [\App\Http\Controllers\ReportsController::class, 'index'])->name('reports.index');
         Route::get('/reports/time-by-customer-this-month', [\App\Http\Controllers\ReportsController::class, 'timeByCustomerThisMonth'])->name('reports.time-by-customer-this-month');

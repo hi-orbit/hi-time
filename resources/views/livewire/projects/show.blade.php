@@ -174,7 +174,7 @@
                         @endif
                         @if(auth()->user()->isAdmin() || auth()->user()->isUser())
                             <button wire:click="openTimeModal()"
-                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium">
+                                    class="time-controls bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium" data-time-tracking>
                                 + Log General Time
                             </button>
                         @endif
@@ -224,17 +224,18 @@
 
                 @if(!Auth::user()->isCustomer())
                 <!-- Timeline Section -->
-                <div class="mb-4">
+                <div class="mb-4 time-tracking-section" data-time-tracking="true">
                     <div class="bg-white border border-gray-200 rounded-lg shadow-sm" style="overflow: visible;">
                         <button wire:click="toggleTimeline"
-                                class="flex items-center justify-between w-full text-left hover:bg-gray-50 px-4 py-2 transition-colors">
+                                class="flex items-center justify-between w-full text-left hover:bg-gray-50 px-4 py-2 transition-colors time-controls"
+                                data-time-tracking="true">
                             <div class="flex items-center space-x-2">
                                 <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                                 </svg>
                                 <span class="text-sm font-medium text-gray-700">Timeline</span>
                                 @if(count($timelineData['entries'] ?? []) > 0)
-                                    <span class="text-xs text-gray-500">({{ count($timelineData['entries']) }} {{ Str::plural('entry', count($timelineData['entries'])) }})</span>
+                                    <span class="text-xs text-gray-500 duration-display">({{ count($timelineData['entries']) }} {{ Str::plural('entry', count($timelineData['entries'])) }})</span>
                                 @endif
                             </div>
                             <svg class="w-4 h-4 text-gray-500 transition-transform transform {{ $showTimeline ? 'rotate-180' : '' }}"
@@ -244,7 +245,8 @@
                         </button>
 
                         @if($showTimeline)
-                            <div class="border-t border-gray-200 px-4 py-3"
+                            <div class="border-t border-gray-200 px-4 py-3 time-tracking-section"
+                                 data-time-tracking="true"
                                  x-show="true"
                                  x-transition:enter="transition ease-out duration-200"
                                  x-transition:enter-start="opacity-0"
@@ -255,7 +257,7 @@
 
                                 <!-- Compact Timeline Chart -->
                                 @if(count($timelineData['entries'] ?? []) > 0)
-                                    <div class="compact-timeline-wrapper">
+                                    <div class="compact-timeline-wrapper time-tracking-section" data-time-tracking="true">
                                         <style>
                                             .compact-timeline-wrapper .timeline-chart-container {
                                                 /* Hide the header/title */
@@ -591,7 +593,7 @@
 
     <!-- Log Time Modal -->
     @if($showTimeModal)
-        <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 time-entry-form" data-time-tracking>
             <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
                 <div class="mt-3">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">
@@ -630,17 +632,17 @@
                             <!-- Manual Hours/Minutes Entry -->
                             <div class="mb-4">
                                 <label class="block text-sm text-gray-600 mb-2">Manual Entry</label>
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-2 gap-4 time-input">
                                     <div>
                                         <label for="hours" class="block text-sm text-gray-600 mb-1">Hours <span class="text-gray-500 text-xs">(optional)</span></label>
                                         <input wire:model="hours" type="number" id="hours" min="0" max="23" placeholder="0"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                               class="time-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                         @error('hours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                     </div>
                                     <div>
                                         <label for="minutes" class="block text-sm text-gray-600 mb-1">Minutes</label>
                                         <input wire:model="minutes" type="number" id="minutes" min="0" max="59" placeholder="0"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                               class="time-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                         @error('minutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                     </div>
                                 </div>
@@ -656,17 +658,17 @@
                             <!-- Start/End Time Entry -->
                             <div class="mb-4">
                                 <label class="block text-sm text-gray-600 mb-2">Start/End Time Entry</label>
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-2 gap-4 time-input">
                                     <div>
                                         <label for="startTime" class="block text-sm text-gray-600 mb-1">Start Time</label>
                                         <input wire:model="startTime" type="text" id="startTime" placeholder="HH:MM"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                               class="time-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                         @error('startTime') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                     </div>
                                     <div>
                                         <label for="endTime" class="block text-sm text-gray-600 mb-1">End Time</label>
                                         <input wire:model="endTime" type="text" id="endTime" placeholder="HH:MM"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                               class="time-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                         @error('endTime') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                     </div>
                                 </div>
@@ -678,7 +680,7 @@
                                 Cancel
                             </button>
                             <button type="submit"
-                                    class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                                    class="time-controls px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
                                 Log Time
                             </button>
                         </div>
@@ -724,12 +726,12 @@
 
                             @if($hasRunningTimer)
                                 <button wire:click="stopTimer({{ $selectedTask->id }})"
-                                        class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium">
+                                        class="time-controls bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium" data-time-tracking>
                                     ⏹ Stop Timer
                                 </button>
                             @else
                                 <button wire:click="startTimer({{ $selectedTask->id }})"
-                                        class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium">
+                                        class="time-controls bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium" data-time-tracking>
                                     ▶ Start Timer
                                 </button>
                             @endif
@@ -860,7 +862,7 @@
                                 </div>
 
                                 @if(!auth()->user()->isCustomer())
-                                    <div>
+                                    <div class="duration-display time-tracking-section" data-time-tracking="true">
                                         <label class="text-sm font-medium text-gray-700">Total time tracked:</label>
                                         <p class="text-sm text-gray-900 mt-1">{{ number_format(($selectedTask->getTotalTimeFromNotesAttribute() + $selectedTask->total_time) / 60, 1) }}h</p>
                                     </div>
@@ -897,19 +899,19 @@
                                     </div>
 
                                     @if(!auth()->user()->isCustomer())
-                                        <div class="mb-3">
+                                        <div class="mb-3 time-entry-form" data-time-tracking>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">Time spent (optional)</label>
 
                                             <!-- Manual Hours/Minutes Entry -->
-                                            <div class="grid grid-cols-2 gap-4 mb-3">
+                                            <div class="grid grid-cols-2 gap-4 mb-3 time-input">
                                                 <div>
                                                     <input wire:model="newNoteHours" type="number" min="0" max="23" placeholder="0"
-                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                                           class="time-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                                     @error('newNoteHours') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                                 </div>
                                                 <div>
                                                     <input wire:model="newNoteMinutes" type="number" min="0" max="59" placeholder="0"
-                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                                           class="time-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                                     @error('newNoteMinutes') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                                 </div>
                                             </div>
@@ -922,15 +924,15 @@
                                             </div>
 
                                             <!-- Start/End Time Entry -->
-                                            <div class="grid grid-cols-2 gap-4">
+                                            <div class="grid grid-cols-2 gap-4 time-input">
                                                 <div>
                                                     <input wire:model="newNoteStartTime" type="text" placeholder="Start time"
-                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                                           class="time-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                                     @error('newNoteStartTime') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                                 </div>
                                                 <div>
                                                     <input wire:model="newNoteEndTime" type="text" placeholder="End time"
-                                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                                           class="time-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                                     @error('newNoteEndTime') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                                 </div>
                                             </div>
@@ -961,7 +963,7 @@
                                                                 <p class="text-sm font-medium text-gray-900">{{ $note->user->name }}</p>
                                                                 <p class="text-xs text-gray-500">{{ $note->created_at->format('M j, Y H:i') }}</p>
                                                                 @if(!auth()->user()->isCustomer() && $note->total_minutes)
-                                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 duration-display time-tracking-section" data-time-tracking="true">
                                                                         {{ $note->formatted_time }}
                                                                     </span>
                                                                 @endif

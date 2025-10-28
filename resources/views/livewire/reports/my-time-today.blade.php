@@ -1,8 +1,8 @@
-<div class="py-12" x-data="{
+<div class="py-12 time-tracking-section" x-data="{
     showMessage: false,
     message: '',
     messageType: 'success'
-}"
+}" data-time-tracking>
 x-on:success.window="showMessage = true; message = $event.detail; messageType = 'success'; setTimeout(() => showMessage = false, 3000)"
 x-on:error.window="showMessage = true; message = $event.detail; messageType = 'error'; setTimeout(() => showMessage = false, 5000)">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">

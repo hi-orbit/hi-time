@@ -19,6 +19,40 @@
 
     <!-- Custom Styles Stack -->
     @stack('styles')
+    
+    <!-- Time Tracking Privacy Mode Styles -->
+    <style>
+        /* Hide time tracking elements when privacy mode is active */
+        .hide-time-tracking .time-tracking-nav,
+        .hide-time-tracking .reports-nav,
+        .hide-time-tracking .time-input,
+        .hide-time-tracking .time-controls,
+        .hide-time-tracking .duration-display,
+        .hide-time-tracking .time-entry-form,
+        .hide-time-tracking .time-tracking-section,
+        .hide-time-tracking [data-time-tracking],
+        .hide-time-tracking .livewire-time-tracking {
+            display: none !important;
+        }
+        
+        /* Optional: Add a subtle indicator when privacy mode is active */
+        .hide-time-tracking::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #8B5CF6, #A855F7, #C084FC);
+            z-index: 9999;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+    </style>
 
     <!-- Simple Browser Notifications -->
     <script>
@@ -316,16 +350,21 @@
                                 <a href="{{ route('proposals.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('proposals.*') || request()->routeIs('leads.*') || request()->routeIs('proposal-templates.*') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
                                     Proposals
                                 </a>
-                                <a href="{{ route('time-tracking.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('time-tracking.*') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                                <a href="{{ route('time-tracking.index') }}" class="time-tracking-nav inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('time-tracking.*') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
                                     Time Tracking
                                 </a>
-                                <a href="{{ route('reports.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('reports.*') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                                <a href="{{ route('reports.index') }}" class="reports-nav inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('reports.*') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
                                     Reports
                                 </a>
                                 @endif
                                 @if(auth()->user()->isAdmin())
                                 <a href="{{ route('settings.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('settings.*') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
                                     Settings
+                                </a>
+                                @endif
+                                @if(!auth()->user()->isCustomer() && !auth()->user()->isAdmin())
+                                <a href="{{ route('settings.screen-sharing') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('settings.screen-sharing') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                                    Privacy
                                 </a>
                                 @endif
                             </div>
@@ -361,5 +400,35 @@
 
     <!-- Custom Scripts Stack -->
     @stack('scripts')
+    
+    <!-- Time Tracking Privacy Mode Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Apply time tracking privacy setting on page load
+            function applyTimeTrackingPrivacy() {
+                const hideTimeTracking = localStorage.getItem('hideTimeTracking') === 'true';
+                if (hideTimeTracking) {
+                    document.body.classList.add('hide-time-tracking');
+                } else {
+                    document.body.classList.remove('hide-time-tracking');
+                }
+            }
+            
+            // Apply setting immediately
+            applyTimeTrackingPrivacy();
+            
+            // Listen for changes to the setting (from settings page)
+            window.addEventListener('timeTrackingVisibilityChanged', function(event) {
+                applyTimeTrackingPrivacy();
+            });
+            
+            // Listen for localStorage changes from other tabs
+            window.addEventListener('storage', function(event) {
+                if (event.key === 'hideTimeTracking') {
+                    applyTimeTrackingPrivacy();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
