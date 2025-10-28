@@ -115,26 +115,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update status display
     function updateStatus(isEnabled) {
-        statusMessage.className = isEnabled 
+        statusMessage.className = isEnabled
             ? 'p-4 rounded-lg bg-green-50 border border-green-200'
             : 'p-4 rounded-lg bg-gray-50 border border-gray-200';
-        
-        statusIcon.className = isEnabled 
+
+        statusIcon.className = isEnabled
             ? 'h-5 w-5 text-green-400'
             : 'h-5 w-5 text-gray-400';
-        
-        statusIcon.innerHTML = isEnabled 
+
+        statusIcon.innerHTML = isEnabled
             ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>'
             : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>';
-        
-        statusText.className = isEnabled 
+
+        statusText.className = isEnabled
             ? 'text-sm font-medium text-green-800'
             : 'text-sm font-medium text-gray-800';
-        
-        statusText.textContent = isEnabled 
+
+        statusText.textContent = isEnabled
             ? 'Privacy mode is active - Time tracking elements are hidden'
             : 'Privacy mode is disabled - All elements are visible';
-        
+
         statusMessage.classList.remove('hidden');
     }
 
@@ -152,10 +152,10 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('hideTimeTracking', value);
         applyTimeHiding(value);
         updateStatus(value);
-        
+
         // Trigger a custom event for other parts of the app to listen to
-        window.dispatchEvent(new CustomEvent('timeTrackingVisibilityChanged', { 
-            detail: { hidden: value } 
+        window.dispatchEvent(new CustomEvent('timeTrackingVisibilityChanged', {
+            detail: { hidden: value }
         }));
     }
 

@@ -19,7 +19,7 @@
 
     <!-- Custom Styles Stack -->
     @stack('styles')
-    
+
     <!-- Time Tracking Privacy Mode Styles -->
     <style>
         /* Hide time tracking elements when privacy mode is active */
@@ -34,7 +34,7 @@
         .hide-time-tracking .livewire-time-tracking {
             display: none !important;
         }
-        
+
         /* Optional: Add a subtle indicator when privacy mode is active */
         .hide-time-tracking::before {
             content: '';
@@ -47,7 +47,7 @@
             z-index: 9999;
             animation: pulse 2s infinite;
         }
-        
+
         @keyframes pulse {
             0%, 100% { opacity: 0.6; }
             50% { opacity: 1; }
@@ -400,7 +400,7 @@
 
     <!-- Custom Scripts Stack -->
     @stack('scripts')
-    
+
     <!-- Time Tracking Privacy Mode Script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -413,15 +413,15 @@
                     document.body.classList.remove('hide-time-tracking');
                 }
             }
-            
+
             // Apply setting immediately
             applyTimeTrackingPrivacy();
-            
+
             // Listen for changes to the setting (from settings page)
             window.addEventListener('timeTrackingVisibilityChanged', function(event) {
                 applyTimeTrackingPrivacy();
             });
-            
+
             // Listen for localStorage changes from other tabs
             window.addEventListener('storage', function(event) {
                 if (event.key === 'hideTimeTracking') {
