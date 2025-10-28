@@ -526,7 +526,7 @@ function copyProposalLink(url) {
         // Show success notification
         const notification = document.getElementById('copy-success');
         notification.classList.remove('hidden');
-        
+
         // Hide notification after 3 seconds
         setTimeout(function() {
             notification.classList.add('hidden');
