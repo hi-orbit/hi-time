@@ -350,15 +350,31 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     });
 
-    // Set initial content
-    if (contentTextarea.value) {
-        sunEditor.setContents(contentTextarea.value);
+    // Helper to ensure we always work with a string HTML value
+    function ensureStringContent(maybeContent) {
+        if (typeof maybeContent === 'string') return maybeContent;
+        if (!maybeContent) return '';
+        // SunEditor may sometimes provide an object with an html property
+        if (maybeContent.html && typeof maybeContent.html === 'string') return maybeContent.html;
+        try {
+            return JSON.stringify(maybeContent);
+        } catch (e) {
+            return String(maybeContent);
+        }
+    }
+
+    // Set initial content (coerce to string if necessary)
+    const initialContent = ensureStringContent(contentTextarea.value);
+    if (initialContent) {
+        sunEditor.setContents(initialContent);
+        contentTextarea.value = initialContent;
     }
 
     // Update hidden textarea when editor content changes
     sunEditor.onChange = function(contents) {
-        contentTextarea.value = contents;
-        updatePreview(contents);
+        const str = ensureStringContent(contents);
+        contentTextarea.value = str;
+        updatePreview(str);
     };
 
     // Handle lead/customer selection
@@ -423,6 +439,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function performPreviewUpdate(content = null) {
         let editorContent = content || sunEditor.getContents();
+
+        // Ensure editorContent is a plain string before proceeding
+        editorContent = ensureStringContent(editorContent);
 
         if (!editorContent || !editorContent.trim()) {
             contentPreview.innerHTML = '<p class="text-gray-500 italic">Start typing to see preview...</p>';
