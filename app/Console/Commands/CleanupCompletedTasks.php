@@ -24,7 +24,7 @@ class CleanupCompletedTasks extends Command
      * @var string
      */
     protected $description = 'Delete tasks that have been in "Done" status for more than 24 hours
-    
+
     This command is scheduled to run daily at 2 AM. To enable scheduling in production,
     add this to your crontab: * * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1';
 
@@ -58,11 +58,6 @@ class CleanupCompletedTasks extends Command
 
         if ($dryRun) {
             $this->warn('DRY RUN: No tasks were actually deleted. Remove --dry-run flag to perform the deletion.');
-            return Command::SUCCESS;
-        }
-
-        if (!$this->confirm('Are you sure you want to delete these tasks? This action cannot be undone.')) {
-            $this->info('Operation cancelled.');
             return Command::SUCCESS;
         }
 
