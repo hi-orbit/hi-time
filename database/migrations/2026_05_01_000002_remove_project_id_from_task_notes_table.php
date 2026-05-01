@@ -12,8 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('task_notes', function (Blueprint $table) {
-            // Add project_id for general activities associated with a project
-            $table->foreignId('project_id')->nullable()->after('task_id')->constrained()->nullOnDelete();
+            // Drop the foreign key constraint first if it exists
+            if (Schema::hasColumn('task_notes', 'project_id')) {
+                $table->dropForeign(['project_id']);
+                $table->dropColumn('project_id');
+            }
         });
     }
 
@@ -23,8 +26,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('task_notes', function (Blueprint $table) {
-            $table->dropForeign(['project_id']);
-            $table->dropColumn('project_id');
+            // Re-add project_id if needed (for rollback)
+            $table->foreignId('project_id')->nullable()->after('task_id')->constrained()->nullOnDelete();
         });
     }
 };
