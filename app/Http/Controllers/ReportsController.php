@@ -198,7 +198,7 @@ class ReportsController extends Controller
             } else {
                 $customerName = $entry->customer_name ?? 'No Customer';
                 $projectName = $entry->project_name ?? 'Unknown Project';
-                
+
                 // If it's a general activity within a project (no task_id), use activity_type and content
                 if (is_null($entry->task_id)) {
                     $activityType = $entry->activity_type ?? 'General Activity';
@@ -207,7 +207,7 @@ class ReportsController extends Controller
                 } else {
                     $activityDescription = $entry->task_title ?? 'Unknown Activity';
                 }
-                
+
                 $entryType = 'Task Work';
             }
 
