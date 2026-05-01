@@ -73,6 +73,56 @@ class ReportsController extends Controller
     }
 
     /**
+     * Export time by customer - last month to CSV
+     */
+    public function exportTimeByCustomerLastMonthCsv()
+    {
+        $startOfLastMonth = Carbon::now()->subMonth()->startOfMonth();
+        $endOfLastMonth = Carbon::now()->subMonth()->endOfMonth();
+
+        $customerTimeData = $this->getCustomerTimeData($startOfLastMonth, $endOfLastMonth);
+
+        $filename = 'time-by-customer-last-month-' . $startOfLastMonth->format('Y-m') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function() use ($customerTimeData) {
+            $file = fopen('php://output', 'w');
+
+            // Add CSV headers
+            fputcsv($file, ['Customer', 'Project', 'Activity', 'User', 'Date', 'Hours', 'Type']);
+
+            // Add data rows
+            foreach ($customerTimeData['customers'] as $customerData) {
+                foreach ($customerData['projects'] as $projectData) {
+                    foreach ($projectData['entries'] as $entry) {
+                        fputcsv($file, [
+                            $customerData['customer_name'],
+                            $projectData['project_name'],
+                            $entry->activity_description ?? $entry->task_title ?? 'Unknown Activity',
+                            $entry->user_name,
+                            \Carbon\Carbon::parse($entry->entry_date ?? $entry->created_at)->format('Y-m-d'),
+                            number_format($entry->calculated_hours ?? (($entry->total_minutes ?? 0) / 60), 2),
+                            $entry->entry_type ?? 'Task Work'
+                        ]);
+                    }
+                }
+            }
+
+            // Add summary row
+            fputcsv($file, []);
+            fputcsv($file, ['Total Hours', '', '', '', '', number_format($customerTimeData['total_hours'], 2), '']);
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
      * Time by user
      */
     public function timeByUser(Request $request)
@@ -107,7 +157,10 @@ class ReportsController extends Controller
             ])
             ->whereNotNull('task_notes.total_minutes') // Only get entries with time logged
             ->leftJoin('tasks', 'task_notes.task_id', '=', 'tasks.id')
-            ->leftJoin('projects', 'tasks.project_id', '=', 'projects.id')
+            ->leftJoin('projects', function($join) {
+                $join->on('tasks.project_id', '=', 'projects.id')
+                     ->orOn('task_notes.project_id', '=', 'projects.id');
+            })
             ->leftJoin('customers', 'projects.customer_id', '=', 'customers.id')
             ->join('users', 'task_notes.user_id', '=', 'users.id')
             ->where(function($query) use ($startDate, $endDate) {
@@ -126,8 +179,8 @@ class ReportsController extends Controller
         $totalHours = 0;
 
         foreach ($timeEntries as $entry) {
-            // Check if this is a general activity (no task_id)
-            if (is_null($entry->task_id)) {
+            // Check if this is a general activity (no task_id and no project_id)
+            if (is_null($entry->task_id) && empty($entry->project_id)) {
                 $customerName = 'General Activities';
                 $projectName = 'General Activities';
 
@@ -145,7 +198,16 @@ class ReportsController extends Controller
             } else {
                 $customerName = $entry->customer_name ?? 'No Customer';
                 $projectName = $entry->project_name ?? 'Unknown Project';
-                $activityDescription = $entry->task_title ?? 'Unknown Activity';
+                
+                // If it's a general activity within a project (no task_id), use activity_type and content
+                if (is_null($entry->task_id)) {
+                    $activityType = $entry->activity_type ?? 'General Activity';
+                    $content = $entry->content ?? $entry->description ?? '';
+                    $activityDescription = !empty($content) ? $activityType . ': ' . $content : $activityType;
+                } else {
+                    $activityDescription = $entry->task_title ?? 'Unknown Activity';
+                }
+                
                 $entryType = 'Task Work';
             }
 
