@@ -176,21 +176,14 @@ class ReportsController extends Controller
         $totalHours = 0;
 
         foreach ($timeEntries as $entry) {
-            // Check if this is a general activity (no task_id)
-            if (is_null($entry->task_id)) {
-                // General activity - check if it's associated with a project/customer
-                if (!empty($entry->customer_name)) {
-                    // Associated with a project/customer
-                    $customerName = $entry->customer_name;
-                    $projectName = $entry->project_name ?? 'General Activities';
-                } else {
-                    // Not associated with any project/customer
-                    $customerName = 'General Activities';
-                    $projectName = 'General Activities';
-                }
+            // All entries are grouped by their customer/project relationship
+            $customerName = $entry->customer_name ?? 'No Customer';
+            $projectName = $entry->project_name ?? 'Unknown Project';
 
-                // Create a descriptive activity description using activity_type and content
-                $activityType = $entry->activity_type ?? 'General Activity';
+            // Determine activity description and type
+            if (!empty($entry->activity_type)) {
+                // This is a general activity - use activity_type and content
+                $activityType = $entry->activity_type;
                 $content = $entry->content ?? $entry->description ?? '';
 
                 if (!empty($content)) {
@@ -198,11 +191,9 @@ class ReportsController extends Controller
                 } else {
                     $activityDescription = $activityType;
                 }
-
                 $entryType = 'General Activity';
             } else {
-                $customerName = $entry->customer_name ?? 'No Customer';
-                $projectName = $entry->project_name ?? 'Unknown Project';
+                // Regular task work
                 $activityDescription = $entry->task_title ?? 'Unknown Activity';
                 $entryType = 'Task Work';
             }
