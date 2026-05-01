@@ -176,13 +176,14 @@ class ReportsController extends Controller
         $totalHours = 0;
 
         foreach ($timeEntries as $entry) {
-            // Check if entry has no task_id (orphaned general activity)
-            if (is_null($entry->task_id)) {
-                $customerName = 'General Activities';
-                $projectName = 'General Activities';
+            // Group by customer/project from the join relationships
+            $customerName = $entry->customer_name ?? 'No Customer';
+            $projectName = $entry->project_name ?? 'Unknown Project';
 
-                // Use activity_type and content for description
-                $activityType = $entry->activity_type ?? 'General Activity';
+            // Determine activity description and type
+            if (!empty($entry->activity_type)) {
+                // This is a general activity - use activity_type and content
+                $activityType = $entry->activity_type;
                 $content = $entry->content ?? $entry->description ?? '';
 
                 if (!empty($content)) {
@@ -192,27 +193,9 @@ class ReportsController extends Controller
                 }
                 $entryType = 'General Activity';
             } else {
-                // Entry has a task_id, group by customer/project
-                $customerName = $entry->customer_name ?? 'No Customer';
-                $projectName = $entry->project_name ?? 'Unknown Project';
-
-                // Determine activity description and type
-                if (!empty($entry->activity_type)) {
-                    // This is a general activity within a task - use activity_type and content
-                    $activityType = $entry->activity_type;
-                    $content = $entry->content ?? $entry->description ?? '';
-
-                    if (!empty($content)) {
-                        $activityDescription = $activityType . ': ' . $content;
-                    } else {
-                        $activityDescription = $activityType;
-                    }
-                    $entryType = 'General Activity';
-                } else {
-                    // Regular task work
-                    $activityDescription = $entry->task_title ?? 'Unknown Activity';
-                    $entryType = 'Task Work';
-                }
+                // Regular task work
+                $activityDescription = $entry->task_title ?? 'Unknown Activity';
+                $entryType = 'Task Work';
             }
 
             // Calculate hours from total_minutes (primary) or duration_minutes (fallback)
