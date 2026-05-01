@@ -178,8 +178,16 @@ class ReportsController extends Controller
         foreach ($timeEntries as $entry) {
             // Check if this is a general activity (no task_id)
             if (is_null($entry->task_id)) {
-                $customerName = 'General Activities';
-                $projectName = 'General Activities';
+                // General activity - check if it's associated with a project/customer
+                if (!empty($entry->customer_name)) {
+                    // Associated with a project/customer
+                    $customerName = $entry->customer_name;
+                    $projectName = $entry->project_name ?? 'General Activities';
+                } else {
+                    // Not associated with any project/customer
+                    $customerName = 'General Activities';
+                    $projectName = 'General Activities';
+                }
 
                 // Create a descriptive activity description using activity_type and content
                 $activityType = $entry->activity_type ?? 'General Activity';
