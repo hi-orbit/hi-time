@@ -213,6 +213,7 @@ class ReportsController extends Controller
                     $activityDescription = $entry->task_title ?? 'Unknown Activity';
                     $entryType = 'Task Work';
                 }
+            }
 
             // Calculate hours from total_minutes (primary) or duration_minutes (fallback)
             $minutes = $entry->total_minutes ?? $entry->duration_minutes ?? 0;
