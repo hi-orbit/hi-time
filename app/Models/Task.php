@@ -78,7 +78,7 @@ class Task extends Model
     /**
      * Get or create a "General Activities" task for a project.
      * This ensures general time entries maintain the relationship chain to projects and customers.
-     * 
+     *
      * @param int $projectId
      * @return Task
      */
