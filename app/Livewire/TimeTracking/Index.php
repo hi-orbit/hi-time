@@ -204,14 +204,14 @@ class Index extends Component
         if ($activityInfo['type'] === 'task') {
             $taskNoteData['task_id'] = $activityInfo['task_id'];
         } else {
-            // For general activities, we need a project but no specific task
+            // For general activities - use or create a "General Activities" task
             if (!$this->selectedProjectId) {
                 $this->addError('selectedTaskId', 'Please select a project for general activities.');
                 return;
             }
+            $generalTask = Task::getOrCreateGeneralActivitiesTask($this->selectedProjectId);
+            $taskNoteData['task_id'] = $generalTask->id;
             $taskNoteData['activity_type'] = $activityInfo['activity_name'];
-            // We'll need to create a general task or handle this differently
-            // For now, let's create it without a task_id but with activity_type
         }
 
         TaskNote::create($taskNoteData);
@@ -381,11 +381,13 @@ class Index extends Component
             if ($activityInfo['type'] === 'task') {
                 $taskNoteData['task_id'] = $activityInfo['task_id'];
             } else {
-                // For general activities
+                // For general activities - use or create a "General Activities" task
                 if (!$this->selectedProjectId) {
                     $this->addError('selectedTaskId', 'Please select a project for general activities.');
                     return;
                 }
+                $generalTask = Task::getOrCreateGeneralActivitiesTask($this->selectedProjectId);
+                $taskNoteData['task_id'] = $generalTask->id;
                 $taskNoteData['activity_type'] = $activityInfo['activity_name'];
             }
 

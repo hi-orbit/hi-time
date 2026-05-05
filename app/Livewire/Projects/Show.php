@@ -1216,8 +1216,10 @@ class Show extends Component
                 }
 
                 if ($this->isGeneralActivity) {
-                    // For general activities
-                    $taskNoteData['task_id'] = null;
+                    // For general activities - use or create a "General Activities" task
+                    $generalTask = Task::getOrCreateGeneralActivitiesTask($this->project->id);
+                    $taskNoteData['task_id'] = $generalTask->id;
+                    $taskNoteData['activity_type'] = $this->activityType;
                     $taskNoteData['content'] = $this->activityType . ': ' . ($this->timeDescription ?: 'General activity');
                 } else {
                     // For task-specific activities

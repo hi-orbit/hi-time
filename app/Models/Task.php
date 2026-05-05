@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class Task extends Model
 {
@@ -72,5 +73,28 @@ class Task extends Model
     public function isRunning()
     {
         return $this->timeEntries()->where('is_running', true)->exists();
+    }
+
+    /**
+     * Get or create a "General Activities" task for a project.
+     * This ensures general time entries maintain the relationship chain to projects and customers.
+     * 
+     * @param int $projectId
+     * @return Task
+     */
+    public static function getOrCreateGeneralActivitiesTask(int $projectId): Task
+    {
+        return self::firstOrCreate(
+            [
+                'project_id' => $projectId,
+                'title' => 'General Activities',
+            ],
+            [
+                'description' => 'System-generated task for general time entries (meetings, calls, etc.)',
+                'status' => 'active',
+                'created_by' => Auth::id(),
+                'order' => 999999, // Put at the end of the task list
+            ]
+        );
     }
 }
