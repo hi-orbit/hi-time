@@ -91,7 +91,7 @@ class Task extends Model
             ],
             [
                 'description' => 'System-generated task for general time entries (meetings, calls, etc.)',
-                'status' => 'active',
+                'status' => 'general',
                 'created_by' => Auth::id(),
                 'order' => 999999, // Put at the end of the task list
             ]

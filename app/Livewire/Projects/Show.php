@@ -603,7 +603,7 @@ class Show extends Component
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'assigned_to' => 'nullable|exists:users,id',
-                'status' => 'required|in:backlog,in_progress,in_test,failed_testing,ready_to_release,done',
+                'status' => 'required|in:backlog,in_progress,in_test,failed_testing,ready_to_release,done,general',
                 'moveToProjectId' => 'nullable|exists:projects,id',
             ]);
 
@@ -720,7 +720,7 @@ class Show extends Component
     public function updateTaskStatusFromModal()
     {
         $this->validate([
-            'taskStatus' => 'required|in:backlog,in_progress,in_test,failed_testing,ready_to_release,done',
+            'taskStatus' => 'required|in:backlog,in_progress,in_test,failed_testing,ready_to_release,done,general',
         ]);
 
         if ($this->selectedTask) {
