@@ -205,6 +205,16 @@ class TimeByUserLivewire extends Component
             return;
         }
 
+        // Normalize edit time formats before validation (strip seconds, pad single-digit hour)
+        if ($this->editStartTime) {
+            if (strlen($this->editStartTime) > 5) $this->editStartTime = substr($this->editStartTime, 0, 5);
+            if (strlen($this->editStartTime) === 4) $this->editStartTime = '0' . $this->editStartTime;
+        }
+        if ($this->editEndTime) {
+            if (strlen($this->editEndTime) > 5) $this->editEndTime = substr($this->editEndTime, 0, 5);
+            if (strlen($this->editEndTime) === 4) $this->editEndTime = '0' . $this->editEndTime;
+        }
+
         $this->validate([
             'editDuration' => 'required|numeric|min:0.01',
             'editDescription' => 'nullable|string|max:1000',

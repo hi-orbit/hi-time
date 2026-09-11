@@ -393,12 +393,14 @@ class Show extends Component
             return;
         }
 
-        // Normalize time formats BEFORE validation
-        if ($this->newNoteStartTime && strlen($this->newNoteStartTime) > 5) {
-            $this->newNoteStartTime = substr($this->newNoteStartTime, 0, 5);
+        // Normalize time formats before validation (strip seconds, pad single-digit hour)
+        if ($this->newNoteStartTime) {
+            if (strlen($this->newNoteStartTime) > 5) $this->newNoteStartTime = substr($this->newNoteStartTime, 0, 5);
+            if (strlen($this->newNoteStartTime) === 4) $this->newNoteStartTime = '0' . $this->newNoteStartTime;
         }
-        if ($this->newNoteEndTime && strlen($this->newNoteEndTime) > 5) {
-            $this->newNoteEndTime = substr($this->newNoteEndTime, 0, 5);
+        if ($this->newNoteEndTime) {
+            if (strlen($this->newNoteEndTime) > 5) $this->newNoteEndTime = substr($this->newNoteEndTime, 0, 5);
+            if (strlen($this->newNoteEndTime) === 4) $this->newNoteEndTime = '0' . $this->newNoteEndTime;
         }
 
         // Custom validation for time fields
@@ -1090,15 +1092,17 @@ class Show extends Component
             $rules['activityType'] = 'required|string|max:100';
         }
 
-        $this->validate($rules);
+        // Normalize time formats before validation (strip seconds, pad single-digit hour)
+        if ($this->startTime) {
+            if (strlen($this->startTime) > 5) $this->startTime = substr($this->startTime, 0, 5);
+            if (strlen($this->startTime) === 4) $this->startTime = '0' . $this->startTime;
+        }
+        if ($this->endTime) {
+            if (strlen($this->endTime) > 5) $this->endTime = substr($this->endTime, 0, 5);
+            if (strlen($this->endTime) === 4) $this->endTime = '0' . $this->endTime;
+        }
 
-        // Normalize time formats BEFORE validation
-        if ($this->startTime && strlen($this->startTime) > 5) {
-            $this->startTime = substr($this->startTime, 0, 5);
-        }
-        if ($this->endTime && strlen($this->endTime) > 5) {
-            $this->endTime = substr($this->endTime, 0, 5);
-        }
+        $this->validate($rules);
 
         // Custom validation for time fields
         $validTimePattern = '/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/';

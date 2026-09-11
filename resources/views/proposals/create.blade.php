@@ -27,8 +27,20 @@
         </div>
 
         <!-- Form -->
-        <form action="{{ route('proposals.store') }}" method="POST" class="space-y-6">
+        <form action="{{ route('proposals.store') }}" method="POST" class="space-y-6" novalidate>
             @csrf
+
+            <!-- General Validation Errors -->
+            @if ($errors->any())
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h4 class="text-red-800 font-medium mb-2">Please fix the following errors:</h4>
+                    <ul class="list-disc list-inside text-red-700 text-sm space-y-1">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Main Form -->
@@ -96,6 +108,13 @@
                                 @enderror
                             </div>
                         </div>
+
+                        <!-- Recipient Error -->
+                        @error('recipient')
+                            <div class="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+                                <p class="text-sm text-red-700">{{ $message }}</p>
+                            </div>
+                        @enderror
 
                         <!-- Manual Client Information (for when no lead/customer selected) -->
                         <div id="manual-client-info" class="border border-gray-200 rounded-md p-4 mb-4" style="display: none;">
@@ -171,8 +190,8 @@
                         <div class="mb-4">
                             <label for="content" class="block text-sm font-medium text-gray-700 mb-2">Content</label>
 
-                            <!-- Hidden textarea for form submission -->
-                            <textarea id="content" name="content" style="display: none;" required>{{ old('content') }}</textarea>
+                            <!-- Hidden textarea for form submission (no 'required' - validation handled by JS) -->
+                            <textarea id="content" name="content" style="display: none;">{{ old('content', '<p>Proposal content</p>') }}</textarea>
 
                             <!-- Sun Editor Container -->
                             <div id="suneditor-container" class="@error('content') border-red-300 @enderror">
@@ -356,17 +375,19 @@ Your Company Name`,
         }
     });
 
-    // Set initial content if available
-    if (contentTextarea.value) {
+    // Set initial content if available (from old input or template)
+    let hasOldContent = contentTextarea.value && contentTextarea.value !== '<p>Proposal content</p>';
+
+    if (hasOldContent) {
         sunEditor.setContents(contentTextarea.value);
     } else {
-        // Set comprehensive test content with all placeholders
+        // Set comprehensive default content with all placeholders
         const placeholders = {
             start: '{' + '{',
             end: '}' + '}'
         };
 
-        const testContent = '<h1>Service Proposal</h1>' +
+        const defaultContent = '<h1>Service Proposal</h1>' +
         '<h2>' + placeholders.start + 'proposal_title' + placeholders.end + '</h2>' +
         '<p><strong>Date:</strong> ' + placeholders.start + 'date' + placeholders.end + '</p>' +
         '<p><strong>Valid Until:</strong> ' + placeholders.start + 'valid_until' + placeholders.end + '</p>' +
@@ -394,13 +415,9 @@ Your Company Name`,
         '<p>Thank you for considering our services.</p>' +
         '<p>Best regards,<br>Your Company Name</p>';
 
-        sunEditor.setContents(testContent);
-        contentTextarea.value = testContent;
-
-        // Set some sample form data to demonstrate replacements
-        document.getElementById('title').value = 'Website Development Proposal';
-        document.getElementById('amount').value = '5000.00';
-        document.getElementById('valid_until').value = '2025-08-31';
+        sunEditor.setContents(defaultContent);
+        contentTextarea.value = defaultContent;
+    }
     }
 
     // Update hidden textarea when editor content changes - IMPROVED VERSION
@@ -565,28 +582,53 @@ Your Company Name`,
         });
     }
 
-    // Handle submit button clicks - SIMPLIFIED and more reliable
+    // Handle form submission - sync content before submission
     const form = document.querySelector('form');
     const submitButtons = form.querySelectorAll('button[type="submit"]');
 
-    submitButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
+    // Sync editor content to textarea helper
+    function syncEditorContent() {
+        try {
             const editorContent = sunEditor.getContents();
             contentTextarea.value = editorContent;
+            return editorContent;
+        } catch (err) {
+            console.error('Error syncing editor content:', err);
+            return contentTextarea.value;
+        }
+    }
 
-            // Simple validation - only prevent if content is truly empty
-            if (!editorContent || editorContent.trim() === '' || editorContent.trim() === '<p><br></p>') {
+    // Validate content is not empty
+    function isValidContent(content) {
+        if (!content) return false;
+        const trimmed = content.trim();
+        if (trimmed === '' || trimmed === '<p><br></p>' || trimmed === '<p> </p>') return false;
+        return true;
+    }
+
+    submitButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            // Sync content BEFORE any validation
+            syncEditorContent();
+
+            // Validate
+            const content = contentTextarea.value;
+            if (!isValidContent(content)) {
                 e.preventDefault();
-                alert('Please enter proposal content before submitting.');
+                sunEditor.focus();
+                contentPreview.innerHTML = '<p class="text-red-500 italic">Please enter proposal content before submitting.</p>';
                 return false;
             }
+
+            // Content is valid, let the form submit naturally
+            console.log('Form content synced, length:', content.length);
         });
     });
 
-    // Backup form submission handler for final content sync
+    // Final sync on form submit event (backup)
     form.addEventListener('submit', function(e) {
-        const editorContent = sunEditor.getContents();
-        contentTextarea.value = editorContent;
+        syncEditorContent();
+        console.log('Form submitting, content length:', contentTextarea.value.length);
     });
 
     // Initialize

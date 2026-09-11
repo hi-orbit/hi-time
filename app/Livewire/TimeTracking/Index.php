@@ -47,8 +47,9 @@ class Index extends Component
         'note' => 'required|string|max:1000',
         'entryDate' => 'required|date',
         'editEntryDate' => 'required|date',
-        'editStartTime' => 'nullable|date_format:H:i',
-        'editEndTime' => 'nullable|date_format:H:i',
+        'editStartTime' => ['nullable', 'regex:/^(0?[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/'],
+        'editEndTime' => ['nullable', 'regex:/^(0?[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/'],
+        // Note: single-digit hours (9:00) are accepted; normalization to HH:MM happens before save
         'editDescription' => 'nullable|string',
     ];
 
@@ -273,12 +274,14 @@ class Index extends Component
             return;
         }
 
-        // Normalize time formats BEFORE validation
-        if ($this->startTime && strlen($this->startTime) > 5) {
-            $this->startTime = substr($this->startTime, 0, 5);
+        // Normalize time formats before validation (strip seconds, pad single-digit hour)
+        if ($this->startTime) {
+            if (strlen($this->startTime) > 5) $this->startTime = substr($this->startTime, 0, 5);
+            if (strlen($this->startTime) === 4) $this->startTime = '0' . $this->startTime;
         }
-        if ($this->endTime && strlen($this->endTime) > 5) {
-            $this->endTime = substr($this->endTime, 0, 5);
+        if ($this->endTime) {
+            if (strlen($this->endTime) > 5) $this->endTime = substr($this->endTime, 0, 5);
+            if (strlen($this->endTime) === 4) $this->endTime = '0' . $this->endTime;
         }
 
         // Custom validation for time fields
@@ -545,6 +548,16 @@ class Index extends Component
         if ($entry->user_id !== Auth::id()) {
             session()->flash('error', 'You can only edit your own time entries.');
             return;
+        }
+
+        // Normalize edit time formats before validation (strip seconds, pad single-digit hour)
+        if ($this->editStartTime) {
+            if (strlen($this->editStartTime) > 5) $this->editStartTime = substr($this->editStartTime, 0, 5);
+            if (strlen($this->editStartTime) === 4) $this->editStartTime = '0' . $this->editStartTime;
+        }
+        if ($this->editEndTime) {
+            if (strlen($this->editEndTime) > 5) $this->editEndTime = substr($this->editEndTime, 0, 5);
+            if (strlen($this->editEndTime) === 4) $this->editEndTime = '0' . $this->editEndTime;
         }
 
         $this->validate([
