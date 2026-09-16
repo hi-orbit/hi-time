@@ -112,6 +112,20 @@ class ProposalController extends Controller
         $status = $request->input('status', 'draft');
         $validated['status'] = $status;
 
+        // Safety net: If a template is selected but content is the default placeholder,
+        // use the template's content instead (handles cases where JS fails to load it)
+        if (!empty($validated['template_id'])) {
+            $template = ProposalTemplate::find($validated['template_id']);
+            if ($template) {
+                $content = trim(strip_tags($validated['content'] ?? ''));
+                if (empty($content) ||
+                    $content === 'Proposal content' ||
+                    stripos($validated['content'] ?? '', '<p>Proposal content</p>') !== false) {
+                    $validated['content'] = $template->content;
+                }
+            }
+        }
+
         // Ensure either lead_id, customer_id, or manual client info is provided
         if (!$validated['lead_id'] && !$validated['customer_id'] && !$validated['client_name']) {
             return back()->withErrors(['recipient' => 'Please select a lead, customer, or enter client information manually.'])->withInput();
@@ -213,6 +227,27 @@ class ProposalController extends Controller
      */
     public function update(Request $request, Proposal $proposal)
     {
+        // Handle inline content-only edit (JSON PATCH from show page)
+        if ($request->isJson() || $request->header('Content-Type') === 'application/json') {
+            if (!$proposal->canBeEdited()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This proposal cannot be edited in its current status.',
+                ], 403);
+            }
+
+            $validated = $request->validate([
+                'content' => 'required|string',
+            ]);
+
+            $proposal->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Proposal content updated successfully.',
+            ]);
+        }
+
         Log::info('ProposalController@update called', [
             'proposal_id' => $proposal->id,
             'method' => $request->method(),
@@ -260,6 +295,20 @@ class ProposalController extends Controller
         // Set status based on which button was clicked
         $status = $request->input('status', $proposal->status); // Keep existing status if not specified
         $validated['status'] = $status;
+
+        // Safety net: If a template is selected but content is the default placeholder,
+        // use the template's content instead (handles cases where JS fails to load it)
+        if (!empty($validated['template_id'])) {
+            $template = ProposalTemplate::find($validated['template_id']);
+            if ($template) {
+                $content = trim(strip_tags($validated['content'] ?? ''));
+                if (empty($content) ||
+                    $content === 'Proposal content' ||
+                    stripos($validated['content'] ?? '', '<p>Proposal content</p>') !== false) {
+                    $validated['content'] = $template->content;
+                }
+            }
+        }
 
         // Ensure either lead_id, customer_id, or manual client info is provided
         if (!$validated['lead_id'] && !$validated['customer_id'] && !$validated['client_name']) {

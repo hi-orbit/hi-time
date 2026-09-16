@@ -1,7 +1,13 @@
 @extends('layouts.app')
 
 @push('styles')
-<link href="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/css/suneditor.min.css" rel="stylesheet">
+<style>
+/* Content editable styles */
+#content-area[contenteditable="true"] {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+</style>
 <style>
 /* Custom styles for proposal content display */
 .proposal-content {
@@ -325,13 +331,28 @@
 
                 <!-- Proposal Content -->
                 <div class="bg-white shadow rounded-lg p-6">
-                    <h2 class="text-lg font-medium text-gray-900 mb-4">Proposal Content</h2>
-                    <div class="proposal-content bg-white p-6 border border-gray-200 rounded-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-medium text-gray-900">Proposal Content</h2>
+                        @if($proposal->canBeEdited())
+                            <div id="edit-controls">
+                                <button type="button" id="edit-content-btn" onclick="toggleInlineEdit()"
+                                        class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium transition">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                    Edit Content
+                                </button>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Proposal Content Area (becomes editable when Edit is clicked) -->
+                    <div id="content-area"
+                         class="proposal-content bg-white p-6 border border-gray-200 rounded-lg min-h-[200px]"
+                         contenteditable="false">
                         @php
-                            // Process template variables in the content
                             $processedContent = $proposal->content;
 
-                            // Get client data for replacements
                             $clientData = [];
                             if ($proposal->lead) {
                                 $clientData = [
@@ -365,7 +386,6 @@
                                 ];
                             }
 
-                            // Add proposal data
                             $proposalData = [
                                 'proposal_title' => $proposal->title ?? '',
                                 'amount' => $proposal->amount ? '£' . number_format($proposal->amount, 2) : '',
@@ -373,25 +393,36 @@
                                 'valid_until' => $proposal->valid_until ? $proposal->valid_until->format('F j, Y') : '',
                             ];
 
-                            // Split names for first/last name variables
                             if (isset($clientData['client_name'])) {
                                 $nameParts = explode(' ', $clientData['client_name'], 2);
                                 $clientData['first_name'] = $nameParts[0] ?? '';
                                 $clientData['last_name'] = $nameParts[1] ?? '';
                             }
 
-                            // Merge all data
                             $allData = array_merge($clientData, $proposalData);
 
-                            // Replace variables in content using robust pattern matching
                             foreach ($allData as $key => $value) {
-                                // Replace with double curly braces (with optional whitespace)
                                 $processedContent = preg_replace('/\{\{\s*' . preg_quote($key, '/') . '\s*\}\}/i', $value, $processedContent);
-                                // Also try single curly braces (in case editor uses different format)
                                 $processedContent = preg_replace('/\{\s*' . preg_quote($key, '/') . '\s*\}/i', $value, $processedContent);
                             }
                         @endphp
                         {!! $processedContent !!}
+                    </div>
+
+                    <!-- Save/Cancel bar (hidden by default) -->
+                    <div id="edit-bar" class="hidden mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
+                        <div class="text-sm text-gray-500" id="save-status"></div>
+                        <div class="flex space-x-3">
+                            <button type="button" onclick="cancelInlineEdit()"
+                                    class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200">
+                                Cancel
+                            </button>
+                            <button type="button" onclick="saveInlineEdit()"
+                                    id="save-content-btn"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
+                                Save Changes
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -534,6 +565,113 @@ function copyProposalLink(url) {
     }).catch(function(err) {
         console.error('Failed to copy text: ', err);
         alert('Failed to copy link. Please try again.');
+    });
+}
+</script>
+
+<script>
+function copyProposalLink(url) {
+    navigator.clipboard.writeText(url).then(function() {
+        const notification = document.getElementById('copy-success');
+        notification.classList.remove('hidden');
+        setTimeout(function() {
+            notification.classList.add('hidden');
+        }, 3000);
+    }).catch(function(err) {
+        console.error('Failed to copy text: ', err);
+        alert('Failed to copy link. Please try again.');
+    });
+}
+</script>
+
+<script>
+const proposalUrl = "{{ route('proposals.update', $proposal) }}";
+const csrfToken = "{{ csrf_token() }}";
+const originalContent = {!! json_encode($proposal->content) !!};
+let isEditing = false;
+let previousContent = null;
+
+function toggleInlineEdit() {
+    if (isEditing) return;
+    isEditing = true;
+
+    const contentArea = document.getElementById('content-area');
+    previousContent = contentArea.innerHTML;
+
+    // Make content editable
+    contentArea.contentEditable = 'true';
+    contentArea.style.outline = '2px solid #3b82f6';
+    contentArea.style.borderRadius = '0.375rem';
+    contentArea.style.cursor = 'text';
+
+    // Show save/cancel bar
+    document.getElementById('edit-bar').classList.remove('hidden');
+    document.getElementById('edit-controls').classList.add('hidden');
+
+    // Focus the content area
+    contentArea.focus();
+}
+
+function cancelInlineEdit() {
+    const contentArea = document.getElementById('content-area');
+
+    // Restore original content
+    contentArea.innerHTML = previousContent;
+    contentArea.contentEditable = 'false';
+    contentArea.style.outline = '';
+    contentArea.style.borderRadius = '';
+    contentArea.style.cursor = '';
+
+    isEditing = false;
+    document.getElementById('edit-bar').classList.add('hidden');
+    document.getElementById('edit-controls').classList.remove('hidden');
+    document.getElementById('save-status').textContent = '';
+}
+
+function saveInlineEdit() {
+    const contentArea = document.getElementById('content-area');
+    const saveBtn = document.getElementById('save-content-btn');
+    const statusEl = document.getElementById('save-status');
+
+    const updatedContent = contentArea.innerHTML;
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+    statusEl.textContent = 'Saving changes...';
+    statusEl.className = 'text-sm text-gray-500';
+
+    fetch(proposalUrl, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ content: updatedContent })
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success) {
+            contentArea.contentEditable = 'false';
+            contentArea.style.outline = '';
+            contentArea.style.borderRadius = '';
+            contentArea.style.cursor = '';
+
+            isEditing = false;
+            location.reload();
+        } else {
+            statusEl.textContent = data.message || 'Failed to save changes.';
+            statusEl.className = 'text-sm text-red-600';
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save Changes';
+        }
+    })
+    .catch(function(error) {
+        console.error('Error saving:', error);
+        statusEl.textContent = 'Error saving changes. Please try again.';
+        statusEl.className = 'text-sm text-red-600';
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Changes';
     });
 }
 </script>

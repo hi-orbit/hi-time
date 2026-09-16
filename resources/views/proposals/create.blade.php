@@ -143,7 +143,6 @@
                                 <option value="">Choose a template...</option>
                                 @foreach($templates as $template)
                                     <option value="{{ $template->id }}"
-                                            data-content="{{ $template->content }}"
                                             {{ old('template_id') == $template->id ? 'selected' : '' }}>
                                         {{ $template->name }} ({{ $template->type }})
                                     </option>
@@ -284,6 +283,9 @@
         </form>
     </div>
 </div>
+
+<!-- Template data as JSON (avoids HTML entity encoding issues with data-* attributes) -->
+<script type="application/json" id="template-data">@json($templates->pluck('content', 'id'))</script>
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
@@ -488,10 +490,11 @@ Your Company Name`,
     document.getElementById('client_email').addEventListener('input', updatePreview);
 
     // Handle template selection
+    const templateData = JSON.parse(document.getElementById('template-data').textContent);
     templateSelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        if (selectedOption.value) {
-            const templateContent = selectedOption.getAttribute('data-content');
+        const selectedTemplateId = this.value;
+        if (selectedTemplateId) {
+            const templateContent = templateData[selectedTemplateId];
             if (templateContent) {
                 sunEditor.setContents(templateContent);
                 contentTextarea.value = templateContent;
