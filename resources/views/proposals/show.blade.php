@@ -7,6 +7,77 @@
     outline: 2px solid #3b82f6;
     outline-offset: 2px;
 }
+
+/* Formatting toolbar */
+#format-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 8px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-bottom: none;
+    border-radius: 0.375rem 0.375rem 0 0;
+}
+#format-toolbar .tb-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+#format-toolbar .tb-divider {
+    width: 1px;
+    height: 24px;
+    background: #d1d5db;
+    margin: 0 4px;
+}
+#format-toolbar button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: #374151;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.15s;
+}
+#format-toolbar button:hover {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+}
+#format-toolbar button.active {
+    background: #3b82f6;
+    color: #fff;
+}
+#format-toolbar select {
+    height: 32px;
+    padding: 0 6px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 12px;
+    color: #374151;
+    cursor: pointer;
+}
+#format-toolbar select:hover {
+    border-color: #9ca3af;
+}
+#format-toolbar input[type="color"] {
+    width: 32px;
+    height: 32px;
+    padding: 2px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    cursor: pointer;
+}
 </style>
 <style>
 /* Custom styles for proposal content display */
@@ -346,6 +417,92 @@
                         @endif
                     </div>
 
+                    <!-- Formatting Toolbar (hidden by default) -->
+                    <div id="format-toolbar" class="hidden">
+                        <div class="tb-group">
+                            <select id="tb-formatblock" onchange="execFormat('formatBlock', this.value); this.value='';">
+                                <option value="">Style</option>
+                                <option value="p">Paragraph</option>
+                                <option value="h1">Heading 1</option>
+                                <option value="h2">Heading 2</option>
+                                <option value="h3">Heading 3</option>
+                                <option value="h4">Heading 4</option>
+                                <option value="h5">Heading 5</option>
+                                <option value="h6">Heading 6</option>
+                                <option value="pre">Preformatted</option>
+                            </select>
+                            <select id="tb-fontsize" onchange="execFormat('fontSize', this.value); this.value='';">
+                                <option value="">Size</option>
+                                <option value="1">Small</option>
+                                <option value="3">Normal</option>
+                                <option value="5">Large</option>
+                                <option value="7">Huge</option>
+                            </select>
+                        </div>
+                        <div class="tb-divider"></div>
+                        <div class="tb-group">
+                            <button onclick="execFormat('bold')" title="Bold"><b>B</b></button>
+                            <button onclick="execFormat('italic')" title="Italic"><i>I</i></button>
+                            <button onclick="execFormat('underline')" title="Underline"><u>U</u></button>
+                            <button onclick="execFormat('strikeThrough')" title="Strikethrough"><s>S</s></button>
+                        </div>
+                        <div class="tb-divider"></div>
+                        <div class="tb-group">
+                            <input type="color" id="tb-fontcolor" value="#000000" onchange="execFormat('foreColor', this.value)" title="Text Color">
+                            <input type="color" id="tb-bgcolor" value="#ffffff" onchange="execFormat('hiliteColor', this.value)" title="Highlight Color">
+                        </div>
+                        <div class="tb-divider"></div>
+                        <div class="tb-group">
+                            <button onclick="execFormat('justifyLeft')" title="Align Left">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M2 4h16v1.5H2V4zm0 4.5h10v1.5H2V8.5zm0 4.5h16v1.5H2v-1.5zm0 4.5h10v1.5H2v-1.5z"/></svg>
+                            </button>
+                            <button onclick="execFormat('justifyCenter')" title="Center">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M2 4h16v1.5H2V4zm3.5 4.5h9v1.5h-9V8.5zm3.5 4.5h2v1.5h-2v-1.5zm-3.5 4.5h9v1.5h-9v-1.5z"/></svg>
+                            </button>
+                            <button onclick="execFormat('justifyRight')" title="Align Right">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M2 4h16v1.5H2V4zm6 4.5h10v1.5H8V8.5zm6 4.5h4v1.5h-4v-1.5zm-6 4.5h10v1.5H8v-1.5z"/></svg>
+                            </button>
+                            <button onclick="execFormat('justifyFull')" title="Justify">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M2 4h16v1.5H2V4zm0 4.5h16v1.5H2V8.5zm0 4.5h16v1.5H2v-1.5zm0 4.5h16v1.5H2v-1.5z"/></svg>
+                            </button>
+                        </div>
+                        <div class="tb-divider"></div>
+                        <div class="tb-group">
+                            <button onclick="execFormat('insertUnorderedList')" title="Bullet List">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><circle cx="3" cy="5" r="1.5"/><circle cx="3" cy="10" r="1.5"/><circle cx="3" cy="15" r="1.5"/><path d="M7 4.25h12v1.5H7V4.25zm0 5.75h12v1.5H7V10zm0 5.75h12v1.5H7V15.75z"/></svg>
+                            </button>
+                            <button onclick="execFormat('insertOrderedList')" title="Numbered List">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><text x="0.5" y="6.5" font-size="5" font-weight="bold">1.</text><text x="0.5" y="11.5" font-size="5" font-weight="bold">2.</text><text x="0.5" y="16.5" font-size="5" font-weight="bold">3.</text><path d="M7 4.25h12v1.5H7V4.25zm0 5.75h12v1.5H7V10zm0 5.75h12v1.5H7V15.75z"/></svg>
+                            </button>
+                            <button onclick="execFormat('indent')" title="Indent">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M2 4h16v1.5H2V4zm8 3.5h8v1.5h-8V7.5zm-4 3.5h12v1.5H6V11zm-4 3.5h16v1.5H2V14.5z"/></svg>
+                            </button>
+                            <button onclick="execFormat('outdent')" title="Outdent">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M2 4h16v1.5H2V4zm4 3.5h8v1.5H6V7.5zm0 3.5h12v1.5H6V11zm0 3.5h12v1.5H6V14.5z"/></svg>
+                            </button>
+                        </div>
+                        <div class="tb-divider"></div>
+                        <div class="tb-group">
+                            <button onclick="execFormat('insertHorizontalRule')" title="Horizontal Line">―</button>
+                            <button onclick="insertTableDialog()" title="Insert Table">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><rect x="1" y="2" width="18" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="1" y1="7" x2="19" y2="7" stroke="currentColor" stroke-width="1"/><line x1="1" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1"/><line x1="7" y1="2" x2="7" y2="18" stroke="currentColor" stroke-width="1"/><line x1="13" y1="2" x2="13" y2="18" stroke="currentColor" stroke-width="1"/></svg>
+                            </button>
+                        </div>
+                        <div class="tb-divider"></div>
+                        <div class="tb-group">
+                            <button onclick="execFormat('undo')" title="Undo">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h11a4 4 0 014 4 4 4 0 01-4 4H8m-4-4l4-4m-4 4l4 4"/></svg>
+                            </button>
+                            <button onclick="execFormat('redo')" title="Redo">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10H10a4 4 0 00-4 4 4 4 0 004 4h5m4-4l-4-4m4 4l-4 4"/></svg>
+                            </button>
+                            <button onclick="execFormat('removeFormat')" title="Clear Formatting">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M7 7l5-5 5 5M9 17l-3 3M15 17l3 3"/></svg>
+                            </button>
+                            <button onclick="toggleSourceView()" id="tb-source-btn" title="View Source">&lt;&gt;</button>
+                        </div>
+                    </div>
+
                     <!-- Proposal Content Area (becomes editable when Edit is clicked) -->
                     <div id="content-area"
                          class="proposal-content bg-white p-6 border border-gray-200 rounded-lg min-h-[200px]"
@@ -590,6 +747,80 @@ const csrfToken = "{{ csrf_token() }}";
 const originalContent = {!! json_encode($proposal->content) !!};
 let isEditing = false;
 let previousContent = null;
+let isSourceView = false;
+
+/** Execute a formatting command on the contenteditable area */
+function execFormat(command, value) {
+    document.getElementById('content-area').focus();
+    document.execCommand(command, false, value || null);
+}
+
+/** Toggle raw source code view */
+function toggleSourceView() {
+    const contentArea = document.getElementById('content-area');
+    const btn = document.getElementById('tb-source-btn');
+
+    if (!isSourceView) {
+        // Switch to source view
+        contentArea.setAttribute('data-html', contentArea.innerHTML);
+        contentArea.innerHTML = formatHTML(contentArea.innerHTML);
+        contentArea.style.fontFamily = 'monospace';
+        contentArea.style.fontSize = '13px';
+        isSourceView = true;
+        btn.classList.add('active');
+    } else {
+        // Switch back to visual view
+        const html = contentArea.getAttribute('data-html') || contentArea.innerHTML;
+        contentArea.innerHTML = html;
+        contentArea.style.fontFamily = '';
+        contentArea.style.fontSize = '';
+        isSourceView = false;
+        btn.classList.remove('active');
+    }
+}
+
+/** Pretty-print HTML for source view */
+function formatHTML(html) {
+    let formatted = '';
+    let indent = '';
+    const tab = '  ';
+    const nodes = html.split(/>\s*</);
+    nodes.forEach(function(node, i) {
+        if (node.match(/^\/\w/)) {
+            indent = indent.substring(tab.length);
+        }
+        formatted += indent + '<' + node + '>\n';
+        if (node.match(/^<?\w[^>]*[^\/]$/) && !node.startsWith('!') && !node.startsWith('br') && !node.startsWith('hr') && !node.startsWith('img') && !node.startsWith('input')) {
+            indent += tab;
+        }
+    });
+    return formatted.substring(1, formatted.length - 2);
+}
+
+/** Insert table dialog */
+function insertTableDialog() {
+    const rows = prompt('Number of rows:', '3');
+    if (!rows) return;
+    const cols = prompt('Number of columns:', '3');
+    if (!cols) return;
+
+    let table = '<table style="width:100%;border-collapse:collapse;margin:1rem 0">';
+    for (let r = 0; r < parseInt(rows); r++) {
+        table += '<tr>';
+        for (let c = 0; c < parseInt(cols); c++) {
+            if (r === 0) {
+                table += '<th style="border:1px solid #d1d5db;padding:0.5rem;background:#f9fafb;font-weight:600">Header</th>';
+            } else {
+                table += '<td style="border:1px solid #d1d5db;padding:0.5rem">Cell</td>';
+            }
+        }
+        table += '</tr>';
+    }
+    table += '</table>';
+
+    document.getElementById('content-area').focus();
+    document.execCommand('insertHTML', false, table);
+}
 
 function toggleInlineEdit() {
     if (isEditing) return;
@@ -600,11 +831,10 @@ function toggleInlineEdit() {
 
     // Make content editable
     contentArea.contentEditable = 'true';
-    contentArea.style.outline = '2px solid #3b82f6';
-    contentArea.style.borderRadius = '0.375rem';
     contentArea.style.cursor = 'text';
 
-    // Show save/cancel bar
+    // Show toolbar and save/cancel bar
+    document.getElementById('format-toolbar').classList.remove('hidden');
     document.getElementById('edit-bar').classList.remove('hidden');
     document.getElementById('edit-controls').classList.add('hidden');
 
@@ -618,11 +848,14 @@ function cancelInlineEdit() {
     // Restore original content
     contentArea.innerHTML = previousContent;
     contentArea.contentEditable = 'false';
-    contentArea.style.outline = '';
-    contentArea.style.borderRadius = '';
     contentArea.style.cursor = '';
+    if (isSourceView) {
+        isSourceView = false;
+        document.getElementById('tb-source-btn').classList.remove('active');
+    }
 
     isEditing = false;
+    document.getElementById('format-toolbar').classList.add('hidden');
     document.getElementById('edit-bar').classList.add('hidden');
     document.getElementById('edit-controls').classList.remove('hidden');
     document.getElementById('save-status').textContent = '';
@@ -633,7 +866,10 @@ function saveInlineEdit() {
     const saveBtn = document.getElementById('save-content-btn');
     const statusEl = document.getElementById('save-status');
 
-    const updatedContent = contentArea.innerHTML;
+    // If in source view, get the raw HTML
+    const updatedContent = isSourceView
+        ? contentArea.innerHTML.replace(/\n/g, '').replace(/\s+/g, ' ')
+        : contentArea.innerHTML;
 
     saveBtn.disabled = true;
     saveBtn.textContent = 'Saving...';
@@ -653,8 +889,6 @@ function saveInlineEdit() {
     .then(function(data) {
         if (data.success) {
             contentArea.contentEditable = 'false';
-            contentArea.style.outline = '';
-            contentArea.style.borderRadius = '';
             contentArea.style.cursor = '';
 
             isEditing = false;
@@ -674,5 +908,18 @@ function saveInlineEdit() {
         saveBtn.textContent = 'Save Changes';
     });
 }
+
+/** Keyboard shortcuts (Ctrl+B, Ctrl+I, etc.) */
+document.addEventListener('keydown', function(e) {
+    if (!isEditing) return;
+    if (e.ctrlKey || e.metaKey) {
+        switch(e.key.toLowerCase()) {
+            case 'b': e.preventDefault(); execFormat('bold'); break;
+            case 'i': e.preventDefault(); execFormat('italic'); break;
+            case 'u': e.preventDefault(); execFormat('underline'); break;
+            case 'z': if (e.shiftKey) { e.preventDefault(); execFormat('redo'); } break;
+        }
+    }
+});
 </script>
 @endsection
