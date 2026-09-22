@@ -12,8 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add 'customer' to the user role enum
-        DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'user', 'contractor', 'customer') DEFAULT 'user'");
+        // Add 'customer' to the user role enum.
+        // MySQL only - on other drivers (e.g. sqlite in tests) the column is already a plain string.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'user', 'contractor', 'customer') DEFAULT 'user'");
+        }
 
         // Create project_users pivot table for customer assignments
         Schema::create('project_users', function (Blueprint $table) {
@@ -35,7 +38,9 @@ return new class extends Migration
         // Remove the project_users table
         Schema::dropIfExists('project_users');
 
-        // Revert the user role enum
-        DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'user', 'contractor') DEFAULT 'user'");
+        // Revert the user role enum (MySQL only, see up()).
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'user', 'contractor') DEFAULT 'user'");
+        }
     }
 };

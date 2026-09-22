@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -12,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('tags', function (Blueprint $table) {
+        // Check if the unique constraint exists before trying to drop it
+        // (driver-agnostic; the previous `SHOW INDEX` query is MySQL-only).
+        $hasNameUnique = Schema::hasIndex('tags', 'tags_name_unique');
+
+        Schema::table('tags', function (Blueprint $table) use ($hasNameUnique) {
             $table->foreignId('customer_id')->nullable()->constrained()->onDelete('cascade')->after('name');
 
-            // Check if the unique constraint exists before trying to drop it
-            $indexes = DB::select("SHOW INDEX FROM tags WHERE Key_name = 'tags_name_unique'");
-            if (!empty($indexes)) {
+            if ($hasNameUnique) {
                 $table->dropUnique(['name']);
             }
 

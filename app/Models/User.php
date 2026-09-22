@@ -32,6 +32,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'api_key',
     ];
 
     /**
@@ -105,5 +106,18 @@ class User extends Authenticatable
     public function assignedProjects()
     {
         return $this->belongsToMany(Project::class, 'project_users');
+    }
+
+    /**
+     * Generate (or regenerate) the user's API key.
+     *
+     * @return string The new API key (shown only once).
+     */
+    public function generateApiKey(): string
+    {
+        $this->api_key = bin2hex(random_bytes(32));
+        $this->save();
+
+        return $this->api_key;
     }
 }

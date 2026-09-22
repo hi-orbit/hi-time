@@ -12,8 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Update the enum to include 'signed' status
-        DB::statement("ALTER TABLE proposals MODIFY COLUMN status ENUM('draft', 'sent', 'viewed', 'accepted', 'rejected', 'cancelled', 'signed') DEFAULT 'draft'");
+        // Update the enum to include 'signed' status.
+        // MySQL only - on other drivers (e.g. sqlite in tests) the column is already a plain string.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE proposals MODIFY COLUMN status ENUM('draft', 'sent', 'viewed', 'accepted', 'rejected', 'cancelled', 'signed') DEFAULT 'draft'");
+        }
     }
 
     /**
@@ -21,7 +24,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Remove 'signed' from the enum
-        DB::statement("ALTER TABLE proposals MODIFY COLUMN status ENUM('draft', 'sent', 'viewed', 'accepted', 'rejected', 'cancelled') DEFAULT 'draft'");
+        // Remove 'signed' from the enum (MySQL only, see up()).
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE proposals MODIFY COLUMN status ENUM('draft', 'sent', 'viewed', 'accepted', 'rejected', 'cancelled') DEFAULT 'draft'");
+        }
     }
 };

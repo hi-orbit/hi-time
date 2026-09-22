@@ -17,8 +17,11 @@ return new class extends Migration
         DB::table('leads')->where('status', 'converted')->update(['status' => 'closed_won']);
         DB::table('leads')->where('status', 'lost')->update(['status' => 'closed_lost']);
 
-        // Use raw SQL to modify the enum column (Laravel's change() doesn't work well with enums)
-        DB::statement("ALTER TABLE leads MODIFY COLUMN status ENUM('new', 'contacted', 'qualified', 'proposal_sent', 'closed_won', 'closed_lost') NOT NULL DEFAULT 'new'");
+        // Use raw SQL to modify the enum column (Laravel's change() doesn't work well with enums).
+        // MySQL only - on other drivers (e.g. sqlite in tests) the column is already a plain string.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE leads MODIFY COLUMN status ENUM('new', 'contacted', 'qualified', 'proposal_sent', 'closed_won', 'closed_lost') NOT NULL DEFAULT 'new'");
+        }
     }
 
     /**
@@ -32,7 +35,9 @@ return new class extends Migration
         DB::table('leads')->where('status', 'closed_won')->update(['status' => 'converted']);
         DB::table('leads')->where('status', 'closed_lost')->update(['status' => 'lost']);
 
-        // Revert the enum column using raw SQL
-        DB::statement("ALTER TABLE leads MODIFY COLUMN status ENUM('active', 'converted', 'lost') NOT NULL DEFAULT 'active'");
+        // Revert the enum column using raw SQL (MySQL only, see up()).
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE leads MODIFY COLUMN status ENUM('active', 'converted', 'lost') NOT NULL DEFAULT 'active'");
+        }
     }
 };

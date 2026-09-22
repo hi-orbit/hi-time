@@ -5,7 +5,6 @@ namespace Database\Factories;
 use App\Models\TaskNote;
 use App\Models\User;
 use App\Models\Task;
-use App\Models\Project;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Carbon\Carbon;
 
@@ -22,7 +21,6 @@ class TaskNoteFactory extends Factory
         return [
             'user_id' => User::factory(),
             'task_id' => null,
-            'project_id' => null,
             'content' => $this->faker->sentence(),
             'description' => $this->faker->sentence(),
             'hours' => floor($durationMinutes / 60),
@@ -54,15 +52,6 @@ class TaskNoteFactory extends Factory
         return $this->state(function (array $attributes) {
             return [
                 'task_id' => Task::factory(),
-            ];
-        });
-    }
-
-    public function withProject()
-    {
-        return $this->state(function (array $attributes) {
-            return [
-                'project_id' => Project::factory(),
             ];
         });
     }

@@ -20,6 +20,8 @@ ini_set('max_file_uploads', '20');
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
+        apiPrefix: 'api',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -28,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'customer.project' => \App\Http\Middleware\CustomerProjectAccess::class,
             'restrict.customer' => \App\Http\Middleware\RestrictCustomerAccess::class,
+            'api.key' => \App\Http\Middleware\ApiAuthenticate::class,
         ]);
 
         // Exclude specific routes from CSRF for image uploads
@@ -37,5 +40,6 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Render JSON error responses (401/403/404/422) for API requests
+        $exceptions->shouldRenderJsonWhen(fn ($request) => str_starts_with($request->path(), 'api/') || $request->expectsJson());
     })->create();

@@ -12,11 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // 'customer' is included from the start: on MySQL the later
-            // 2025_08_20_084524 migration re-sets the same enum via raw SQL, while on
-            // other drivers (e.g. sqlite in tests) enums are varchar + CHECK and that
-            // raw ALTER is skipped - so the value must be allowed here.
-            $table->enum('role', ['admin', 'user', 'contractor', 'customer'])->default('user');
+            $table->string('api_key')->nullable()->unique()->after('settings');
         });
     }
 
@@ -26,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('role');
+            $table->dropColumn('api_key');
         });
     }
 };
