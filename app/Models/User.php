@@ -109,6 +109,17 @@ class User extends Authenticatable
     }
 
     /**
+     * IDs of the customers this user has access to (via assigned projects).
+     */
+    public function accessibleCustomerIds()
+    {
+        return $this->assignedProjects()
+            ->whereNotNull('projects.customer_id')
+            ->pluck('projects.customer_id')
+            ->unique();
+    }
+
+    /**
      * Generate (or regenerate) the user's API key.
      *
      * @return string The new API key (shown only once).
