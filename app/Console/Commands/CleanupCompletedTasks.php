@@ -16,14 +16,14 @@ class CleanupCompletedTasks extends Command
      */
     protected $signature = 'tasks:cleanup-completed
                             {--dry-run : Show what would be deleted without actually deleting}
-                            {--hours=24 : Number of hours after which completed tasks should be deleted}';
+                            {--days=30 : Number of days after which completed tasks should be deleted}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Delete tasks that have been in "Done" status for more than 24 hours
+    protected $description = 'Delete tasks that have been in "Done" status for more than 30 days
 
     This command is scheduled to run daily at 2 AM. To enable scheduling in production,
     add this to your crontab: * * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1';
@@ -33,13 +33,13 @@ class CleanupCompletedTasks extends Command
      */
     public function handle()
     {
-        $hours = (int) $this->option('hours');
+        $days = (int) $this->option('days');
         $dryRun = $this->option('dry-run');
-        $cutoffTime = Carbon::now()->subHours($hours);
+        $cutoffTime = Carbon::now()->subDays($days);
 
-        $this->info("Looking for tasks in 'Done' status older than {$hours} hours (before {$cutoffTime->format('Y-m-d H:i:s')})...");
+        $this->info("Looking for tasks in 'Done' status older than {$days} days (before {$cutoffTime->format('Y-m-d H:i:s')})...");
 
-        // Find tasks that are in "Done" status and have been updated more than X hours ago
+        // Find tasks that are in "Done" status and have been updated more than X days ago
         $tasksToDelete = Task::where('status', 'done')
             ->where('updated_at', '<', $cutoffTime)
             ->with(['project', 'notes', 'attachments', 'tags', 'timeEntries'])
