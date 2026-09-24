@@ -1,6 +1,6 @@
 @push('styles')
 <!-- Sun Editor (task description & notes) -->
-<link href="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/css/suneditor.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/dist/css/suneditor.min.css" rel="stylesheet">
 <style>
     .task-sun-editor {
         border: 1px solid #d1d5db;
@@ -13,8 +13,8 @@
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/src/lang/en.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/dist/suneditor.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/src/lang/en.js"></script>
 @endpush
 
 <div class="py-12">
@@ -557,7 +557,9 @@
                                          return;
                                      }
 
-                                     this.editor = SUNEDITOR.create('task-description-editor', {
+                                     // Pass the element itself: Sun Editor v3 treats a string
+                                     // target as a raw CSS selector, so a bare id no longer resolves
+                                     this.editor = SUNEDITOR.create(container, {
                                          width: '100%',
                                          height: '150px',
                                          plugins: { image: false, video: false, table: false, file: false },
@@ -977,7 +979,9 @@
                                                      return;
                                                  }
 
-                                                 this.editor = SUNEDITOR.create('note-editor', {
+                                                 // Pass the element itself: Sun Editor v3 treats a string
+                                                 // target as a raw CSS selector, so a bare id no longer resolves
+                                                 this.editor = SUNEDITOR.create(container, {
                                                      width: '100%',
                                                      height: '100px',
                                                      charCounter: true,
@@ -1149,7 +1153,7 @@
                                              }
                                          }
                                      }"
-                                     x-init="startAutoRefresh()"
+                                     x-init="startAutoRefresh(); return stopAutoRefresh"
                                      x-on:beforeunload.window="stopAutoRefresh()">
                                     <h5 class="text-sm font-medium text-gray-900 mb-2">Upload Files (Auto-upload)</h5>
                                     <livewire:dropzone

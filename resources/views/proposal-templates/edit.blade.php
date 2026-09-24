@@ -4,7 +4,7 @@
 
 @push('styles')
 <!-- Sun Editor CSS -->
-<link href="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/css/suneditor.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/dist/css/suneditor.min.css" rel="stylesheet">
 <style>
     /* Custom styles for Sun E        placeholder: \`Enter your proposal template content here...
 
@@ -229,24 +229,24 @@ We are pleased to submit this proposal for @{{project_name}}...\`, .sun-editor {
 
 @push('scripts')
 <!-- Sun Editor JS -->
-<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/src/lang/en.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/dist/suneditor.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/src/lang/en.js"></script>
 
 @verbatim
 @push('scripts')
 <!-- Sun Editor JS -->
-<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/src/lang/en.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/dist/suneditor.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/src/lang/en.js"></script>
 
 @push('scripts')
 <!-- Sun Editor JS -->
-<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/src/lang/en.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/dist/suneditor.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/src/lang/en.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof SUNEDITOR !== 'undefined') {
-        const editor = SUNEDITOR.create('suneditor-container', {
+        const editor = SUNEDITOR.create(document.getElementById('suneditor-container'), {
             plugins: [
                 'align',
                 'font',

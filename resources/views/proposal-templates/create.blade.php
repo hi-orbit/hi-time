@@ -4,7 +4,7 @@
 
 @push('styles')
 <!-- Sun Editor CSS -->
-<link href="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/css/suneditor.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/dist/css/suneditor.min.css" rel="stylesheet">
 <style>
     /* Custom styles for Sun Editor */
     .sun-editor {
@@ -217,15 +217,16 @@
 </div>
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/src/lang/en.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/dist/suneditor.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/src/lang/en.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const contentTextarea = document.getElementById('content');
 
     // Initialize Sun Editor with working configuration from proposals
-    const sunEditor = SUNEDITOR.create('suneditor-container', {
+    // (pass the element: v3 treats a string as a raw CSS selector)
+    const sunEditor = SUNEDITOR.create(document.getElementById('suneditor-container'), {
         lang: SUNEDITOR_LANG['en'],
         width: '100%',
         height: '400px',

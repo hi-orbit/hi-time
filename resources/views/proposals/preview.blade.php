@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @push('styles')
-<link href="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/css/suneditor.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/dist/css/suneditor.min.css" rel="stylesheet">
 <style>
 /* Custom styles for proposal content display */
 .proposal-content {
