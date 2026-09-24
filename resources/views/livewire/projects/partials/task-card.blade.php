@@ -12,7 +12,7 @@
             <div class="flex-1">
                 <h4 class="font-medium text-gray-900 text-sm mb-1">{{ $task->title }}</h4>
                 @if($task->description)
-                    <p class="text-xs text-gray-600 mb-2">{{ Str::limit($task->description, 60) }}</p>
+                    <p class="text-xs text-gray-600 mb-2">{{ Str::limit(html_entity_decode(strip_tags($task->description)), 60) }}</p>
                 @endif
 
                 <!-- Tags -->

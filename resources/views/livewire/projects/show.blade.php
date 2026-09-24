@@ -1,3 +1,22 @@
+@push('styles')
+<!-- Sun Editor (task description & notes) -->
+<link href="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/css/suneditor.min.css" rel="stylesheet">
+<style>
+    .task-sun-editor {
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+    }
+    .task-sun-editor .sun-editor-editable {
+        font-family: inherit;
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/dist/suneditor.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suneditor@latest/src/lang/en.js"></script>
+@endpush
+
 <div class="py-12">
     <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -72,7 +91,7 @@
                                              class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
                                             <div class="font-medium text-sm text-gray-900">{{ $task->title }}</div>
                                             @if($task->description)
-                                                <div class="text-xs text-gray-500 mt-1 line-clamp-2">{{ Str::limit($task->description, 100) }}</div>
+                                                <div class="text-xs text-gray-500 mt-1 line-clamp-2">{{ Str::limit(html_entity_decode(strip_tags($task->description)), 100) }}</div>
                                             @endif
 
                                             <!-- Tags in search results -->
@@ -523,10 +542,64 @@
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                             @error('title') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
-                        <div class="mb-4">
-                            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                            <textarea wire:model="description" id="description" rows="3"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                        <div class="mb-4"
+                             wire:key="task-description-editor-{{ $editingTask && $selectedTask ? $selectedTask->id : 'create' }}"
+                             x-data="{
+                                 editor: null,
+                                 init() {
+                                     const container = document.getElementById('task-description-editor');
+                                     const input = document.getElementById('task-description-input');
+                                     if (!container || !input) return;
+
+                                     // Fallback to a plain textarea if Sun Editor failed to load
+                                     if (typeof SUNEDITOR === 'undefined') {
+                                         input.classList.remove('hidden');
+                                         return;
+                                     }
+
+                                     this.editor = SUNEDITOR.create('task-description-editor', {
+                                         width: '100%',
+                                         height: '150px',
+                                         plugins: { image: false, video: false, table: false, file: false },
+                                     });
+                                     this.editor.setContents(@js($this->description ?: ''));
+                                     this.editor.onChange = (contents) => this.syncContents(input, contents);
+
+                                     // Re-sync from server state (e.g. after form resets) so the
+                                     // editor never keeps stale content hidden from Livewire
+                                     const onUpdated = () => {
+                                         if (!this.editor || !container.isConnected) return;
+                                         const current = this.editor.getContents();
+                                         if (input.value !== current) {
+                                             this.editor.setContents(input.value);
+                                         }
+                                     };
+                                     window.addEventListener('livewire:updated', onUpdated);
+
+                                     // Make sure the latest content reaches the hidden textarea
+                                     // before the form is submitted
+                                     const form = container.closest('form');
+                                     if (form) {
+                                         form.addEventListener('submit', () => this.syncContents(input, this.editor.getContents()));
+                                     }
+
+                                     return () => {
+                                         window.removeEventListener('livewire:updated', onUpdated);
+                                         if (this.editor) {
+                                             this.editor.destroy();
+                                             this.editor = null;
+                                         }
+                                     };
+                                 },
+                                 syncContents(input, contents) {
+                                     input.value = contents;
+                                     input.dispatchEvent(new Event('input', { bubbles: true }));
+                                 },
+                             }">
+                            <label for="task-description-input" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                            <div id="task-description-editor" wire:ignore class="task-sun-editor"></div>
+                            <textarea id="task-description-input" wire:model="description" rows="3"
+                                      class="hidden w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
                             @error('description') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
                         <div class="mb-4">
@@ -814,7 +887,7 @@
                             <div class="bg-gray-50 rounded-lg p-4 mb-4">
                                 <div class="mb-3">
                                     <label class="text-sm font-medium text-gray-700">Description:</label>
-                                    <p class="text-sm text-gray-900 mt-1">{{ $selectedTask->description ?: 'No description provided.' }}</p>
+                                    <div class="text-sm text-gray-900 mt-1 rich-text">{{ $selectedTask->description ? $selectedTask->rendered_description : 'No description provided.' }}</div>
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-4 mb-3">
@@ -890,11 +963,66 @@
 
                                 <!-- Add Note Form -->
                                 <form wire:submit.prevent="addNote" class="mb-4" wire:key="add-note-form-{{ $selectedTask->id }}">
-                                    <div class="mb-3">
-                                        <label for="newNote" class="block text-sm font-medium text-gray-700 mb-2">Add a note</label>
-                                        <textarea wire:model="newNote" id="newNote" rows="3"
-                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                                                  placeholder="Add a note..."></textarea>
+                                    <div class="mb-3"
+                                         x-data="{
+                                             editor: null,
+                                             init() {
+                                                 const container = document.getElementById('note-editor');
+                                                 const input = document.getElementById('new-note-input');
+                                                 if (!container || !input) return;
+
+                                                 // Fallback to a plain textarea if Sun Editor failed to load
+                                                 if (typeof SUNEDITOR === 'undefined') {
+                                                     input.classList.remove('hidden');
+                                                     return;
+                                                 }
+
+                                                 this.editor = SUNEDITOR.create('note-editor', {
+                                                     width: '100%',
+                                                     height: '100px',
+                                                     charCounter: true,
+                                                     maxCharCount: 1000,
+                                                     placeholder: 'Add a note...',
+                                                     plugins: { image: false, video: false, table: false, file: false },
+                                                 });
+                                                 this.editor.setContents(@js($this->newNote ?: ''));
+                                                 this.editor.onChange = (contents) => this.syncContents(input, contents);
+
+                                                 // Re-sync from server state (addNote resets newNote) so the
+                                                 // editor clears itself and never keeps stale content
+                                                 const onUpdated = () => {
+                                                     if (!this.editor || !container.isConnected) return;
+                                                     const current = this.editor.getContents();
+                                                     if (input.value !== current) {
+                                                         this.editor.setContents(input.value);
+                                                     }
+                                                 };
+                                                 window.addEventListener('livewire:updated', onUpdated);
+
+                                                 // Make sure the latest content reaches the hidden textarea
+                                                 // before the form is submitted
+                                                 const form = container.closest('form');
+                                                 if (form) {
+                                                     form.addEventListener('submit', () => this.syncContents(input, this.editor.getContents()));
+                                                 }
+
+                                                 return () => {
+                                                     window.removeEventListener('livewire:updated', onUpdated);
+                                                     if (this.editor) {
+                                                         this.editor.destroy();
+                                                         this.editor = null;
+                                                     }
+                                                 };
+                                             },
+                                             syncContents(input, contents) {
+                                                 input.value = contents;
+                                                 input.dispatchEvent(new Event('input', { bubbles: true }));
+                                             },
+                                         }">
+                                        <label for="new-note-input" class="block text-sm font-medium text-gray-700 mb-2">Add a note</label>
+                                        <div id="note-editor" wire:ignore class="task-sun-editor"></div>
+                                        <textarea id="new-note-input" wire:model="newNote" rows="3"
+                                                  class="hidden w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
                                         @error('newNote') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
@@ -981,7 +1109,7 @@
                                                         </button>
                                                     @endif
                                                 </div>
-                                                <p class="text-sm text-gray-700 w-full">{{ $note->content }}</p>
+                                                <div class="text-sm text-gray-700 w-full rich-text">{{ $note->rendered_content }}</div>
                                             </div>
                                         @endforeach
                                     @else

@@ -76,6 +76,11 @@ class Task extends Model
         return $this->timeEntries()->where('is_running', true)->first();
     }
 
+    public function getRenderedDescriptionAttribute()
+    {
+        return \App\Support\RichText::render($this->description);
+    }
+
     public function isRunning()
     {
         return $this->timeEntries()->where('is_running', true)->exists();

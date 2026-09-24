@@ -56,6 +56,11 @@ class TaskNote extends Model
         return $this->belongsTo(Project::class);
     }
 
+    public function getRenderedContentAttribute()
+    {
+        return \App\Support\RichText::render($this->content);
+    }
+
     public function getFormattedTimeAttribute(): string
     {
         if (!$this->total_minutes) {
