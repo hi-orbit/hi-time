@@ -15,6 +15,123 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/dist/suneditor.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/suneditor@2.47.12/src/lang/en.js"></script>
+<script>
+// Shared Sun Editor + Livewire bridge for the task description & note editors.
+//
+// Sun Editor 2.47.12 schedules untracked async callbacks from its history
+// stack (a default 400ms "historyStackDelayTime" commit timer plus a 0ms
+// _resourcesStateChange timer on every input) and its char counter. Its
+// destroy() deletes every instance method, so a modal closed while those
+// timers are still pending (i.e. closing right after typing) makes the
+// pending callbacks throw uncaught TypeErrors ("this._iframeAutoHeight is
+// not a function", "e.getCharCount is not a function"). destroy() is
+// therefore deferred by 500ms so those callbacks resolve while the instance
+// is still intact; during the window the editor's window resize/scroll
+// listeners are inert no-ops against its (already removed) DOM.
+window.sunEditorWidget = function (opts) {
+    const registry = window.__sunEditorInstances = window.__sunEditorInstances || {};
+    return {
+        editor: null,
+        offMorph: null,
+        init() {
+            const container = document.getElementById(opts.containerId);
+            const input = document.getElementById(opts.inputId);
+            if (!container || !input) return;
+
+            // Fallback to a plain textarea if Sun Editor failed to load
+            if (typeof SUNEDITOR === 'undefined') {
+                input.classList.remove('hidden');
+                return;
+            }
+
+            // A previous instance for this container may still be pending its
+            // deferred destroy (modal reopened quickly). Retire it now so we
+            // never end up with two editors on the same container.
+            const prev = registry[opts.containerId];
+            if (prev && prev.editor && typeof prev.editor.destroy === 'function') {
+                if (prev.timer) clearTimeout(prev.timer);
+                try { prev.editor.destroy(); } catch (err) { /* stale instance */ }
+                delete registry[opts.containerId];
+            }
+
+            let editor;
+            try {
+                // Pass the element itself: Sun Editor resolves a string
+                // target via getElementById, which fails on dynamically
+                // rendered modal hosts.
+                editor = SUNEDITOR.create(container, opts.createOptions);
+            } catch (err) {
+                console.error('Sun Editor init failed:', err);
+                input.classList.remove('hidden');
+                return;
+            }
+            if (!editor || typeof editor.setContents !== 'function') {
+                input.classList.remove('hidden');
+                return;
+            }
+            this.editor = editor;
+            editor.setContents(opts.initialContents || '');
+            editor.onChange = (contents) => this.syncContents(input, contents);
+            registry[opts.containerId] = { editor: editor, timer: null };
+
+            // Re-sync from server state (e.g. addNote resets newNote) so the
+            // editor never keeps stale content hidden from Livewire. Livewire
+            // 3 dispatches no window-level 'livewire:updated' event, so hook
+            // the morph bus instead.
+            const onMorph = ({ component }) => {
+                if (!this.editor || typeof this.editor.getContents !== 'function') return;
+                if (component && component.el && !component.el.contains(input)) return;
+                if (input.value !== this.editor.getContents()) {
+                    this.editor.setContents(input.value);
+                }
+            };
+            if (typeof Livewire !== 'undefined' && typeof Livewire.hook === 'function') {
+                this.offMorph = Livewire.hook('morph.updated', onMorph);
+            }
+
+            // Make sure the latest content reaches the hidden textarea before
+            // the form is submitted.
+            const form = container.closest('form');
+            if (form) {
+                form.addEventListener('submit', () => {
+                    if (this.editor && typeof this.editor.getContents === 'function') {
+                        this.syncContents(input, this.editor.getContents());
+                    }
+                });
+            }
+        },
+        // Alpine 3 invokes x-data destroy() when the element is removed
+        // (modal close / task switch). Note: a function returned from init()
+        // is executed immediately by this Alpine version, so it must not be
+        // used for cleanup.
+        destroy() {
+            if (typeof this.offMorph === 'function') this.offMorph();
+            this.offMorph = null;
+            const entry = registry[opts.containerId];
+            if (entry && entry.editor === this.editor && this.editor) {
+                entry.timer = setTimeout(() => {
+                    if (entry.editor !== this.editor || !this.editor) return;
+                    try {
+                        // Remove the content iframe first: v2's destroy()
+                        // wipes all instance methods, so a still-pending
+                        // iframe load would otherwise throw afterwards.
+                        const topArea = document.getElementById('suneditor_' + opts.containerId);
+                        const frame = topArea && topArea.querySelector ? topArea.querySelector('iframe') : null;
+                        if (frame && frame.parentNode) frame.parentNode.removeChild(frame);
+                        this.editor.destroy();
+                    } catch (err) { console.warn('Sun Editor destroy failed:', err); }
+                    this.editor = null;
+                    delete registry[opts.containerId];
+                }, 500);
+            }
+        },
+        syncContents(input, contents) {
+            input.value = contents;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        },
+    };
+};
+</script>
 @endpush
 
 <div class="py-12">
@@ -544,62 +661,16 @@
                         </div>
                         <div class="mb-4"
                              wire:key="task-description-editor-{{ $editingTask && $selectedTask ? $selectedTask->id : 'create' }}"
-                             x-data="{
-                                 editor: null,
-                                 init() {
-                                     const container = document.getElementById('task-description-editor');
-                                     const input = document.getElementById('task-description-input');
-                                     if (!container || !input) return;
-
-                                     // Fallback to a plain textarea if Sun Editor failed to load
-                                     if (typeof SUNEDITOR === 'undefined') {
-                                         input.classList.remove('hidden');
-                                         return;
-                                     }
-
-                                     // Pass the element itself: Sun Editor v3 treats a string
-                                     // target as a raw CSS selector, so a bare id no longer resolves
-                                     this.editor = SUNEDITOR.create(container, {
-                                         width: '100%',
-                                         height: '150px',
-                                         plugins: { image: false, video: false, table: false, file: false },
-                                     });
-                                     this.editor.setContents(@js($this->description ?: ''));
-                                     this.editor.onChange = (contents) => this.syncContents(input, contents);
-
-                                     // Re-sync from server state (e.g. after form resets) so the
-                                     // editor never keeps stale content hidden from Livewire
-                                     const onUpdated = () => {
-                                         if (!this.editor || !container.isConnected) return;
-                                         const current = this.editor.getContents();
-                                         if (input.value !== current) {
-                                             this.editor.setContents(input.value);
-                                         }
-                                     };
-                                     window.addEventListener('livewire:updated', onUpdated);
-
-                                     // Make sure the latest content reaches the hidden textarea
-                                     // before the form is submitted
-                                     const form = container.closest('form');
-                                     if (form) {
-                                         form.addEventListener('submit', () => this.syncContents(input, this.editor.getContents()));
-                                     }
-
-                                     return () => {
-                                         window.removeEventListener('livewire:updated', onUpdated);
-                                         if (this.editor) {
-                                             this.editor.destroy();
-                                             this.editor = null;
-                                         }
-                                     };
-                                 },
-                                 syncContents(input, contents) {
-                                     input.value = contents;
-                                     input.dispatchEvent(new Event('input', { bubbles: true }));
-                                 },
-                             }">
+                             x-data="sunEditorWidget({
+                                 containerId: 'task-description-editor',
+                                 inputId: 'task-description-input',
+                                 initialContents: @js($this->description ?: ''),
+                                 createOptions: { width: '100%', height: '150px', plugins: { image: false, video: false, table: false, file: false } },
+                             })">
                             <label for="task-description-input" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                            <div id="task-description-editor" wire:ignore class="task-sun-editor"></div>
+                            <div wire:ignore class="task-sun-editor">
+                                <div id="task-description-editor"></div>
+                            </div>
                             <textarea id="task-description-input" wire:model="description" rows="3"
                                       class="hidden w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
                             @error('description') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
@@ -966,65 +1037,16 @@
                                 <!-- Add Note Form -->
                                 <form wire:submit.prevent="addNote" class="mb-4" wire:key="add-note-form-{{ $selectedTask->id }}">
                                     <div class="mb-3"
-                                         x-data="{
-                                             editor: null,
-                                             init() {
-                                                 const container = document.getElementById('note-editor');
-                                                 const input = document.getElementById('new-note-input');
-                                                 if (!container || !input) return;
-
-                                                 // Fallback to a plain textarea if Sun Editor failed to load
-                                                 if (typeof SUNEDITOR === 'undefined') {
-                                                     input.classList.remove('hidden');
-                                                     return;
-                                                 }
-
-                                                 // Pass the element itself: Sun Editor v3 treats a string
-                                                 // target as a raw CSS selector, so a bare id no longer resolves
-                                                 this.editor = SUNEDITOR.create(container, {
-                                                     width: '100%',
-                                                     height: '100px',
-                                                     charCounter: true,
-                                                     maxCharCount: 1000,
-                                                     placeholder: 'Add a note...',
-                                                     plugins: { image: false, video: false, table: false, file: false },
-                                                 });
-                                                 this.editor.setContents(@js($this->newNote ?: ''));
-                                                 this.editor.onChange = (contents) => this.syncContents(input, contents);
-
-                                                 // Re-sync from server state (addNote resets newNote) so the
-                                                 // editor clears itself and never keeps stale content
-                                                 const onUpdated = () => {
-                                                     if (!this.editor || !container.isConnected) return;
-                                                     const current = this.editor.getContents();
-                                                     if (input.value !== current) {
-                                                         this.editor.setContents(input.value);
-                                                     }
-                                                 };
-                                                 window.addEventListener('livewire:updated', onUpdated);
-
-                                                 // Make sure the latest content reaches the hidden textarea
-                                                 // before the form is submitted
-                                                 const form = container.closest('form');
-                                                 if (form) {
-                                                     form.addEventListener('submit', () => this.syncContents(input, this.editor.getContents()));
-                                                 }
-
-                                                 return () => {
-                                                     window.removeEventListener('livewire:updated', onUpdated);
-                                                     if (this.editor) {
-                                                         this.editor.destroy();
-                                                         this.editor = null;
-                                                     }
-                                                 };
-                                             },
-                                             syncContents(input, contents) {
-                                                 input.value = contents;
-                                                 input.dispatchEvent(new Event('input', { bubbles: true }));
-                                             },
-                                         }">
+                                         x-data="sunEditorWidget({
+                                             containerId: 'note-editor',
+                                             inputId: 'new-note-input',
+                                             initialContents: @js($this->newNote ?: ''),
+                                             createOptions: { width: '100%', height: '100px', charCounter: true, maxCharCount: 1000, placeholder: 'Add a note...', plugins: { image: false, video: false, table: false, file: false } },
+                                         })">
                                         <label for="new-note-input" class="block text-sm font-medium text-gray-700 mb-2">Add a note</label>
-                                        <div id="note-editor" wire:ignore class="task-sun-editor"></div>
+                                        <div wire:ignore class="task-sun-editor">
+                                            <div id="note-editor"></div>
+                                        </div>
                                         <textarea id="new-note-input" wire:model="newNote" rows="3"
                                                   class="hidden w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
                                         @error('newNote') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
